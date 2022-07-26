@@ -1,6 +1,9 @@
 version: 2.1
 
 executors:
+  base:
+    docker:
+      - image: cimg/deploy:2022.07
   jdk17:
     docker:
       - image: cimg/openjdk:17.0.3
@@ -79,6 +82,33 @@ jobs:
         - store_artifacts:
             path: test-reports
 
+  deploy-dev:
+    executor: base
+    environment:
+      K8_USER: boa-pipeline
+      K8_URL: "https://82BD0213010A79DBD7EAF886E3E553E0.gr7.us-west-2.eks.amazonaws.com"
+      K8_CLUSTER: cera-solutions-eng
+      K8_NAMESPACE: boa-dev
+    steps:
+      - checkout
+      - use_service_account
+      - run: |
+          sudo apt update && sudo apt install kubectl -y
+          kubectl config view
+          kubectl get serviceaccounts -n boa-dev
+      - run: 
+          name: Deploy BoA
+          command: |
+            kubectl apply -f ./extras/jwt/jwt-secret.yaml
+            kubectl apply -f ./kubernetes-manifests
+      - run:
+          name: Wait for deployment
+          command: |
+            kubectl wait deployment -n default frontend --for condition=Available=True --timeout=90s
+      - run: 
+          name: Print Frontend URL
+          command: kubectl get service frontend | awk '{print $4}'
+
 workflows:
   main:
     jobs:
@@ -86,3 +116,20 @@ workflows:
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
+      - deploy-dev:
+          requires: [ python-test, java-test-and-code-cov ]
+          context: [ cera-boa-dev ]
+
+
+commands:
+  use_service_account:
+    steps:
+      - run:
+          command: |
+            echo ${K8_CERT} | base64 -d > ca.crt
+            kubectl config set-cluster ${K8_CLUSTER} --server=${K8_URL} --certificate-authority=ca.crt
+            export DECODED_TOKEN=$(echo ${K8_TOKEN} | base64 -d)
+            kubectl config set-credentials ${K8_USER} --token=${DECODED_TOKEN}
+            kubectl config set-context default --user=${K8_USER}  --cluster=${K8_CLUSTER}
+            kubectl config use-context default
+          name: Use K8s token & cert to create kubeconfig.
