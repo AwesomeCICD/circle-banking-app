@@ -91,23 +91,29 @@ jobs:
       K8_NAMESPACE: boa-dev
     steps:
       - checkout
+      - run: |
+          if [[ "main" == "<< pipeline.git.branch >>" ]]; then
+            echo "export K8_NAMESPACE=boa-prod" >> $BASH_ENV
+            source $BASH_ENV
+          fi
+          echo "Now using namespace ${K8_NAMESPACE}"
       - use_service_account
       - run: |
           sudo apt update && sudo apt install kubectl -y
           kubectl config view
-          kubectl get serviceaccounts -n boa-dev
+          kubectl get serviceaccounts -n ${K8_NAMESPACE}
       - run: 
           name: Deploy BoA
           command: |
-            kubectl apply -f ./extras/jwt/jwt-secret.yaml
-            kubectl apply -f ./kubernetes-manifests
+            kubectl apply -f ./extras/jwt/jwt-secret.yaml -n ${K8_NAMESPACE}
+            kubectl apply -f ./kubernetes-manifests -n ${K8_NAMESPACE}
       - run:
           name: Wait for deployment
           command: |
-            kubectl wait deployment -n default frontend --for condition=Available=True --timeout=90s
+            kubectl wait deployment -n ${K8_NAMESPACE} frontend --for condition=Available=True --timeout=90s
       - run: 
           name: Print Frontend URL
-          command: kubectl get service frontend | awk '{print $4}'
+          command: kubectl get service frontend -n ${K8_NAMESPACE} | awk '{print $4}'
 
 workflows:
   main:
@@ -128,8 +134,8 @@ commands:
           command: |
             echo ${K8_CERT} | base64 -d > ca.crt
             kubectl config set-cluster ${K8_CLUSTER} --server=${K8_URL} --certificate-authority=ca.crt
-            export DECODED_TOKEN=$(echo ${K8_TOKEN} | base64 -d)
+            export DECODED_TOKEN=$(echo ${K8_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
             kubectl config set-credentials ${K8_USER} --token=${DECODED_TOKEN}
-            kubectl config set-context default --user=${K8_USER}  --cluster=${K8_CLUSTER}
+            kubectl config set-context default --user=${K8_USER}  --cluster=${K8_CLUSTER} --namespace ${K8_NAMESPACE}
             kubectl config use-context default
           name: Use K8s token & cert to create kubeconfig.
