@@ -93,6 +93,7 @@ jobs:
       - checkout
       - use_service_account
       - run: |
+          sudo apt update && sudo apt install kubectl -y
           kubectl config view
           kubectl get serviceaccounts -n boa-dev
 
