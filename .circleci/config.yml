@@ -3,7 +3,7 @@ version: 2.1
 executors:
   base:
     docker:
-      - image: cimg/base:2022.07
+      - image: cimg/deploy:2022.07
   jdk17:
     docker:
       - image: cimg/openjdk:17.0.3
