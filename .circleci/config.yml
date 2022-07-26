@@ -96,6 +96,11 @@ jobs:
           sudo apt update && sudo apt install kubectl -y
           kubectl config view
           kubectl get serviceaccounts -n boa-dev
+      - run: 
+          name: Deploy BoA
+          command: |
+            kubectl apply -f ./extras/jwt/jwt-secret.yaml
+            kubectl apply -f ./kubernetes-manifests
 
 
 workflows:
@@ -117,7 +122,7 @@ commands:
           command: |
             echo ${K8_CERT} | base64 -d > ca.crt
             kubectl config set-cluster ${K8_CLUSTER} --server=${K8_URL} --certificate-authority=ca.crt
-            kubectl config set-credentials circleci --token=${K8_TOKEN}
+            kubectl config set-credentials ${K8_USER} --token=${K8_TOKEN}
             kubectl config set-context default --user=${K8_USER} --namespace=${K8_NAMESPACE} --cluster=${K8_CLUSTER}
             kubectl config use-context default
           name: Use K8s token & cert to create kubeconfig.
