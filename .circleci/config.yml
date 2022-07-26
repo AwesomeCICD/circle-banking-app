@@ -101,7 +101,13 @@ jobs:
           command: |
             kubectl apply -f ./extras/jwt/jwt-secret.yaml
             kubectl apply -f ./kubernetes-manifests
-
+      - run:
+          name: Wait for deployment
+          command: |
+            kubectl wait deployment -n default frontend --for condition=Available=True --timeout=90s
+      - run: 
+          name: Print Frontend URL
+          command: kubectl get service frontend | awk '{print $4}'
 
 workflows:
   main:
