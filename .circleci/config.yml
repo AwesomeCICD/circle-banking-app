@@ -122,7 +122,8 @@ commands:
           command: |
             echo ${K8_CERT} | base64 -d > ca.crt
             kubectl config set-cluster ${K8_CLUSTER} --server=${K8_URL} --certificate-authority=ca.crt
-            kubectl config set-credentials ${K8_USER} --token=${K8_TOKEN}
-            kubectl config set-context default --user=${K8_USER} --namespace=${K8_NAMESPACE} --cluster=${K8_CLUSTER}
+            export DECODED_TOKEN=$(echo ${K8_TOKEN} | base64 -d)
+            kubectl config set-credentials ${K8_USER} --token=${DECODED_TOKEN}
+            kubectl config set-context default --user=${K8_USER}  --cluster=${K8_CLUSTER}
             kubectl config use-context default
           name: Use K8s token & cert to create kubeconfig.
