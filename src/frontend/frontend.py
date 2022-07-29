@@ -137,7 +137,7 @@ def create_app():
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
-                               cymbal_logo=os.getenv('CYMBAL_LOGO', 'false'),
+                               CIRCLE_LOGO=os.getenv('CIRCLE_LOGO', 'false'),
                                history=transaction_list,
                                balance=balance,
                                name=display_name,
@@ -361,7 +361,7 @@ def create_app():
                                     _scheme=app.config['SCHEME']))
 
         return render_template('login.html',
-                               cymbal_logo=os.getenv('CYMBAL_LOGO', 'false'),
+                               CIRCLE_LOGO=os.getenv('CIRCLE_LOGO', 'false'),
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
@@ -417,7 +417,7 @@ def create_app():
                                     _external=True,
                                     _scheme=app.config['SCHEME']))
         return render_template('signup.html',
-                               cymbal_logo=os.getenv('CYMBAL_LOGO', 'false'),
+                               CIRCLE_LOGO=os.getenv('CIRCLE_LOGO', 'false'),
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,

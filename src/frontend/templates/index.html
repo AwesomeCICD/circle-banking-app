@@ -19,8 +19,8 @@ limitations under the License.
       <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-      {% if cymbal_logo == "true" %}
-      <title>CymbalBank</title>
+      {% if CIRCLE_LOGO == "true" %}
+      <title>CircleBank</title>
       {% else %}
       <title>{{ bank_name }}</title>
       {% endif %}
@@ -39,7 +39,7 @@ limitations under the License.
       <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-top">
           <div class="container">
-              {% if cymbal_logo == "true" %}
+              {% if CIRCLE_LOGO == "true" %}
               <div class="logo-container">
                 <a href="/"><img id="cymbal-logo" src="static/img/cymbal.svg"></a>
               </div>

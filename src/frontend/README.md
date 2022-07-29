@@ -34,8 +34,8 @@ Implemented in Python with Flask.
   - a string to pre-populate the "password" field. Optional
 - `BANK_NAME`
   - a string that will be shown in the navbar to indicate the name of the bank. Optional, defaults to `Bank of Aion`
-- `CYMBAL_LOGO`
-  - boolean, set to `true` to toggle the CymbalBank logo and name. Defaults to `false`.
+- `CIRCLE_LOGO`
+  - boolean, set to `true` to toggle the CircleBank logo and name. Defaults to `false`.
 
 - ConfigMap `environment-config`:
   - `LOCAL_ROUTING_NUM`
