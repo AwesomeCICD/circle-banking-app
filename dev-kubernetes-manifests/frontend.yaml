@@ -62,8 +62,8 @@ spec:
         - name: LOG_LEVEL
           value: "info"
         # Set to "true" to enable the CircleBank logo + title
-        # - name: CIRCLE_LOGO
-        #   value: "false"
+        - name: CIRCLE_LOGO
+           value: "true"
         # Customize the bank name used in the header. Defaults to 'Bank of Anthos' - when CIRCLE_LOGO is true, uses 'CircleBank'
         # - name: BANK_NAME
         #   value: ""
