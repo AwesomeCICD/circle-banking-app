@@ -138,6 +138,8 @@ workflows:
 
 commands:
   use_service_account:
+  # This command uses the assigned context to hydrate a kubeconfig from the given service account.
+  # These values are automatically injected into the 2 app contexts by the `reference-architecture` project
     steps:
       - run:
           command: |
