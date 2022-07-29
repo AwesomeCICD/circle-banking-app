@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-Please check the [open issues](https://github.com/GoogleCloudPlatform/bank-of-anthos/issues) for this repository to verify that the same `issue/bug` has not been already reported. 
+Please check the [open issues](https://github.com/AwesomeCICD/bank-of-aion/issues) for this repository to verify that the same `issue/bug` has not been already reported. 
 
 If you see the bug being already reported, please upvote and comment on the existing issue instead of opening a new one. If you notice a `bug/issue` which is not the same as yours but is related, create a new one and link to the existing `bug/issue`.
 

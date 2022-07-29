@@ -368,7 +368,7 @@ def create_app():
                                message=request.args.get('msg', None),
                                default_user=os.getenv('DEFAULT_USERNAME', ''),
                                default_password=os.getenv('DEFAULT_PASSWORD', ''),
-                               bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
+                               bank_name=os.getenv('BANK_NAME', 'Bank of Aion'))
 
     @app.route('/login', methods=['POST'])
     def login():
@@ -421,7 +421,7 @@ def create_app():
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
-                               bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
+                               bank_name=os.getenv('BANK_NAME', 'Bank of Aion'))
 
     @app.route("/signup", methods=['POST'])
     def signup():
