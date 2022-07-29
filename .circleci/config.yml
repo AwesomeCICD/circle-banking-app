@@ -127,6 +127,7 @@ workflows:
           requires: [ python-test, java-test-and-code-cov ]
           context: [ cera-boa-dev ]
       - deploy:
+          name: Deploy Production
           requires: [ Deploy Dev ]
           context: [ cera-boa-prod ]
           environment: prod
