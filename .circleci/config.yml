@@ -82,21 +82,20 @@ jobs:
         - store_artifacts:
             path: test-reports
 
-  deploy-dev:
+  deploy:
     executor: base
+    parameters:
+      environment:
+        type: string
+        default: dev
+        description: Environment suffix used by namesapce and SA account name.
     environment:
-      K8_USER: boa-pipeline
+      K8_USER: boa-pipeline-<<parameters.environment>>
       K8_URL: "https://82BD0213010A79DBD7EAF886E3E553E0.gr7.us-west-2.eks.amazonaws.com"
       K8_CLUSTER: cera-solutions-eng
-      K8_NAMESPACE: boa-dev
     steps:
       - checkout
-      - run: |
-          if [[ "main" == "<< pipeline.git.branch >>" ]]; then
-            echo "export K8_NAMESPACE=boa-prod" >> $BASH_ENV
-            source $BASH_ENV
-          fi
-          echo "Now using namespace ${K8_NAMESPACE}"
+      - run: echo "Now using namespace ${K8_NAMESPACE}"
       - use_service_account
       - run: |
           sudo apt update && sudo apt install kubectl -y
@@ -122,13 +121,25 @@ workflows:
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
-      - deploy-dev:
+      - deploy:
+          name: Deploy Dev
+          environment: dev
           requires: [ python-test, java-test-and-code-cov ]
           context: [ cera-boa-dev ]
+      - deploy:
+          name: Deploy Production
+          requires: [ Deploy Dev ]
+          context: [ cera-boa-prod ]
+          environment: prod
+          filters:
+            branches:
+              only: [ main ]
 
 
 commands:
   use_service_account:
+  # This command uses the assigned context to hydrate a kubeconfig from the given service account.
+  # These values are automatically injected into the 2 app contexts by the `reference-architecture` project
     steps:
       - run:
           command: |

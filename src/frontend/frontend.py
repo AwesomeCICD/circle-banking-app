@@ -144,7 +144,7 @@ def create_app():
                                account_id=account_id,
                                contacts=contacts,
                                message=request.args.get('msg', None),
-                               bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
+                               bank_name=os.getenv('BANK_NAME', 'Bank of Aion'))
 
     def _populate_contact_labels(account_id, transactions, contacts):
         """
