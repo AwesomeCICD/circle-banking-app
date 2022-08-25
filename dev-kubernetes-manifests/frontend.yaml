@@ -42,7 +42,7 @@ spec:
               - all
           privileged: false
           readOnlyRootFilesystem: true
-        image: frontend
+        image: cera-frontend
         volumeMounts:
         - name: publickey
           mountPath: "/tmp/.ssh"
@@ -55,7 +55,9 @@ spec:
         - name: PORT
           value: "8080"
         - name: ENABLE_TRACING
-          value: "true"
+          value: "false"
+        - name: ENABLE_METRICS
+          value: "false"
         - name: SCHEME
           value: "http"
          # Valid levels are debug, info, warning, error, critical. If no valid level is set, gunicorn will default to info.
@@ -65,8 +67,8 @@ spec:
         # - name: CYMBAL_LOGO
         #   value: "false"
         # Customize the bank name used in the header. Defaults to 'Bank of Anthos' - when CYMBAL_LOGO is true, uses 'CymbalBank'
-        # - name: BANK_NAME
-        #   value: ""
+        - name: BANK_NAME
+          value: "Bank of Aion"
         # Customize the cluster name if it cannot be retrieved from the metadata server
         #- name: CLUSTER_NAME
         #  value: "my-cluster"

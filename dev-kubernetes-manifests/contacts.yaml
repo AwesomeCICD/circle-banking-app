@@ -42,7 +42,7 @@ spec:
               - all
           privileged: false
           readOnlyRootFilesystem: true
-        image: contacts
+        image: cera-contacts
         volumeMounts:
         - name: publickey
           mountPath: "/tmp/.ssh"
@@ -55,7 +55,9 @@ spec:
         - name: PORT
           value: "8080"
         - name: ENABLE_TRACING
-          value: "true"
+          value: "false"
+        - name: ENABLE_METRICS
+          value: "false"
         # Valid levels are debug, info, warning, error, critical.
         # If no valid level is set, will default to info.
         - name: LOG_LEVEL

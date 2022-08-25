@@ -33,9 +33,9 @@ requires:
   - configs: [setup]
 build:
   artifacts:
-  - image: accounts-db
+  - image: cera-accounts-db
     context: src/accounts-db
-  - image: ledger-db
+  - image: cera-ledger-db
     context: src/ledger-db
 deploy:
   kubectl:
@@ -53,18 +53,18 @@ requires:
   - configs: [db]
 build:
   artifacts:
-  - image: ledgerwriter
+  - image: cera-ledgerwriter
     jib:
       project: src/ledgerwriter
-  - image: balancereader
+  - image: cera-balancereader
     jib:
       project: src/balancereader
-  - image: transactionhistory
+  - image: cera-transactionhistory
     jib:
       project: src/transactionhistory
-  - image: contacts
+  - image: cera-contacts
     context: src/contacts
-  - image: userservice
+  - image: cera-userservice
     context: src/userservice
 deploy:
   kubectl:
@@ -81,24 +81,24 @@ apiVersion: skaffold/v2beta18
 kind: Config
 metadata:
   name: frontend # module defining frontend service
-build:
+build:    
   artifacts:
-  - image: frontend
+  - image: cera-frontend
     context: src/frontend
 deploy:
   kubectl:
     manifests:
     - dev-kubernetes-manifests/frontend.yaml
-# [END gke_bank_of_anthos_skaffold_config_frontend]
+# [END gke_bank_of_anthos_s:ffold_config_frontend]
 ---
 # [START gke_bank_of_anthos_skaffold_config_loadgenerator]
 apiVersion: skaffold/v2beta18
 kind: Config
 metadata:
   name: loadgenerator # module defining a load generator service
-build:
+build:    
   artifacts:
-  - image: loadgenerator
+  - image: cera-loadgenerator
     context: src/loadgenerator
 deploy:
   kubectl:

@@ -46,7 +46,7 @@ spec:
               - all
           privileged: false
           readOnlyRootFilesystem: true
-        image: loadgenerator
+        image: cera-loadgenerator
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
@@ -57,8 +57,8 @@ spec:
         resources:
           requests:
             cpu: 100m
-            memory: 512Mi
+            memory: 128Mi
           limits:
             cpu: 250m
-            memory: 1Gi
+            memory: 512Mi
 # [END gke_dev_kubernetes_manifests_loadgenerator_deployment_loadgenerator]
