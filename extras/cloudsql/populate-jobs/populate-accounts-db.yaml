@@ -244,6 +244,7 @@ data:
     # See the License for the specific language governing permissions and
     # limitations under the License.
 
+    # [START gke_initdb_1_load_testdata]
     # Immediately exit if any error occurs during script execution.
     set -o errexit
 
@@ -328,9 +329,9 @@ data:
         fi
       done
 
-      # A password hash + salt for the demo password 'password'
+      # A password hash + salt for the demo password 'bankofanthos'
       # Via Python3:  bycrypt.hashpw('password'.encode('utf-8'), bcrypt.gensalt())
-      DEFAULT_PASSHASH='\x243262243132245273764737474f39777562452f4a786a79444a7263756f386568466b762e634e5262356e6867746b474752584c6634437969346643'
+      DEFAULT_PASSHASH='\x10366c9787939e989772d7c98f55bd1ba3a25b761a8c034daab69b1a4c28dcf4'
 
       create_accounts
     }

@@ -36,7 +36,7 @@ spec:
       serviceAccountName: default
       containers:
       - name: accounts-db
-        image: gcr.io/bank-of-anthos-ci/accounts-db:v0.5.5
+        image: 483285841698.dkr.ecr.us-west-2.amazonaws.com/cera-accounts-db:build69
         envFrom:
           - configMapRef:
               name: environment-config
