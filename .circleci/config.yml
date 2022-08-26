@@ -199,7 +199,7 @@ commands:
             read -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN \<<< \
               $(aws sts assume-role-with-web-identity \
               --role-arn ${AWS_ROLE_ARN} \
-              --role-session-name "CircleCI-Pipeline-<<pipeline.git.branch>>" \
+              --role-session-name "CircleCI-Pipeline-BoA" \
               --web-identity-token $CIRCLE_OIDC_TOKEN \
               --duration-seconds 3600 \
               --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
