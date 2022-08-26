@@ -141,11 +141,7 @@ jobs:
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            namespace=boa-<<parameters.environment>>
-            if [ "prod" == "<<parameters.environment>>" ];then
-              namespace=boa
-            fi
-            skaffold deploy --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com --namespace=$namespace --build-artifacts=output/tags.json
+            skaffold deploy --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com --namespace=${K8_NAMESPACE} --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
