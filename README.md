@@ -55,9 +55,10 @@ We can use namespaces to represent the distinct environments.
 
 4. **Deploy Bank of Aion to the cluster.**
 
+**Yes SE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
+
 ```
-kubectl apply -f ./extras/jwt/jwt-secret.yaml
-kubectl apply -f ./kubernetes-manifests
+skaffold run --tag=build-local --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com
 ```
 
 5. **Wait for the Pods to be ready.**
@@ -92,10 +93,7 @@ Visit `https://EXTERNAL_IP` to access your instance of Bank of Aion.
 ## Additional deployment options
 
 - **Workload Identity**: [See these instructions.](./docs/workload-identity.md)
-- **Cloud SQL**: [See these instructions](./extras/cloudsql) to replace the in-cluster databases with hosted Google Cloud SQL.
-- **Multi Cluster with Cloud SQL**: [See these instructions](./extras/cloudsql-multicluster) to replicate the app across two regions using GKE, Multi Cluster Ingress, and Google Cloud SQL.
 - **Istio**: Apply `istio-manifests/` to your cluster to access the frontend through the IngressGateway.
-- **Aion Service Mesh**: ASM requires Workload Identity to be enabled in your GKE cluster. [See the workload identity instructions](./docs/workload-identity.md) to configure and deploy the app. Then, apply `istio-manifests/` to your cluster to configure frontend ingress.
 - **Java Monolith (VM)**: We provide a version of this app where the three Java microservices are coupled together into one monolithic service, which you can deploy inside a VM (eg. Google Compute Engine). See the [ledgermonolith](./src/ledgermonolith) directory.
 
 ## Troubleshooting
@@ -105,9 +103,3 @@ See the [troubleshooting guide](./docs/troubleshooting.md) for resolving common 
 ## Development
 
 See the [development guide](./docs/development.md) to learn how to run and develop this app locally.
-
-## Demos featuring Bank of Aion
-- [Explore Aion (Google Cloud docs)](https://cloud.google.com/Aion/docs/tutorials/explore-Aion)
-- [Tutorial - Migrate for Aion - Migrating a monolith VM to GKE](https://cloud.google.com/migrate/Aion/docs/migrating-monolith-vm-overview-setup)
-- [Google Cloud Architecture Center - Running distributed services on GKE private clusters using Aion Service Mesh](https://cloud.google.com/architecture/distributed-services-on-gke-private-using-Aion-service-mesh)
-- [Google Cloud Next '20 - Hands-on Keynote](https://www.youtube.com/watch?v=7QR1z35h_yc)  (Aion, Cloud Operations, Spring Cloud GCP, BigQuery, AutoML)

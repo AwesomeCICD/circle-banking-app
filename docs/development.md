@@ -102,7 +102,7 @@ kubectl create secret generic jwt-key --from-file=./jwtRS256.key --from-file=./j
 ```
 
 ## Testing your changes locally 
-- [ ] TODO: CHANGES NEEDED TO APPLY TO AWS EKS
+- [ ] TODO: CHANGES NEEDED TO APPLY TO AWS EKS ONCE NEXUS IS READY
 
 We recommend you test and build directly on Kubernetes, from your local environment.  This is because there are seven services and for the app to fully function, all the services need to be running. All the services have dependencies, environment variables, and secrets and that are built into the Kubernetes environment / manifests, so testing directly on Kubernetes is the fastest way to see your code changes in action.
 
@@ -115,7 +115,7 @@ Make sure that you export `PROJECT_ID` as an environment variable (or add to you
 The [`skaffold dev`](https://skaffold.dev/docs/references/cli/#skaffold-dev) command watches your local code, and continuously builds and deploys container images to your GKE cluster anytime you save a file. Skaffold uses Docker Desktop to build the Python images, then [Jib](https://github.com/GoogleContainerTools/jib#jib) (installed via Maven) to build the Java images. 
 
 ```
-skaffold dev --default-repo=gcr.io/${PROJECT_ID}/bank-of-anthos
+skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com 
 ```
 
 
@@ -124,7 +124,7 @@ skaffold dev --default-repo=gcr.io/${PROJECT_ID}/bank-of-anthos
 The [`skaffold run`](https://skaffold.dev/docs/references/cli/#skaffold-run) command build and deploys the services to your GKE cluster one time, then exits. 
 
 ```
-skaffold run --default-repo=gcr.io/${PROJECT_ID}/bank-of-anthos
+skaffold run --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com 
 ```
 
 ### Running services selectively
@@ -137,16 +137,15 @@ Skaffold reads the [skaffold.yaml](../skaffold.yaml) file to understand the proj
 To work with only the `frontend` module, run:
 
 ```
-skaffold dev --default-repo=gcr.io/${PROJECT_ID}/bank-of-anthos -m frontend
+skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m frontend
 ```
 
 To work with both `frontend` and `backend` modules, run:
 
 ```
-skaffold dev --default-repo=gcr.io/${PROJECT_ID}/bank-of-anthos -m frontend -m backend
+skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m frontend -m backend
 ```
 
 ## Continuous Integration
 
-When you're ready to create a Pull Request for your branch, you will notice that the Github Actions CI workflows run on your branch. This includes both code and deploy tests into a separate GKE cluster owned by the maintainers. The GitHub Actions CI workflows are [described here](../.github/workflows).
-
+Checkout `.circleci/config.yml` for CI steps
