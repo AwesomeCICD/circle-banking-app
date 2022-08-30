@@ -526,20 +526,21 @@ def create_app():
     app.config['SCHEME'] = os.environ.get('SCHEME', 'http')
 
     # where am I?
-    metadata_server = os.getenv('METADATA_SERVER', 'metadata.google.internal')
-    metadata_url = f'http://{metadata_server}/computeMetadata/v1/'
-    metadata_headers = {'Metadata-Flavor': 'Google'}
+    #metadata_server = os.getenv('METADATA_SERVER', '169.254.169.254')
+    #metadata_url = f'http://{metadata_server}/computeMetadata/v1/'
+    #metadata_headers = {'Metadata-Flavor': 'Google'}
 
-    # get GKE cluster name
+    # get  cluster name from downard API (labels passed by skaffold deploy)
     cluster_name = os.getenv('CLUSTER_NAME', 'unknown')
     try:
-        req = requests.get(metadata_url + 'instance/attributes/cluster-name',
-                           headers=metadata_headers)
-        if req.ok:
-            cluster_name = str(req.text)
+        with open('/etc/podinfo/labels') as file:
+            for line in file:
+                key, value = line.strip().split('=', 1)
+                if key == "cluster_name":
+                    cluster_name=value
     except (RequestException, HTTPError) as err:
         app.logger.warning(
-            f"Unable to retrieve cluster name from metadata server {metadata_server}.")
+            f"Unable to retrieve cluster name from Deployment manifest.")
 
     # get GKE pod name
     pod_name = "unknown"
