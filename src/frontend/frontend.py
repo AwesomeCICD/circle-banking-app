@@ -12,6 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#
+# Copyright 2022 CircleCI, from Google Source
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 """Web service for frontend
 """
 
@@ -22,6 +38,7 @@ import os
 import socket
 from decimal import Decimal, DecimalException
 from time import sleep
+import boto3
 
 import requests
 from requests.exceptions import HTTPError, RequestException
@@ -137,6 +154,8 @@ def create_app():
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
+                               pod_region=pod_region,
+                               pod_group=pod_group,
                                circleci_logo=os.getenv('CIRCLECI_LOGO', 'false'),
                                history=transaction_list,
                                balance=balance,
@@ -365,6 +384,8 @@ def create_app():
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
+                               pod_region=pod_region,
+                               pod_group=pod_group,
                                message=request.args.get('msg', None),
                                default_user=os.getenv('DEFAULT_USERNAME', ''),
                                default_password=os.getenv('DEFAULT_PASSWORD', ''),
@@ -421,6 +442,8 @@ def create_app():
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
+                               pod_region=pod_region,
+                               pod_group=pod_group,
                                bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
 
     @app.route("/signup", methods=['POST'])
@@ -525,27 +548,57 @@ def create_app():
     app.config['TIMESTAMP_FORMAT'] = '%Y-%m-%dT%H:%M:%S.%f%z'
     app.config['SCHEME'] = os.environ.get('SCHEME', 'http')
 
-    # where am I?
-    #metadata_server = os.getenv('METADATA_SERVER', '169.254.169.254')
-    #metadata_url = f'http://{metadata_server}/computeMetadata/v1/'
-    #metadata_headers = {'Metadata-Flavor': 'Google'}
-
-    # get  cluster name & region from downard API (labels passed by skaffold deploy)
-    cluster_name = os.getenv('CLUSTER_NAME', 'unknown')
+    # where am I? - use AWS meta IMDSv2 to hop to underlying ec2 info, needs a token auth
     pod_zone = os.getenv('POD_ZONE', 'unknown')
+    pod_region = os.getenv('POD_REGION', 'unknown')
+    pod_group = os.getenv('POD_GROUP', 'unknown')
+    try:
+        app.logger.warning("Attempting to get AWS Meta Info..")
+        response = requests.put(url="http://169.254.169.254/latest/api/token",data=None,headers={"X-aws-ec2-metadata-token-ttl-seconds":"120"}, timeout=5)
+        app.logger.warning(f"AWS Meta API for Token returned code: {response.status_code}")
+        token = response.text
+        response = requests.get(url="http://169.254.169.254/latest/meta-data/",headers={"X-aws-ec2-metadata-token":token})
+        app.logger.warning(f"AWS Meta API for Info returned code: {response.status_code}")
+        app.logger.warning(response.text)
+        response = requests.get(url="http://169.254.169.254/latest/meta-data/instance-id",headers={"X-aws-ec2-metadata-token":token})
+        instance_id = response.text
+        response = requests.get(url="http://169.254.169.254/latest/meta-data/placement",headers={"X-aws-ec2-metadata-token":token})
+        app.logger.warning(f"AWS Meta API forplacement returned code: {response.status_code}")
+        app.logger.warning(response.text)
+       
+        response = requests.get(url="http://169.254.169.254/latest/meta-data/placement/availability-zone",headers={"X-aws-ec2-metadata-token":token})
+        pod_zone = response.text
+        response = requests.get(url="http://169.254.169.254/latest/meta-data/placement/region",headers={"X-aws-ec2-metadata-token":token})
+        pod_region = response.text
+        response = requests.get(url="http://169.254.169.254/latest/meta-data/mac",headers={"X-aws-ec2-metadata-token":token})
+        mac = response.text
+        mac_url = f'http://169.254.169.254/latest/meta-data/network/interfaces/macs/{requests.utils.quote(mac)}/subnet-ipv4-cidr-block'
+        app.logger.warning(f"Pod MAC url: {mac_url}")
+        response = requests.get(url=mac_url,headers={"X-aws-ec2-metadata-token":token})
+        pod_group = response.text
+    except (RequestException, HTTPError) as err:
+        app.logger.warning("Unable to retrieve info from AWS.")
+
+    #k8s tag names conflict withthe way metadata would expose it.  So we have a few layers to try to get cluster name
+    # 1 ask environment, least likely
+    cluster_name = os.getenv('CLUSTER_NAME', 'unknown')
+    # 2 ask Downward API - only works for automated deploys that properly set maifest labels
     try:
         with open('/etc/podinfo/labels') as file:
             for line in file:
                 key, value = line.strip().split('=', 1)
                 if key == "cluster_name":
                     cluster_name=value
-                elif key == "pod_zone":
-                    pod_zone = value
-                elif key == "region":
-                    cluster_region = value
     except (RequestException, HTTPError) as err:
         app.logger.warning(
             "Unable to retrieve cluster name from Deployment manifest.")
+    # 3 most accurate but less portable, ask AWS API
+    ec2 = boto3.resource('ec2',region_name = pod_region)
+    ec2instance = ec2.Instance(instance_id)
+    for tags in ec2instance.tags:
+        if tags["Key"] == 'aws:eks:cluster-name':
+            cluster_name = tags["Value"]
+            break
 
     # get GKE pod name
     pod_name = "unknown"

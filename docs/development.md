@@ -6,6 +6,12 @@ This document describes how to develop and add features to the Bank of Anthos ap
 
 Access to SE team [CERA plaform](https://github.com/AwesomeCICD/reference-architecture). 
 
+OR
+
+Access to a forked / branched cluster.
+
+**Skaffold will use whatever context is active for kubectl**
+
 ## Install Tools 
 
 You can use MacOS or Linux as your dev environment - all these languages and tools support both. 
@@ -115,7 +121,8 @@ Make sure that you export `PROJECT_ID` as an environment variable (or add to you
 The [`skaffold dev`](https://skaffold.dev/docs/references/cli/#skaffold-dev) command watches your local code, and continuously builds and deploys container images to your GKE cluster anytime you save a file. Skaffold uses Docker Desktop to build the Python images, then [Jib](https://github.com/GoogleContainerTools/jib#jib) (installed via Maven) to build the Java images. 
 
 ```
-skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com 
+# kubectl config use-context <CLUSTER_CONTEXT_TO_TARGET>
+skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com -n MY_NAMESPACE
 ```
 
 
@@ -134,16 +141,18 @@ Skaffold reads the [skaffold.yaml](../skaffold.yaml) file to understand the proj
 - the `frontend` module for the single frontend service.
 - the `loadbalancer` module for the single loadbalancer service. 
 
+**The `setup` mofule must prefix many of the modules.  running `-m setup,...` should fix it.
+
 To work with only the `frontend` module, run:
 
 ```
-skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m frontend
+skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m setup,frontend
 ```
 
 To work with both `frontend` and `backend` modules, run:
 
 ```
-skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m frontend -m backend
+skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m setup -m frontend -m backend
 ```
 
 ## Continuous Integration
