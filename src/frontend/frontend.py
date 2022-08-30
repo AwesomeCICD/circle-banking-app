@@ -530,31 +530,26 @@ def create_app():
     #metadata_url = f'http://{metadata_server}/computeMetadata/v1/'
     #metadata_headers = {'Metadata-Flavor': 'Google'}
 
-    # get  cluster name from downard API (labels passed by skaffold deploy)
+    # get  cluster name & region from downard API (labels passed by skaffold deploy)
     cluster_name = os.getenv('CLUSTER_NAME', 'unknown')
+    pod_zone = os.getenv('POD_ZONE', 'unknown')
     try:
         with open('/etc/podinfo/labels') as file:
             for line in file:
                 key, value = line.strip().split('=', 1)
                 if key == "cluster_name":
                     cluster_name=value
+                elif key == "pod_zone":
+                    pod_zone = value
+                elif key == "region":
+                    cluster_region = value
     except (RequestException, HTTPError) as err:
         app.logger.warning(
-            f"Unable to retrieve cluster name from Deployment manifest.")
+            "Unable to retrieve cluster name from Deployment manifest.")
 
     # get GKE pod name
     pod_name = "unknown"
     pod_name = socket.gethostname()
-
-    # get GKE node zone
-    pod_zone = os.getenv('POD_ZONE', 'unknown')
-    try:
-        req = requests.get(metadata_url + 'instance/zone',
-                           headers=metadata_headers)
-        if req.ok:
-            pod_zone = str(req.text.split("/")[3])
-    except (RequestException, HTTPError) as err:
-        app.logger.warning(f"Unable to retrieve zone from metadata server {metadata_server}.")
 
     # register formater functions
     app.jinja_env.globals.update(format_currency=format_currency)
