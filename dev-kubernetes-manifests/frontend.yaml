@@ -25,6 +25,7 @@ spec:
     metadata:
       labels:
         app: frontend
+        cluster_name: ooops
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -49,6 +50,8 @@ spec:
           readOnly: true
         - mountPath: /tmp
           name: tmp
+        - name: podinfo
+          mountPath: /etc/podinfo
         env:
         - name: VERSION
           value: "dev"
@@ -123,6 +126,13 @@ spec:
             path: publickey
       - emptyDir: {}
         name: tmp
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+
 # [END gke_dev_kubernetes_manifests_frontend_deployment_frontend]
 ---
 # [START gke_dev_kubernetes_manifests_frontend_service_frontend]
