@@ -27,25 +27,27 @@ from locust import HttpUser, TaskSet, SequentialTaskSet, task, between
 
 MASTER_PASSWORD = "password"
 
-TRANSACTION_ACCT_LIST = [str(randint(1111100000, 1111199999)) for _ in range(50)]
+TRANSACTION_ACCT_LIST = [str(randint(1111100000, 1111199999))
+                         for _ in range(50)]
+
 
 def signup_helper(locust, username):
     """
     create a new user account in the system
     succeeds if token was returned
     """
-    userdata = {"username":username,
-                "password":MASTER_PASSWORD,
-                "password-repeat":MASTER_PASSWORD,
+    userdata = {"username": username,
+                "password": MASTER_PASSWORD,
+                "password-repeat": MASTER_PASSWORD,
                 "firstname": username,
-                "lastname":"TestAccount",
-                "birthday":"01/01/2000",
-                "timezone":"82",
-                "address":"1021 Valley St",
-                "city":"Seattle",
-                "state":"WA",
-                "zip":"98103",
-                "ssn":"111-22-3333"}
+                "lastname": "TestAccount",
+                "birthday": "01/01/2000",
+                "timezone": "82",
+                "address": "1021 Valley St",
+                "city": "Seattle",
+                "state": "WA",
+                "zip": "98103",
+                "ssn": "111-22-3333"}
     with locust.client.post("/signup", data=userdata, catch_response=True) as response:
         found_token = False
         for r_hist in response.history:
@@ -57,12 +59,15 @@ def signup_helper(locust, username):
             response.failure("login failed")
         return found_token
 
+
 def generate_username():
     """
     generates random 15 character
     alphanumeric username
     """
     return ''.join(choice(ascii_letters + digits) for _ in range(15))
+
+
 class AllTasks(SequentialTaskSet):
     """
     wrapper for UnauthenticatedTasks and AuthenticatedTasks sets
@@ -113,6 +118,7 @@ class AllTasks(SequentialTaskSet):
         """
         set of tasks to run after obtaining an auth token
         """
+
         def on_start(self):
             """
             on start, deposit a large balance into each account
@@ -166,7 +172,7 @@ class AllTasks(SequentialTaskSet):
             if amount is None:
                 amount = random() * 1000
             acct_info = {"account_num": choice(TRANSACTION_ACCT_LIST),
-                         "routing_num":"111111111"}
+                         "routing_num": "111111111"}
             transaction = {"account": json.dumps(acct_info),
                            "amount": amount,
                            "uuid": generate_username()}
@@ -182,8 +188,8 @@ class AllTasks(SequentialTaskSet):
             sends POST request to /login with stored credentials
             succeeds if a token was returned
             """
-            with self.client.post("/login", {"username":self.user.username,
-                                             "password":MASTER_PASSWORD},
+            with self.client.post("/login", {"username": self.user.username,
+                                             "password": MASTER_PASSWORD},
                                   catch_response=True) as response:
                 found_token = False
                 for r_hist in response.history:
