@@ -343,10 +343,15 @@ limitations under the License.
       <!-- Page Footer -->
       <footer class="footer">
         <div class="container">
+          {% if '-dev' in pod_namespace %}
+            <div class="footerbackgrounddev">
+             DEV DEV DEV DEV
+            </div> 
+          {% endif %}
             <div class="row mb-2" class="footer-google-inc">© 2020-2022 CircleCI</div>
             <div class="row mb-3">
               <small>
-                <b>Cluster: </b>{{ cluster_name }}, <b>Pod: </b>{{ pod_name }}<b>, Zone: </b>{{ pod_zone }}<b>, Subnet: </b>{{ pod_group }}
+                <b>Cluster: </b>{{ cluster_name }}, <b>NS: </b>{{ pod_namespace }}, <b>Pod: </b>{{ pod_name }}<b>, Zone: </b>{{ pod_zone }}<b>, Subnet: </b>{{ pod_group }}
               </small>
             </div>
             <div class="row mb-3">

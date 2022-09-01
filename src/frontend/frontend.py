@@ -160,6 +160,7 @@ def create_app():
                                pod_zone=pod_zone,
                                pod_region=pod_region,
                                pod_group=pod_group,
+                               pod_namespace=namespace,
                                circleci_logo=os.getenv(
                                    'CIRCLECI_LOGO', 'false'),
                                history=transaction_list,
@@ -396,6 +397,7 @@ def create_app():
                                pod_zone=pod_zone,
                                pod_region=pod_region,
                                pod_group=pod_group,
+                               pod_namespace=namespace,
                                message=request.args.get('msg', None),
                                default_user=os.getenv('DEFAULT_USERNAME', ''),
                                default_password=os.getenv(
@@ -458,6 +460,7 @@ def create_app():
                                pod_zone=pod_zone,
                                pod_region=pod_region,
                                pod_group=pod_group,
+                               pod_namespace=namespace,
                                bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
 
     @app.route("/signup", methods=['POST'])
@@ -569,6 +572,7 @@ def create_app():
     pod_zone = os.getenv('POD_ZONE', 'unknown')
     pod_region = os.getenv('POD_REGION', 'unknown')
     pod_group = os.getenv('POD_GROUP', 'unknown')
+    namespace = os.getenv('POD_NAMESPACE', 'unknown')
     metaserver = "http://169.254.169.254/latest"
     instance_id = "unknown"
     try:
@@ -634,7 +638,7 @@ def create_app():
         app.logger.warning(
             "Unable to retrieve cluster name from Deployment manifest.")
 
-    # get GKE pod name
+    # get EKS pod name
     pod_name = "unknown"
     pod_name = socket.gethostname()
 
