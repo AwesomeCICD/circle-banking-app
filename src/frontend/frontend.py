@@ -47,10 +47,10 @@ from flask import Flask, abort, jsonify, make_response, redirect, \
     render_template, request, url_for
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.propagate import set_global_textmap
-from opentelemetry.propagators.textmap import TextMapPropagator
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.jinja2 import Jinja2Instrumentor
@@ -654,10 +654,33 @@ def create_app():
     # Set up tracing and export spans to Cloud Trace.
     if os.environ['ENABLE_TRACING'] == "true":
         app.logger.info("✅ Tracing enabled.")
-        provider = TracerProvider()
-        processor = BatchSpanProcessor(ConsoleSpanExporter())
-        provider.add_span_processor(processor)
-        trace.set_tracer_provider(provider)
+
+        trace.set_tracer_provider(
+            TracerProvider(
+                    resource=Resource.create({SERVICE_NAME: "boa-frontend"})
+                )
+        )
+        tracer = trace.get_tracer(__name__)
+
+        # create a JaegerExporter
+        jaeger_exporter = JaegerExporter(
+            # configure agent
+            agent_host_name='172.20.38.194',
+            agent_port=6831,
+            # optional: configure also collector
+            #collector_endpoint='http://jaeger-collector:14268/api/traces?format=jaeger.thrift',
+            # username=xxxx, # optional
+            # password=xxxx, # optional
+            # max_tag_value_length=None # optional
+        )
+
+        # Create a BatchSpanProcessor and add the exporter to it
+        span_processor = BatchSpanProcessor(jaeger_exporter)
+
+        # add to the tracer
+        trace.get_tracer_provider().add_span_processor(span_processor)
+
+
         # Add tracing auto-instrumentation for Flask, jinja and requests
         FlaskInstrumentor().instrument_app(app)
         RequestsInstrumentor().instrument()
