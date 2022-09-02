@@ -1,5 +1,7 @@
 version: 2.1
-
+orbs:
+  compass: atlassian-labs/compass@0.1.1
+          
 executors:
   base:
     docker:
@@ -172,15 +174,19 @@ workflows:
           name: Deploy Dev
           environment: dev
           requires: [ skaffold-build-push ]
-          context: [ reference-arch-aws-oidc, cera-boa-dev ]
+          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
+          post-steps:
+            - compass/notify_deployment
       - deploy:
           name: Deploy Production
           requires: [ Deploy Dev ]
-          context: [ reference-arch-aws-oidc, cera-boa-prod ]
+          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
           environment: prod
           filters:
             branches:
               only: [ main ]
+          post-steps:
+            - compass/notify_deployment
 
 
 commands:

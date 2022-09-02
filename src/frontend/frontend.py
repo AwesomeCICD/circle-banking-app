@@ -47,11 +47,10 @@ from flask import Flask, abort, jsonify, make_response, redirect, \
     render_template, request, url_for
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.propagate import set_global_textmap
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.propagators.cloud_trace_propagator import CloudTraceFormatPropagator
+from opentelemetry.propagators.textmap import TextMapPropagator
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.jinja2 import Jinja2Instrumentor
@@ -579,11 +578,11 @@ def create_app():
         app.logger.warning("Attempting to get AWS Meta Info..")
         response = requests.put(url=f"{metaserver}/api/token", data=None,
                                 headers={"X-aws-ec2-metadata-token-ttl-seconds": "120"}, timeout=5)
-        app.logger.warning(
-            f"AWS Meta API for Token returned code: {response.status_code}")
+        response.raise_for_status()
         token = response.text
         response = requests.get(url=f"{metaserver}/meta-data/",
                                 headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        response.raise_for_status()
         app.logger.warning(
             f"AWS Meta API for Info returned code: {response.status_code}")
         app.logger.warning(response.text)
@@ -613,7 +612,7 @@ def create_app():
                                 "X-aws-ec2-metadata-token": token}, timeout=5)
         pod_group = response.text
     except (RequestException, HTTPError) as err:
-        app.logger.warning("Unable to retrieve info from AWS.")
+        app.logger.warning(f"Unable to retrieve info from AWS: {err}")
 
     # k8s tag names conflict withthe way metadata would expose it.
     # So we have a few layers to try to get cluster name
@@ -655,12 +654,10 @@ def create_app():
     # Set up tracing and export spans to Cloud Trace.
     if os.environ['ENABLE_TRACING'] == "true":
         app.logger.info("✅ Tracing enabled.")
-        trace.set_tracer_provider(TracerProvider())
-        cloud_trace_exporter = CloudTraceSpanExporter()
-        trace.get_tracer_provider().add_span_processor(
-            BatchSpanProcessor(cloud_trace_exporter)
-        )
-        set_global_textmap(CloudTraceFormatPropagator())
+        provider = TracerProvider()
+        processor = BatchSpanProcessor(ConsoleSpanExporter())
+        provider.add_span_processor(processor)
+        trace.set_tracer_provider(provider)
         # Add tracing auto-instrumentation for Flask, jinja and requests
         FlaskInstrumentor().instrument_app(app)
         RequestsInstrumentor().instrument()
