@@ -21,8 +21,6 @@ import com.google.common.cache.CacheStats;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.binder.cache.GuavaCacheMetrics;
 import io.micrometer.core.lang.Nullable;
-import io.micrometer.stackdriver.StackdriverConfig;
-import io.micrometer.stackdriver.StackdriverMeterRegistry;
 import java.util.concurrent.ExecutionException;
 
 import com.auth0.jwt.JWTVerifier;
@@ -76,27 +74,10 @@ class BalanceReaderControllerTest {
     @BeforeEach
     void setUp() {
         initMocks(this);
-        StackdriverMeterRegistry meterRegistry = new StackdriverMeterRegistry(new StackdriverConfig() {
-            @Override
-            public boolean enabled() {
-                return false;
-            }
-
-            @Override
-            public String projectId() {
-                return "test";
-            }
-
-            @Override
-            @Nullable
-            public String get(String key) {
-                return null;
-            }
-        }, clock);
+        // TODO: mock tracer for cache hits
 
         when(cache.stats()).thenReturn(stats);
-        balanceReaderController = new BalanceReaderController(ledgerReader, verifier,
-            meterRegistry, cache, LOCAL_ROUTING_NUM, VERSION);
+        balanceReaderController = new BalanceReaderController(ledgerReader, verifier, cache, LOCAL_ROUTING_NUM, VERSION);
 
         when(verifier.verify(TOKEN)).thenReturn(jwt);
         when(jwt.getClaim(JWT_ACCOUNT_KEY)).thenReturn(claim);

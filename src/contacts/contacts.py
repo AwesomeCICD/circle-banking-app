@@ -30,11 +30,18 @@ from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from db import ContactsDb
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.propagators.composite import CompositePropagator
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.propagators.b3 import B3MultiFormat
+
+
 from opentelemetry.propagate import set_global_textmap
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.propagators.cloud_trace_propagator import CloudTraceFormatPropagator
+
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
 
@@ -199,13 +206,23 @@ def create_app():
     # Set up tracing and export spans to Cloud Trace.
     if os.environ['ENABLE_TRACING'] == "true":
         app.logger.info("✅ Tracing enabled.")
-        # Set up tracing and export spans to Cloud Trace
-        trace.set_tracer_provider(TracerProvider())
-        cloud_trace_exporter = CloudTraceSpanExporter()
-        trace.get_tracer_provider().add_span_processor(
-            BatchSpanProcessor(cloud_trace_exporter)
+        trace.set_tracer_provider(
+            TracerProvider(
+                resource=Resource.create(
+                    {SERVICE_NAME:
+                     f"{os.environ['POD_NAMESPACE']}-contacts"}
+                )
+            )
         )
-        set_global_textmap(CloudTraceFormatPropagator())
+        tracer = trace.get_tracer(__name__)
+        jaeger_exporter = JaegerExporter(
+            agent_host_name='jaeger-agent',
+        )
+        span_processor = BatchSpanProcessor(jaeger_exporter)
+        trace.get_tracer_provider().add_span_processor(span_processor)
+
+        set_global_textmap(CompositePropagator(
+            [B3MultiFormat(), TraceContextTextMapPropagator(), W3CBaggagePropagator()]))
         FlaskInstrumentor().instrument_app(app)
     else:
         app.logger.info("🚫 Tracing disabled.")

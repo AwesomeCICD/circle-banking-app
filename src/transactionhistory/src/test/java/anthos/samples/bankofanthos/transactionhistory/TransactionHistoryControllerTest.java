@@ -29,8 +29,6 @@ import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.lang.Nullable;
-import io.micrometer.stackdriver.StackdriverConfig;
-import io.micrometer.stackdriver.StackdriverMeterRegistry;
 import java.util.Deque;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,27 +72,10 @@ class TransactionHistoryControllerTest {
     @BeforeEach
     void setUp() {
         initMocks(this);
-        StackdriverMeterRegistry meterRegistry = new StackdriverMeterRegistry(new StackdriverConfig() {
-            @Override
-            public boolean enabled() {
-                return false;
-            }
-
-            @Override
-            public String projectId() {
-                return "test";
-            }
-
-            @Override
-            @Nullable
-            public String get(String key) {
-                return null;
-            }
-        }, clock);
 
         when(cache.stats()).thenReturn(stats);
         transactionHistoryController = new TransactionHistoryController(ledgerReader,
-            meterRegistry, verifier, PUBLIC_KEY_PATH, cache, LOCAL_ROUTING_NUM, VERSION);
+         verifier, PUBLIC_KEY_PATH, cache, LOCAL_ROUTING_NUM, VERSION);
 
         when(verifier.verify(TOKEN)).thenReturn(jwt);
         when(jwt.getClaim(JWT_ACCOUNT_KEY)).thenReturn(claim);

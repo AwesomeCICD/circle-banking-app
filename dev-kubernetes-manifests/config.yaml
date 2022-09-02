@@ -46,3 +46,30 @@ data:
   # All demo user accounts are hardcoded to use the login password 'circleci'
   DEMO_LOGIN_PASSWORD: "circleci"
 # [END gke_dev_kubernetes_manifests_config_configmap_demo_data_config]
+---
+# [START eks_dev_allow_agent_in_mynsmaepsace]
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-agent
+spec:
+  type: ExternalName
+  externalName: jaeger-demo-agent.default.svc.cluster.local
+  ports:
+  - port: 6831
+# [END gke_dev_kubernetes_manifests_frontend_service_frontend]
+---
+# [START eks_dev_allow_agent_in_mynsmaepsace]
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+spec:
+  type: ExternalName
+  externalName: jaeger-demo-collector.default.svc.cluster.local
+  ports:
+  - port: 4317
+    name: otel
+  - port: 14250
+    name: jaeger
+# [END gke_dev_kubernetes_manifests_frontend_service_frontend]

@@ -61,14 +61,18 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: OTEL_PROPAGATORS
+          value: tracecontext,baggage,b3
+        - name: OTEL_TRACES_EXPORTER
+          value: jaeger
         - name: VERSION
           value: "dev"
         - name: PORT
           value: "8080"
         - name: ENABLE_TRACING
-          value: "false"
+          value: "true"
         - name: ENABLE_METRICS
-          value: "false"
+          value: "true"
         - name: SCHEME
           value: "http"
          # Valid levels are debug, info, warning, error, critical. If no valid level is set, gunicorn will default to info.
