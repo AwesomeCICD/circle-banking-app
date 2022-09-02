@@ -114,7 +114,12 @@ We recommend you test and build directly on Kubernetes, from your local environm
 
 You can use the `skaffold` tool to build and deploy your code to the GKE cluster in your project. 
 
-Make sure that you export `PROJECT_ID` as an environment variable (or add to your `.bashrc` before running either of these commands)
+**NOTE:** You must set docker to login to ECR with
+
+```shell
+aws sso login #see SE WIki for guidance
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 483285841698.dkr.ecr.us-west-2.amazonaws.com 
+```
 
 ### Option 1 - Build and deploy continuously 
 

@@ -47,11 +47,10 @@ from flask import Flask, abort, jsonify, make_response, redirect, \
     render_template, request, url_for
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.propagate import set_global_textmap
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.propagators.cloud_trace_propagator import CloudTraceFormatPropagator
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.jinja2 import Jinja2Instrumentor
@@ -160,6 +159,7 @@ def create_app():
                                pod_zone=pod_zone,
                                pod_region=pod_region,
                                pod_group=pod_group,
+                               pod_namespace=namespace,
                                circleci_logo=os.getenv(
                                    'CIRCLECI_LOGO', 'false'),
                                history=transaction_list,
@@ -396,6 +396,7 @@ def create_app():
                                pod_zone=pod_zone,
                                pod_region=pod_region,
                                pod_group=pod_group,
+                               pod_namespace=namespace,
                                message=request.args.get('msg', None),
                                default_user=os.getenv('DEFAULT_USERNAME', ''),
                                default_password=os.getenv(
@@ -458,6 +459,7 @@ def create_app():
                                pod_zone=pod_zone,
                                pod_region=pod_region,
                                pod_group=pod_group,
+                               pod_namespace=namespace,
                                bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
 
     @app.route("/signup", methods=['POST'])
@@ -569,17 +571,18 @@ def create_app():
     pod_zone = os.getenv('POD_ZONE', 'unknown')
     pod_region = os.getenv('POD_REGION', 'unknown')
     pod_group = os.getenv('POD_GROUP', 'unknown')
+    namespace = os.getenv('POD_NAMESPACE', 'unknown')
     metaserver = "http://169.254.169.254/latest"
     instance_id = "unknown"
     try:
         app.logger.warning("Attempting to get AWS Meta Info..")
         response = requests.put(url=f"{metaserver}/api/token", data=None,
                                 headers={"X-aws-ec2-metadata-token-ttl-seconds": "120"}, timeout=5)
-        app.logger.warning(
-            f"AWS Meta API for Token returned code: {response.status_code}")
+        response.raise_for_status()
         token = response.text
         response = requests.get(url=f"{metaserver}/meta-data/",
                                 headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        response.raise_for_status()
         app.logger.warning(
             f"AWS Meta API for Info returned code: {response.status_code}")
         app.logger.warning(response.text)
@@ -609,7 +612,7 @@ def create_app():
                                 "X-aws-ec2-metadata-token": token}, timeout=5)
         pod_group = response.text
     except (RequestException, HTTPError) as err:
-        app.logger.warning("Unable to retrieve info from AWS.")
+        app.logger.warning(f"Unable to retrieve info from AWS: {err}")
 
     # k8s tag names conflict withthe way metadata would expose it.
     # So we have a few layers to try to get cluster name
@@ -634,7 +637,7 @@ def create_app():
         app.logger.warning(
             "Unable to retrieve cluster name from Deployment manifest.")
 
-    # get GKE pod name
+    # get EKS pod name
     pod_name = "unknown"
     pod_name = socket.gethostname()
 
@@ -651,12 +654,33 @@ def create_app():
     # Set up tracing and export spans to Cloud Trace.
     if os.environ['ENABLE_TRACING'] == "true":
         app.logger.info("✅ Tracing enabled.")
-        trace.set_tracer_provider(TracerProvider())
-        cloud_trace_exporter = CloudTraceSpanExporter()
-        trace.get_tracer_provider().add_span_processor(
-            BatchSpanProcessor(cloud_trace_exporter)
+
+        trace.set_tracer_provider(
+            TracerProvider(
+                    resource=Resource.create({SERVICE_NAME: "boa-frontend"})
+                )
         )
-        set_global_textmap(CloudTraceFormatPropagator())
+        tracer = trace.get_tracer(__name__)
+
+        # create a JaegerExporter
+        jaeger_exporter = JaegerExporter(
+            # configure agent
+            agent_host_name='172.20.38.194',
+            agent_port=6831,
+            # optional: configure also collector
+            #collector_endpoint='http://jaeger-collector:14268/api/traces?format=jaeger.thrift',
+            # username=xxxx, # optional
+            # password=xxxx, # optional
+            # max_tag_value_length=None # optional
+        )
+
+        # Create a BatchSpanProcessor and add the exporter to it
+        span_processor = BatchSpanProcessor(jaeger_exporter)
+
+        # add to the tracer
+        trace.get_tracer_provider().add_span_processor(span_processor)
+
+
         # Add tracing auto-instrumentation for Flask, jinja and requests
         FlaskInstrumentor().instrument_app(app)
         RequestsInstrumentor().instrument()
