@@ -67,7 +67,7 @@ spec:
         - name: ENABLE_METRICS
           value: "true"
         - name: OTEL_PROPAGATORS
-          value: tracecontext,baggage,jaeger
+          value: tracecontext,baggage,b3
         - name: OTEL_TRACES_EXPORTER
           value: jaeger
         # Valid levels are debug, info, warning, error, critical.
