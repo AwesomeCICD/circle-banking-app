@@ -30,7 +30,7 @@ from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from db import ContactsDb
 
 from opentelemetry import trace
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
 from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
@@ -215,11 +215,12 @@ def create_app():
             )
         )
         tracer = trace.get_tracer(__name__)
-        jaeger_exporter = JaegerExporter(
-            agent_host_name='jaeger-agent',
+        trace.get_tracer_provider().add_span_processor(
+            BatchSpanProcessor(OTLPSpanExporter())
         )
-        span_processor = BatchSpanProcessor(jaeger_exporter)
-        trace.get_tracer_provider().add_span_processor(span_processor)
+        set_global_textmap(CompositePropagator(
+            [B3MultiFormat(), TraceContextTextMapPropagator(), W3CBaggagePropagator()]))
+
 
         set_global_textmap(CompositePropagator(
             [B3MultiFormat(), TraceContextTextMapPropagator(), W3CBaggagePropagator()]))

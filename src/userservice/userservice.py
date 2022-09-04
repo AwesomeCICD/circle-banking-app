@@ -252,9 +252,6 @@ def create_app():
         set_global_textmap(CompositePropagator(
             [B3MultiFormat(), TraceContextTextMapPropagator(), W3CBaggagePropagator()]))
 
-
-        # add to the tracer
-        trace.get_tracer_provider().add_span_processor(span_processor)
         FlaskInstrumentor().instrument_app(app)
     else:
         app.logger.info("🚫 Tracing disabled.")
