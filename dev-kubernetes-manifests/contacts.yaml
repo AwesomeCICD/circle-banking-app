@@ -69,7 +69,9 @@ spec:
         - name: OTEL_PROPAGATORS
           value: tracecontext,baggage,b3
         - name: OTEL_TRACES_EXPORTER
-          value: jaeger
+          value: otlp
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: 'http://jaeger-collector:4317'
         # Valid levels are debug, info, warning, error, critical.
         # If no valid level is set, will default to info.
         - name: LOG_LEVEL

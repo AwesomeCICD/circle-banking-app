@@ -4,6 +4,8 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.in
 #
+backoff==2.1.2
+    # via opentelemetry-exporter-otlp-proto-grpc
 boto3==1.24.62
     # via -r requirements.in
 botocore==1.27.62
@@ -27,9 +29,9 @@ deprecated==1.2.13
 flask==2.1.2
     # via -r requirements.in
 googleapis-common-protos==1.56.2
-    # via opentelemetry-exporter-jaeger-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-grpc
 grpcio==1.47.0
-    # via opentelemetry-exporter-jaeger-proto-grpc
+    # via opentelemetry-exporter-otlp-proto-grpc
 gunicorn==20.1.0
     # via -r requirements.in
 idna==3.3
@@ -50,8 +52,7 @@ markupsafe==2.1.1
     # via jinja2
 opentelemetry-api==1.12.0
     # via
-    #   opentelemetry-exporter-jaeger-proto-grpc
-    #   opentelemetry-exporter-jaeger-thrift
+    #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-flask
     #   opentelemetry-instrumentation-jinja2
@@ -60,12 +61,8 @@ opentelemetry-api==1.12.0
     #   opentelemetry-propagator-b3
     #   opentelemetry-propagator-jaeger
     #   opentelemetry-sdk
-opentelemetry-exporter-jaeger==1.12.0
+opentelemetry-exporter-otlp-proto-grpc==1.12.0
     # via -r requirements.in
-opentelemetry-exporter-jaeger-proto-grpc==1.12.0
-    # via opentelemetry-exporter-jaeger
-opentelemetry-exporter-jaeger-thrift==1.12.0
-    # via opentelemetry-exporter-jaeger
 opentelemetry-instrumentation==0.33b0
     # via
     #   opentelemetry-instrumentation-flask
@@ -84,11 +81,12 @@ opentelemetry-propagator-b3==1.12.0
     # via -r requirements.in
 opentelemetry-propagator-jaeger==1.12.0
     # via -r requirements.in
+opentelemetry-proto==1.12.0
+    # via opentelemetry-exporter-otlp-proto-grpc
 opentelemetry-sdk==1.12.0
     # via
     #   -r requirements.in
-    #   opentelemetry-exporter-jaeger-proto-grpc
-    #   opentelemetry-exporter-jaeger-thrift
+    #   opentelemetry-exporter-otlp-proto-grpc
 opentelemetry-semantic-conventions==0.33b0
     # via
     #   opentelemetry-instrumentation-flask
@@ -101,7 +99,9 @@ opentelemetry-util-http==0.33b0
     #   opentelemetry-instrumentation-requests
     #   opentelemetry-instrumentation-wsgi
 protobuf==3.20.1
-    # via googleapis-common-protos
+    # via
+    #   googleapis-common-protos
+    #   opentelemetry-proto
 pycparser==2.21
     # via cffi
 pyjwt==2.4.0
@@ -116,9 +116,6 @@ six==1.16.0
     # via
     #   grpcio
     #   python-dateutil
-    #   thrift
-thrift==0.16.0
-    # via opentelemetry-exporter-jaeger-thrift
 typing-extensions==4.2.0
     # via
     #   importlib-metadata
