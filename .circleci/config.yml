@@ -144,14 +144,7 @@ jobs:
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            namespace=boa-<<parameters.environment>>
-            if [ "prod" == "<<parameters.environment>>" ];then
-              namespace=boa
-            fi
-            skaffold deploy --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com \
-            --namespace=$namespace \
-            --build-artifacts=output/tags.json \
-            --label=cluster_name=${K8_CLUSTER} 
+            skaffold deploy --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com --namespace=${K8_NAMESPACE} --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
@@ -213,7 +206,7 @@ commands:
             read -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN \<<< \
               $(aws sts assume-role-with-web-identity \
               --role-arn ${AWS_ROLE_ARN} \
-              --role-session-name "CircleCI-Pipeline-<<pipeline.git.branch>>" \
+              --role-session-name "CircleCI-Pipeline-BoA" \
               --web-identity-token $CIRCLE_OIDC_TOKEN \
               --duration-seconds 3600 \
               --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
