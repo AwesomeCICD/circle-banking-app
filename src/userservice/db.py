@@ -21,6 +21,7 @@ import random
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, LargeBinary
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
+
 class UserDb:
     """
     UserDb provides a set of helper functions over SQLAlchemy
@@ -80,7 +81,8 @@ class UserDb:
                 # If there already exists an account, try again.
                 if result is not None:
                     accountid = None
-                    self.logger.debug('RESULT: account ID already exists. Trying again')
+                    self.logger.debug(
+                        'RESULT: account ID already exists. Trying again')
         self.logger.debug('RESULT: account ID generated.')
         return accountid
 
@@ -93,7 +95,8 @@ class UserDb:
                 or None if that user does not exist
         Raises: SQLAlchemyError if there was an issue with the database
         """
-        statement = self.users_table.select().where(self.users_table.c.username == username)
+        statement = self.users_table.select().where(
+            self.users_table.c.username == username)
         self.logger.debug('QUERY: %s', str(statement))
         with self.engine.connect() as conn:
             result = conn.execute(statement).first()

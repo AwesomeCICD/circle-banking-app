@@ -12,6 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#
+# Copyright 2022 CircleCI, from Google Source
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 """Web service for frontend
 """
 
@@ -22,6 +38,7 @@ import os
 import socket
 from decimal import Decimal, DecimalException
 from time import sleep
+import boto3
 
 import requests
 from requests.exceptions import HTTPError, RequestException
@@ -30,11 +47,10 @@ from flask import Flask, abort, jsonify, make_response, redirect, \
     render_template, request, url_for
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.propagate import set_global_textmap
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.propagators.cloud_trace_propagator import CloudTraceFormatPropagator
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.jinja2 import Jinja2Instrumentor
@@ -90,7 +106,8 @@ def create_app():
         token = request.cookies.get(app.config['TOKEN_NAME'])
         if not verify_token(token):
             # user isn't authenticated
-            app.logger.debug('User isn\'t authenticated. Redirecting to login page.')
+            app.logger.debug(
+                'User isn\'t authenticated. Redirecting to login page.')
             return redirect(url_for('login_page',
                                     _external=True,
                                     _scheme=app.config['SCHEME']))
@@ -105,7 +122,8 @@ def create_app():
         try:
             url = '{}/{}'.format(app.config["BALANCES_URI"], account_id)
             app.logger.debug('Getting account balance.')
-            response = requests.get(url=url, headers=hed, timeout=app.config['BACKEND_TIMEOUT'])
+            response = requests.get(
+                url=url, headers=hed, timeout=app.config['BACKEND_TIMEOUT'])
             if response:
                 balance = response.json()
         except (requests.exceptions.RequestException, ValueError) as err:
@@ -115,7 +133,8 @@ def create_app():
         try:
             url = '{}/{}'.format(app.config["HISTORY_URI"], account_id)
             app.logger.debug('Getting transaction history.')
-            response = requests.get(url=url, headers=hed, timeout=app.config['BACKEND_TIMEOUT'])
+            response = requests.get(
+                url=url, headers=hed, timeout=app.config['BACKEND_TIMEOUT'])
             if response:
                 transaction_list = response.json()
         except (requests.exceptions.RequestException, ValueError) as err:
@@ -125,7 +144,8 @@ def create_app():
         try:
             url = '{}/{}'.format(app.config["CONTACTS_URI"], username)
             app.logger.debug('Getting contacts.')
-            response = requests.get(url=url, headers=hed, timeout=app.config['BACKEND_TIMEOUT'])
+            response = requests.get(
+                url=url, headers=hed, timeout=app.config['BACKEND_TIMEOUT'])
             if response:
                 contacts = response.json()
         except (requests.exceptions.RequestException, ValueError) as err:
@@ -137,7 +157,11 @@ def create_app():
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
-                               circleci_logo=os.getenv('CIRCLECI_LOGO', 'false'),
+                               pod_region=pod_region,
+                               pod_group=pod_group,
+                               pod_namespace=namespace,
+                               circleci_logo=os.getenv(
+                                   'CIRCLECI_LOGO', 'false'),
                                history=transaction_list,
                                balance=balance,
                                name=display_name,
@@ -172,7 +196,8 @@ def create_app():
         # Populate the 'accountLabel' field. If no match found, default to None.
         for trans in transactions:
             if trans['toAccountNum'] == account_id:
-                trans['accountLabel'] = contact_map.get(trans['fromAccountNum'])
+                trans['accountLabel'] = contact_map.get(
+                    trans['fromAccountNum'])
             elif trans['fromAccountNum'] == account_id:
                 trans['accountLabel'] = contact_map.get(trans['toAccountNum'])
 
@@ -189,7 +214,8 @@ def create_app():
         token = request.cookies.get(app.config['TOKEN_NAME'])
         if not verify_token(token):
             # user isn't authenticated
-            app.logger.error('Error submitting payment: user is not authenticated.')
+            app.logger.error(
+                'Error submitting payment: user is not authenticated.')
             return abort(401)
         try:
             account_id = decode_token(token)['acct']
@@ -251,7 +277,8 @@ def create_app():
         token = request.cookies.get(app.config['TOKEN_NAME'])
         if not verify_token(token):
             # user isn't authenticated
-            app.logger.error('Error submitting deposit: user is not authenticated.')
+            app.logger.error(
+                'Error submitting deposit: user is not authenticated.')
             return abort(401)
         try:
             # get account id from token
@@ -355,19 +382,25 @@ def create_app():
         token = request.cookies.get(app.config['TOKEN_NAME'])
         if verify_token(token):
             # already authenticated
-            app.logger.debug('User already authenticated. Redirecting to /home')
+            app.logger.debug(
+                'User already authenticated. Redirecting to /home')
             return redirect(url_for('home',
                                     _external=True,
                                     _scheme=app.config['SCHEME']))
 
         return render_template('login.html',
-                               circleci_logo=os.getenv('CIRCLECI_LOGO', 'false'),
+                               circleci_logo=os.getenv(
+                                   'CIRCLECI_LOGO', 'false'),
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
+                               pod_region=pod_region,
+                               pod_group=pod_group,
+                               pod_namespace=namespace,
                                message=request.args.get('msg', None),
                                default_user=os.getenv('DEFAULT_USERNAME', ''),
-                               default_password=os.getenv('DEFAULT_PASSWORD', ''),
+                               default_password=os.getenv(
+                                   'DEFAULT_PASSWORD', ''),
                                bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
 
     @app.route('/login', methods=['POST'])
@@ -384,7 +417,8 @@ def create_app():
         try:
             app.logger.debug('Logging in.')
             req = requests.get(url=app.config["LOGIN_URI"],
-                               params={'username': username, 'password': password})
+                               params={'username': username, 'password': password},
+                               timeout=5)
             req.raise_for_status()  # Raise on HTTP Status code 4XX or 5XX
 
             # login success
@@ -412,15 +446,20 @@ def create_app():
         token = request.cookies.get(app.config['TOKEN_NAME'])
         if verify_token(token):
             # already authenticated
-            app.logger.debug('User already authenticated. Redirecting to /home')
+            app.logger.debug(
+                'User already authenticated. Redirecting to /home')
             return redirect(url_for('home',
                                     _external=True,
                                     _scheme=app.config['SCHEME']))
         return render_template('signup.html',
-                               circleci_logo=os.getenv('CIRCLECI_LOGO', 'false'),
+                               circleci_logo=os.getenv(
+                                   'CIRCLECI_LOGO', 'false'),
                                cluster_name=cluster_name,
                                pod_name=pod_name,
                                pod_zone=pod_zone,
+                               pod_region=pod_region,
+                               pod_group=pod_group,
+                               pod_namespace=namespace,
                                bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
 
     @app.route("/signup", methods=['POST'])
@@ -487,13 +526,15 @@ def create_app():
     def format_timestamp_day(timestamp):
         """ Format the input timestamp day in a human readable way """
         # TODO: time zones?
-        date = datetime.datetime.strptime(timestamp, app.config['TIMESTAMP_FORMAT'])
+        date = datetime.datetime.strptime(
+            timestamp, app.config['TIMESTAMP_FORMAT'])
         return date.strftime('%d')
 
     def format_timestamp_month(timestamp):
         """ Format the input timestamp month in a human readable way """
         # TODO: time zones?
-        date = datetime.datetime.strptime(timestamp, app.config['TIMESTAMP_FORMAT'])
+        date = datetime.datetime.strptime(
+            timestamp, app.config['TIMESTAMP_FORMAT'])
         return date.strftime('%b')
 
     def format_currency(int_amount):
@@ -520,40 +561,85 @@ def create_app():
         os.environ.get('CONTACTS_API_ADDR'))
     app.config['PUBLIC_KEY'] = open(os.environ.get('PUB_KEY_PATH'), 'r').read()
     app.config['LOCAL_ROUTING'] = os.getenv('LOCAL_ROUTING_NUM')
-    app.config['BACKEND_TIMEOUT'] = 4  # timeout in seconds for calls to the backend
+    # timeout in seconds for calls to the backend
+    app.config['BACKEND_TIMEOUT'] = 4
     app.config['TOKEN_NAME'] = 'token'
     app.config['TIMESTAMP_FORMAT'] = '%Y-%m-%dT%H:%M:%S.%f%z'
     app.config['SCHEME'] = os.environ.get('SCHEME', 'http')
 
-    # where am I?
-    metadata_server = os.getenv('METADATA_SERVER', 'metadata.google.internal')
-    metadata_url = f'http://{metadata_server}/computeMetadata/v1/'
-    metadata_headers = {'Metadata-Flavor': 'Google'}
+    # where am I? - use AWS meta IMDSv2 to hop to underlying ec2 info, needs a token auth
+    pod_zone = os.getenv('POD_ZONE', 'unknown')
+    pod_region = os.getenv('POD_REGION', 'unknown')
+    pod_group = os.getenv('POD_GROUP', 'unknown')
+    namespace = os.getenv('POD_NAMESPACE', 'unknown')
+    metaserver = "http://169.254.169.254/latest"
+    instance_id = "unknown"
+    try:
+        app.logger.warning("Attempting to get AWS Meta Info..")
+        response = requests.put(url=f"{metaserver}/api/token", data=None,
+                                headers={"X-aws-ec2-metadata-token-ttl-seconds": "120"}, timeout=5)
+        response.raise_for_status()
+        token = response.text
+        response = requests.get(url=f"{metaserver}/meta-data/",
+                                headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        response.raise_for_status()
+        app.logger.warning(
+            f"AWS Meta API for Info returned code: {response.status_code}")
+        app.logger.warning(response.text)
+        response = requests.get(url=f"{metaserver}/meta-data/instance-id",
+                                headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        instance_id = response.text
+        response = requests.get(url=f"{metaserver}/meta-data/placement",
+                                headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        app.logger.warning(
+            f"AWS Meta API forplacement returned code: {response.status_code}")
+        app.logger.warning(response.text)
 
-    # get GKE cluster name
+        response = requests.get(
+            url=f"{metaserver}/meta-data/placement/availability-zone",
+            headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        pod_zone = response.text
+        response = requests.get(url=f"{metaserver}/meta-data/placement/region",
+                                headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        pod_region = response.text
+        response = requests.get(url=f"{metaserver}/meta-data/mac",
+                                headers={"X-aws-ec2-metadata-token": token}, timeout=5)
+        mac = response.text
+        emac = requests.utils.quote(mac)
+        mac_url = f'{metaserver}/meta-data/network/interfaces/macs/{emac}/subnet-ipv4-cidr-block'
+        app.logger.warning(f"Pod MAC url: {mac_url}")
+        response = requests.get(url=mac_url, headers={
+                                "X-aws-ec2-metadata-token": token}, timeout=5)
+        pod_group = response.text
+    except (RequestException, HTTPError) as err:
+        app.logger.warning(f"Unable to retrieve info from AWS: {err}")
+
+    # k8s tag names conflict withthe way metadata would expose it.
+    # So we have a few layers to try to get cluster name
+    # 1 ask environment, least likely
     cluster_name = os.getenv('CLUSTER_NAME', 'unknown')
     try:
-        req = requests.get(metadata_url + 'instance/attributes/cluster-name',
-                           headers=metadata_headers)
-        if req.ok:
-            cluster_name = str(req.text)
+    # 2 ask Downward API - only works for automated deploys that properly set maifest labels
+        with open('/etc/podinfo/labels') as file:
+            for line in file:
+                key, value = line.strip().split('=', 1)
+                if key == "cluster_name":
+                    cluster_name = value
+
+    # 3 most accurate but less portable, ask AWS API
+        ec2 = boto3.resource('ec2', region_name=pod_region)
+        ec2instance = ec2.Instance(instance_id)
+        for tags in ec2instance.tags:
+            if tags["Key"] == 'aws:eks:cluster-name':
+                cluster_name = tags["Value"]
+                break
     except (RequestException, HTTPError) as err:
         app.logger.warning(
-            f"Unable to retrieve cluster name from metadata server {metadata_server}.")
+            "Unable to retrieve cluster name from Deployment manifest.")
 
-    # get GKE pod name
+    # get EKS pod name
     pod_name = "unknown"
     pod_name = socket.gethostname()
-
-    # get GKE node zone
-    pod_zone = os.getenv('POD_ZONE', 'unknown')
-    try:
-        req = requests.get(metadata_url + 'instance/zone',
-                           headers=metadata_headers)
-        if req.ok:
-            pod_zone = str(req.text.split("/")[3])
-    except (RequestException, HTTPError) as err:
-        app.logger.warning(f"Unable to retrieve zone from metadata server {metadata_server}.")
 
     # register formater functions
     app.jinja_env.globals.update(format_currency=format_currency)
@@ -568,12 +654,33 @@ def create_app():
     # Set up tracing and export spans to Cloud Trace.
     if os.environ['ENABLE_TRACING'] == "true":
         app.logger.info("✅ Tracing enabled.")
-        trace.set_tracer_provider(TracerProvider())
-        cloud_trace_exporter = CloudTraceSpanExporter()
-        trace.get_tracer_provider().add_span_processor(
-            BatchSpanProcessor(cloud_trace_exporter)
+
+        trace.set_tracer_provider(
+            TracerProvider(
+                    resource=Resource.create({SERVICE_NAME: "boa-frontend"})
+                )
         )
-        set_global_textmap(CloudTraceFormatPropagator())
+        tracer = trace.get_tracer(__name__)
+
+        # create a JaegerExporter
+        jaeger_exporter = JaegerExporter(
+            # configure agent
+            agent_host_name='172.20.38.194',
+            agent_port=6831,
+            # optional: configure also collector
+            #collector_endpoint='http://jaeger-collector:14268/api/traces?format=jaeger.thrift',
+            # username=xxxx, # optional
+            # password=xxxx, # optional
+            # max_tag_value_length=None # optional
+        )
+
+        # Create a BatchSpanProcessor and add the exporter to it
+        span_processor = BatchSpanProcessor(jaeger_exporter)
+
+        # add to the tracer
+        trace.get_tracer_provider().add_span_processor(span_processor)
+
+
         # Add tracing auto-instrumentation for Flask, jinja and requests
         FlaskInstrumentor().instrument_app(app)
         RequestsInstrumentor().instrument()

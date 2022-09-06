@@ -25,6 +25,7 @@ spec:
     metadata:
       labels:
         app: frontend
+        cluster_name: ooops
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -49,15 +50,25 @@ spec:
           readOnly: true
         - mountPath: /tmp
           name: tmp
+        - name: podinfo
+          mountPath: /etc/podinfo
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: VERSION
           value: "dev"
         - name: PORT
           value: "8080"
         - name: ENABLE_TRACING
-          value: "false"
+          value: "true"
         - name: ENABLE_METRICS
-          value: "false"
+          value: "true"
         - name: SCHEME
           value: "http"
          # Valid levels are debug, info, warning, error, critical. If no valid level is set, gunicorn will default to info.
@@ -123,6 +134,13 @@ spec:
             path: publickey
       - emptyDir: {}
         name: tmp
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+
 # [END gke_dev_kubernetes_manifests_frontend_deployment_frontend]
 ---
 # [START gke_dev_kubernetes_manifests_frontend_service_frontend]

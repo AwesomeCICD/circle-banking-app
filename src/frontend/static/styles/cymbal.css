@@ -464,3 +464,23 @@
       align-items: center;
       margin-right: 15px;
     }
+
+    .footer .container{
+      position: relative;
+      background: none;
+      z-index:1;
+    }
+
+.footerbackgrounddev {
+      margin: 3rem;
+      position: absolute;
+      font-size: 3.5rem;
+      background-color: rgba(184, 9, 9, 0.651) ;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: -1;
+      transform: rotate(-10deg);
+      -webkit-transform: rotate(-10deg);
+      color: #c6afaf;
+    }
