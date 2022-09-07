@@ -8,6 +8,9 @@ links:
   - name: GitHub
     type: REPOSITORY
     url: 'https://github.com/AwesomeCICD/bank-of-aion'
+  - name: CircleCI
+    type: PROJECT
+    url: 'https://app.circleci.com/pipelines/github/AwesomeCICD/bank-of-aion'
 relationships: {}
 
 # Learn more about formatting compass.yml:
