@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.1
+  maven: circleci/maven@1.3.0
           
 executors:
   base:
@@ -56,35 +57,45 @@ jobs:
     executor: jdk17
     steps:
       - checkout
-      - run: |
-          ./mvnw checkstyle:check
+      - maven/with_cache:  
+          verify_dependencies: false       
+          steps: 
+          - run: ./mvnw checkstyle:check
+
 
   java-test-and-code-cov:
-      executor: jdk17
-      steps:
-        - checkout
-        - run: mkdir test-reports
-        - run: |
-            ./mvnw test
-            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-            echo "checking $SERVICE..."
-            # save current working dir to memory and cd to src/$SERVICE
-            pushd src/$SERVICE
-            ../../mvnw jacoco:report
-            echo "Coverage for $SERVICE:"
-            awk -F, \
-            '{ instructions += $4 + $5; covered += $5 } END \
-            { print covered, "/", instructions, " instructions covered"; \
-            print int(100*covered/instructions), "% covered" }' \
-            target/site/jacoco/jacoco.csv
-            cp target/surefire-reports/*.xml ../../test-reports
-            # return to previously saved path
-            popd
-            done
-        - store_test_results:
-            path: test-reports
-        - store_artifacts:
-            path: test-reports
+    executor: jdk17
+    steps:
+      - checkout
+      - run: mkdir test-reports
+      - run: |
+         echo "DONTUSESAMECACHEASCHECKSTYLEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxxku" >> src/pom.xml
+         find . -name 'pom.xml'
+      - maven/with_cache:
+          verify_dependencies: false    
+          steps: 
+          - run: rm src/pom.xml #would mess up maven, not valid pom
+          - run: |
+              ./mvnw test
+              for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+              echo "checking $SERVICE..."
+              # save current working dir to memory and cd to src/$SERVICE
+              pushd src/$SERVICE
+              ../../mvnw jacoco:report
+              echo "Coverage for $SERVICE:"
+              awk -F, \
+              '{ instructions += $4 + $5; covered += $5 } END \
+              { print covered, "/", instructions, " instructions covered"; \
+              print int(100*covered/instructions), "% covered" }' \
+              target/site/jacoco/jacoco.csv
+              cp target/surefire-reports/*.xml ../../test-reports
+              # return to previously saved path
+              popd
+              done
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
 
   skaffold-build-push:
       executor: jdk17

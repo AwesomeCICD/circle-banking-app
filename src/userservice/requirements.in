@@ -18,9 +18,9 @@ itsdangerous==2.1.2
 jinja2==3.1.2
 markupsafe==2.1.1
 more-itertools==8.13.0
-opentelemetry-sdk==1.11.1
-opentelemetry-instrumentation-flask==0.30b1
-opentelemetry-instrumentation-sqlalchemy==0.30b1
+opentelemetry-sdk==1.12.0
+opentelemetry-instrumentation-flask==0.33b0
+opentelemetry-instrumentation-sqlalchemy==0.33b0
 packaging==21.3
 pluggy==1.0.0
 protobuf==3.20.1
@@ -45,5 +45,6 @@ webencodings==0.5.1
 werkzeug==2.1.2
 wrapt==1.14.1
 zipp==3.8.0
-opentelemetry-exporter-jaeger==1.12.0
+opentelemetry-exporter-otlp-proto-grpc==1.12.0
 opentelemetry-propagator-jaeger==1.12.0
+opentelemetry-propagator-b3==1.12.0

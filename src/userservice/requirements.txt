@@ -8,6 +8,8 @@ attrs==21.4.0
     # via
     #   -r requirements.in
     #   pytest
+backoff==2.1.2
+    # via opentelemetry-exporter-otlp-proto-grpc
 bcrypt==3.2.2
     # via -r requirements.in
 bleach==5.0.1
@@ -38,7 +40,9 @@ coverage[toml]==6.4.1
 cryptography==37.0.3
     # via -r requirements.in
 deprecated==1.2.13
-    # via opentelemetry-api
+    # via
+    #   opentelemetry-api
+    #   opentelemetry-propagator-b3
 flask==2.1.2
     # via -r requirements.in
 google-api-core==2.8.2
@@ -50,13 +54,13 @@ google-auth==2.9.0
 googleapis-common-protos==1.56.2
     # via
     #   google-api-core
-    #   opentelemetry-exporter-jaeger-proto-grpc
+    #   opentelemetry-exporter-otlp-proto-grpc
 greenlet==1.1.2
     # via sqlalchemy
 grpcio==1.47.0
     # via
     #   -r requirements.in
-    #   opentelemetry-exporter-jaeger-proto-grpc
+    #   opentelemetry-exporter-otlp-proto-grpc
 gunicorn==20.1.0
     # via -r requirements.in
 idna==3.3
@@ -87,47 +91,46 @@ markupsafe==2.1.1
     #   jinja2
 more-itertools==8.13.0
     # via -r requirements.in
-opentelemetry-api==1.11.1
+opentelemetry-api==1.12.0
     # via
-    #   opentelemetry-exporter-jaeger-proto-grpc
-    #   opentelemetry-exporter-jaeger-thrift
+    #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-flask
     #   opentelemetry-instrumentation-sqlalchemy
     #   opentelemetry-instrumentation-wsgi
+    #   opentelemetry-propagator-b3
     #   opentelemetry-propagator-jaeger
     #   opentelemetry-sdk
-opentelemetry-exporter-jaeger==1.12.0
+opentelemetry-exporter-otlp-proto-grpc==1.12.0
     # via -r requirements.in
-opentelemetry-exporter-jaeger-proto-grpc==1.12.0
-    # via opentelemetry-exporter-jaeger
-opentelemetry-exporter-jaeger-thrift==1.12.0
-    # via opentelemetry-exporter-jaeger
-opentelemetry-instrumentation==0.30b1
+opentelemetry-instrumentation==0.33b0
     # via
     #   opentelemetry-instrumentation-flask
     #   opentelemetry-instrumentation-sqlalchemy
     #   opentelemetry-instrumentation-wsgi
-opentelemetry-instrumentation-flask==0.30b1
+opentelemetry-instrumentation-flask==0.33b0
     # via -r requirements.in
-opentelemetry-instrumentation-sqlalchemy==0.30b1
+opentelemetry-instrumentation-sqlalchemy==0.33b0
     # via -r requirements.in
-opentelemetry-instrumentation-wsgi==0.30b1
+opentelemetry-instrumentation-wsgi==0.33b0
     # via opentelemetry-instrumentation-flask
+opentelemetry-propagator-b3==1.12.0
+    # via -r requirements.in
 opentelemetry-propagator-jaeger==1.12.0
     # via -r requirements.in
-opentelemetry-sdk==1.11.1
+opentelemetry-proto==1.12.0
+    # via opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-sdk==1.12.0
     # via
     #   -r requirements.in
-    #   opentelemetry-exporter-jaeger-proto-grpc
-    #   opentelemetry-exporter-jaeger-thrift
-opentelemetry-semantic-conventions==0.30b1
+    #   opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-semantic-conventions==0.33b0
     # via
     #   opentelemetry-instrumentation-flask
     #   opentelemetry-instrumentation-sqlalchemy
     #   opentelemetry-instrumentation-wsgi
     #   opentelemetry-sdk
-opentelemetry-util-http==0.30b1
+opentelemetry-util-http==0.33b0
     # via
     #   opentelemetry-instrumentation-flask
     #   opentelemetry-instrumentation-wsgi
@@ -145,6 +148,7 @@ protobuf==3.20.1
     #   -r requirements.in
     #   google-api-core
     #   googleapis-common-protos
+    #   opentelemetry-proto
 psycopg2-binary==2.9.3
     # via -r requirements.in
 py==1.11.0
@@ -194,11 +198,8 @@ six==1.16.0
     #   bleach
     #   google-auth
     #   grpcio
-    #   thrift
 sqlalchemy==1.4.39
     # via -r requirements.in
-thrift==0.16.0
-    # via opentelemetry-exporter-jaeger-thrift
 tomli==2.0.1
     # via
     #   coverage

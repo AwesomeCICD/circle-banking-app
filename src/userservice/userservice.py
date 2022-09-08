@@ -30,8 +30,17 @@ import bleach
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from db import UserDb
 
+
 from opentelemetry import trace
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.propagators.composite import CompositePropagator
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.propagators.b3 import B3MultiFormat
+
+
+from opentelemetry.propagate import set_global_textmap
+
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -229,25 +238,20 @@ def create_app():
         app.logger.info("✅ Tracing enabled.")
         trace.set_tracer_provider(
             TracerProvider(
-                    resource=Resource.create({SERVICE_NAME: "boa-userservice"})
+                resource=Resource.create(
+                    {SERVICE_NAME:
+                     f"{os.environ['POD_NAMESPACE']}-userservice"}
                 )
+            )
         )
         tracer = trace.get_tracer(__name__)
         # create a JaegerExporter
-        jaeger_exporter = JaegerExporter(
-            # configure agent
-            agent_host_name='172.20.38.194',
-            agent_port=6831,
-            # optional: configure also collector
-            #collector_endpoint='http://jaeger-collector:14268/api/traces?format=jaeger.thrift',
-            # username=xxxx, # optional
-            # password=xxxx, # optional
-            # max_tag_value_length=None # optional
+        trace.get_tracer_provider().add_span_processor(
+            BatchSpanProcessor(OTLPSpanExporter())
         )
-        # Create a BatchSpanProcessor and add the exporter to it
-        span_processor = BatchSpanProcessor(jaeger_exporter)
-        # add to the tracer
-        trace.get_tracer_provider().add_span_processor(span_processor)
+        set_global_textmap(CompositePropagator(
+            [B3MultiFormat(), TraceContextTextMapPropagator(), W3CBaggagePropagator()]))
+
         FlaskInstrumentor().instrument_app(app)
     else:
         app.logger.info("🚫 Tracing disabled.")

@@ -16,7 +16,6 @@
 
 package anthos.samples.bankofanthos.ledgerwriter;
 
-import com.google.cloud.MetadataConfig;
 import io.micrometer.stackdriver.StackdriverConfig;
 import io.micrometer.stackdriver.StackdriverMeterRegistry;
 import java.util.HashMap;
@@ -103,7 +102,7 @@ public class LedgerWriterApplication {
 
             @Override
             public String projectId() {
-                String id = MetadataConfig.getProjectId();
+                String id = "Unkown";
                 if (id == null) {
                     id = "";
                 }
@@ -125,10 +124,10 @@ public class LedgerWriterApplication {
                 String podName = System.getenv("HOSTNAME");
                 String containerName = podName.substring(0,
                     podName.indexOf("-"));
-                map.put("location", MetadataConfig.getZone());
+                map.put("location", "Unkown");
                 map.put("container_name", containerName);
                 map.put("pod_name", podName);
-                map.put("cluster_name", MetadataConfig.getClusterName());
+                map.put("cluster_name", "Unkown");
                 map.put("namespace_name", System.getenv("NAMESPACE"));
                 return map;
             }

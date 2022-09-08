@@ -53,6 +53,20 @@ spec:
         - name: http-server
           containerPort: 8080
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: OTEL_PROPAGATORS
+          value: tracecontext,baggage,b3
+        - name: OTEL_TRACES_EXPORTER
+          value: otlp
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: 'http://jaeger-collector:4317'
         - name: VERSION
           value: "dev"
         - name: PORT

@@ -47,7 +47,14 @@ from flask import Flask, abort, jsonify, make_response, redirect, \
     render_template, request, url_for
 
 from opentelemetry import trace
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.propagators.composite import CompositePropagator
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.propagators.b3 import B3MultiFormat
+
+from opentelemetry.propagate import set_global_textmap
+
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -417,7 +424,8 @@ def create_app():
         try:
             app.logger.debug('Logging in.')
             req = requests.get(url=app.config["LOGIN_URI"],
-                               params={'username': username, 'password': password},
+                               params={'username': username,
+                                       'password': password},
                                timeout=5)
             req.raise_for_status()  # Raise on HTTP Status code 4XX or 5XX
 
@@ -619,7 +627,7 @@ def create_app():
     # 1 ask environment, least likely
     cluster_name = os.getenv('CLUSTER_NAME', 'unknown')
     try:
-    # 2 ask Downward API - only works for automated deploys that properly set maifest labels
+        # 2 ask Downward API - only works for automated deploys that properly set maifest labels
         with open('/etc/podinfo/labels') as file:
             for line in file:
                 key, value = line.strip().split('=', 1)
@@ -657,28 +665,17 @@ def create_app():
 
         trace.set_tracer_provider(
             TracerProvider(
-                    resource=Resource.create({SERVICE_NAME: "boa-frontend"})
-                )
+                resource=Resource.create(
+                    {SERVICE_NAME: f"{namespace}-frontend"})
+            )
         )
         tracer = trace.get_tracer(__name__)
 
-        # create a JaegerExporter
-        jaeger_exporter = JaegerExporter(
-            # configure agent
-            agent_host_name='172.20.38.194',
-            agent_port=6831,
-            # optional: configure also collector
-            #collector_endpoint='http://jaeger-collector:14268/api/traces?format=jaeger.thrift',
-            # username=xxxx, # optional
-            # password=xxxx, # optional
-            # max_tag_value_length=None # optional
+        trace.get_tracer_provider().add_span_processor(
+            BatchSpanProcessor(OTLPSpanExporter())
         )
-
-        # Create a BatchSpanProcessor and add the exporter to it
-        span_processor = BatchSpanProcessor(jaeger_exporter)
-
-        # add to the tracer
-        trace.get_tracer_provider().add_span_processor(span_processor)
+        set_global_textmap(CompositePropagator(
+            [B3MultiFormat(), TraceContextTextMapPropagator(), W3CBaggagePropagator()]))
 
 
         # Add tracing auto-instrumentation for Flask, jinja and requests
