@@ -12,8 +12,11 @@ links:
     type: PROJECT
     url: 'https://app.circleci.com/pipelines/github/AwesomeCICD/bank-of-aion'
   - name: Docs
-    type: DOCUMENTATION
-    ur: 'https://github.com/AwesomeCICD/bank-of-aion/tree/main/docs'
+    type: DOCUMENT
+    url: 'https://github.com/AwesomeCICD/bank-of-aion/tree/main/docs'
+  - name: #CERA-work
+    type: CHAT_CHANNEL
+    url: 'https://circleci.slack.com/archives/C03UKAA7A4F'
 relationships: 
   DEPENDS_ON:
     - 'ari:cloud:compass:f70fc615-659b-4377-82ad-9468d843b4b5:component/c3368863-b2d9-4e16-88b6-4aa6087cc55c/6a9d6a07-e4a1-4f19-866a-cdccb3c6c8d4'
