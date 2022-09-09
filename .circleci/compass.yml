@@ -13,7 +13,7 @@ links:
     url: 'https://app.circleci.com/pipelines/github/AwesomeCICD/bank-of-aion'
   - name: Docs
     type: DOCUMENT
-    url: 'https://github.com/AwesomeCICD/bank-of-aion/tree/main/docs'
+    url: 'https://github.com/AwesomeCICD/bank-of-aion/blob/main/docs/development.md'
   - name: #CERA-work
     type: CHAT_CHANNEL
     url: 'https://circleci.slack.com/archives/C03UKAA7A4F'
