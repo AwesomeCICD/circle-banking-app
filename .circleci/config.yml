@@ -169,7 +169,10 @@ workflows:
     jobs:
       - java-checkstyle
       - java-test-and-code-cov
-      - python-checkstyle
+      - python-checkstyle:
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
       - python-test
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
