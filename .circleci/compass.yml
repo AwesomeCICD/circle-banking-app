@@ -1,7 +1,7 @@
 name: Bank of Aion
 id: 'ari:cloud:compass:f70fc615-659b-4377-82ad-9468d843b4b5:component/c3368863-b2d9-4e16-88b6-4aa6087cc55c/3f3db93e-87bb-4ad0-ab2a-19703a2c5abc'
 description: The monorepo application
-ownerId: 'ari:cloud:teams::team/12bb681d-8d7d-4914-9037-a21d7e45dd21'
+ownerId: 'ari:cloud:teams::team/98ee4194-b1bf-450b-b7ab-c516e19ef002'
 fields:
   tier: 2
 links:
