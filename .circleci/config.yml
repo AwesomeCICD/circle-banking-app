@@ -170,6 +170,7 @@ workflows:
       - java-checkstyle
       - java-test-and-code-cov
       - python-checkstyle:
+          context: [ compass-integration-bank-of-aion ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
