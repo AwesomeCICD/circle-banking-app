@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.1
+  compass: atlassian-labs/compass@dev:6ff0bf80a33db030526672c752079f0c357cb3c5
   maven: circleci/maven@1.3.0
           
 executors:
@@ -180,7 +180,8 @@ workflows:
           requires: [ skaffold-build-push ]
           context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
           post-steps:
-            - compass/notify_deployment
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
       - deploy:
           name: Deploy Production
           requires: [ Deploy Dev ]
@@ -190,7 +191,8 @@ workflows:
             branches:
               only: [ main ]
           post-steps:
-            - compass/notify_deployment
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
 
 
 commands:
