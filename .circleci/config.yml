@@ -181,7 +181,7 @@ workflows:
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
-                environment_type: dev
+                environment_type: development
       - deploy:
           name: Deploy Production
           requires: [ Deploy Dev ]
