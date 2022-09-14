@@ -176,7 +176,7 @@ workflows:
           context: reference-arch-aws-oidc
       - deploy:
           name: Deploy Dev
-          environment: dev
+          environment_type: dev
           requires: [ skaffold-build-push ]
           context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
           post-steps:
@@ -186,7 +186,7 @@ workflows:
           name: Deploy Production
           requires: [ Deploy Dev ]
           context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
-          environment: prod
+          environment_type: production
           filters:
             branches:
               only: [ main ]
