@@ -176,23 +176,23 @@ workflows:
           context: reference-arch-aws-oidc
       - deploy:
           name: Deploy Dev
-          environment_type: dev
           requires: [ skaffold-build-push ]
           context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
+                environment_type: dev
       - deploy:
           name: Deploy Production
           requires: [ Deploy Dev ]
           context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
-          environment_type: production
           filters:
             branches:
               only: [ main ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
+                environment_type: production
 
 
 commands:
