@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@dev:6ff0bf80a33db030526672c752079f0c357cb3c5
+  compass: eddiewebb/compass-fork-for-fixes@dev:7
   maven: circleci/maven@1.3.0
           
 executors:
@@ -68,30 +68,33 @@ jobs:
     steps:
       - checkout
       - run: mkdir test-reports
+      - run: mvn help:effective-pom > /tmp/zpom.xml
+      - restore_cache:
+          keys:
+            - v1-mvn-full-{{ checksum "/tmp/zpom.xml" }}
+            - v1-mvn-full-
+      - run: mvn dependency:go-offline
+      - save_cache:
+          key: v1-mvn-full-{{ checksum "/tmp/zpom.xml" }}
+          paths:
+            - ~/.m2
       - run: |
-         echo "DONTUSESAMECACHEASCHECKSTYLEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxxku" >> src/pom.xml
-         find . -name 'pom.xml'
-      - maven/with_cache:
-          verify_dependencies: false    
-          steps: 
-          - run: rm src/pom.xml #would mess up maven, not valid pom
-          - run: |
-              ./mvnw test
-              for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-              echo "checking $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
-              pushd src/$SERVICE
-              ../../mvnw jacoco:report
-              echo "Coverage for $SERVICE:"
-              awk -F, \
-              '{ instructions += $4 + $5; covered += $5 } END \
-              { print covered, "/", instructions, " instructions covered"; \
-              print int(100*covered/instructions), "% covered" }' \
-              target/site/jacoco/jacoco.csv
-              cp target/surefire-reports/*.xml ../../test-reports
-              # return to previously saved path
-              popd
-              done
+          ./mvnw test
+          for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+          echo "checking $SERVICE..."
+          # save current working dir to memory and cd to src/$SERVICE
+          pushd src/$SERVICE
+          ../../mvnw jacoco:report
+          echo "Coverage for $SERVICE:"
+          awk -F, \
+          '{ instructions += $4 + $5; covered += $5 } END \
+          { print covered, "/", instructions, " instructions covered"; \
+          print int(100*covered/instructions), "% covered" }' \
+          target/site/jacoco/jacoco.csv
+          cp target/surefire-reports/*.xml ../../test-reports
+          # return to previously saved path
+          popd
+          done
       - store_test_results:
           path: test-reports
       - store_artifacts:
@@ -110,6 +113,11 @@ jobs:
         - enable-oidc
         - setup_remote_docker:
             docker_layer_caching: true
+        - run: mvn help:effective-pom > /tmp/zpom.xml
+        - restore_cache:
+            keys:
+              - v1-mvn-full-{{ checksum "/tmp/zpom.xml" }}
+              - v1-mvn-full-
         - run: |
             #this is temp use of admin rights while we bukld out nexus
             aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 483285841698.dkr.ecr.us-west-2.amazonaws.com
@@ -193,6 +201,7 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: production
+                environment: CERA-Cluster-Namer-Prod
 
 
 commands:
