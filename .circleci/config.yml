@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  compass: eddiewebb/compass-fork-for-fixes@dev:7
+  compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.3.0
           
 executors:
@@ -240,3 +240,5 @@ commands:
             echo "export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $BASH_ENV
             echo "export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $BASH_ENV
             source $BASH_ENV
+
+# VS Code Extension Version: 1.0.0
