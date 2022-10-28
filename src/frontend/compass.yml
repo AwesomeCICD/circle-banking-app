@@ -1,6 +1,6 @@
-name: Bank of Aion
+name: BoA Frontend
 id: 'ari:cloud:compass:f70fc615-659b-4377-82ad-9468d843b4b5:component/c3368863-b2d9-4e16-88b6-4aa6087cc55c/3f3db93e-87bb-4ad0-ab2a-19703a2c5abc'
-description: The monorepo application
+description: The monorepo application's frontend python app
 ownerId: 'ari:cloud:teams::team/98ee4194-b1bf-450b-b7ab-c516e19ef002'
 fields:
   tier: 2
@@ -21,5 +21,6 @@ relationships:
   DEPENDS_ON:
     - 'ari:cloud:compass:f70fc615-659b-4377-82ad-9468d843b4b5:component/c3368863-b2d9-4e16-88b6-4aa6087cc55c/6a9d6a07-e4a1-4f19-866a-cdccb3c6c8d4'
     - 'ari:cloud:compass:f70fc615-659b-4377-82ad-9468d843b4b5:component/c3368863-b2d9-4e16-88b6-4aa6087cc55c/75ccdd25-bcf9-4737-910f-a3dd4cee9ea5'
+    - 'ari:cloud:compass:f70fc615-659b-4377-82ad-9468d843b4b5:component/c3368863-b2d9-4e16-88b6-4aa6087cc55c/3c5a0f90-bb20-4aa4-9373-77c682821c49'
 # Learn more about formatting compass.yml:
 # https://go.atlassian.com/compass-yml-format
