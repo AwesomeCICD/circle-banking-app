@@ -184,7 +184,6 @@ workflows:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
       - cypress/run:
-          spec: '--spec "/cypress/integration/*.js"'
           requires: [ skaffold-build-push, java-checkstyle, python-checkstyle ]
           attach-workspace: yes
       - deploy:
