@@ -2,6 +2,7 @@ version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.3.0
+  cypress: cypress-io/cypress@2.2.0
           
 executors:
   base:
@@ -129,7 +130,7 @@ jobs:
         - persist_to_workspace:
             root: output
             paths: [ 'tags.json' ]
-
+ 
 
   deploy:
     executor: base
@@ -182,6 +183,13 @@ workflows:
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
+      - cypress/run:
+          executor: base-12
+          wait-on: https://dev.cera.circleci-labs.com/
+          spec: '--spec ./cypress/integration/*.js'
+          requires:
+            - skaffold-build-push  
+          attach-workspace: yes
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push ]
@@ -240,5 +248,7 @@ commands:
             echo "export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $BASH_ENV
             echo "export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $BASH_ENV
             source $BASH_ENV
+
+# VS Code Extension Version: 1.0.0
 
 # VS Code Extension Version: 1.0.0
