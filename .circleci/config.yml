@@ -184,14 +184,12 @@ workflows:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
       - cypress/run:
-          wait-on: https://dev.cera.circleci-labs.com/
-          spec: '--spec ./cypress/integration/*.js'
-          requires:
-            - skaffold-build-push  
+          spec: '--spec "/cypress/integration/*.js"'
+          requires: [ skaffold-build-push, java-checkstyle, python-checkstyle ]
           attach-workspace: yes
       - deploy:
           name: Deploy Dev
-          requires: [ skaffold-build-push ]
+          requires: [ skaffold-build-push, cypress/run ]
           context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
           post-steps:
             - compass/notify_deployment:
@@ -247,6 +245,8 @@ commands:
             echo "export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $BASH_ENV
             echo "export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $BASH_ENV
             source $BASH_ENV
+
+# VS Code Extension Version: 1.0.0
 
 # VS Code Extension Version: 1.0.0
 
