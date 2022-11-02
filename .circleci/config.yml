@@ -184,7 +184,7 @@ workflows:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
       - cypress/run:
-          executor: base-12
+          executor: default
           wait-on: https://dev.cera.circleci-labs.com/
           spec: '--spec ./cypress/integration/*.js'
           requires:
