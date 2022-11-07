@@ -28,8 +28,8 @@ logger.addHandler(fh)
 """
 Setup 
 """
-starting_hash='af062c100e4e44cd221aeb4f4e523e1c82bad7a3'
-# ==> https://github.com/AwesomeCICD/bank-of-aion/commit/57f8fa8e5fd528f9c54142c1c493b7cdad26b87c
+starting_hash='ca5f844244f1b113d466a83ef305136feb4de620'
+target_branch='demo_flow' #should we keeep off main?
 github_login="UNKNOWN" # well get it..
 github_org='AwesomeCICD'
 github_token=os.environ['GITHUB_API_TOKEN']
@@ -167,7 +167,7 @@ def openPullRequestAgainstBranch(branch_name, issue):
     pull_request={
         'title':'Merge ' + branch_name + ' into production stream',
         'head':branch_name,
-        'base':'main',
+        'base':target_branch,
         'body':'Please review and merge changes for Issue #' +str(issue['number']),
         'labels': f'demo-{github_login}'
     }
