@@ -174,9 +174,9 @@ def openPullRequestAgainstBranch(branch_name, issue):
     url = base_url+'/issues'
     r = request(url, payload=base_issue)
     logger.debug(r)
-    logger.debug("Create PR from issue" + str(r['id']))
+    logger.debug("Create PR from issue" + str(r['number']))
     pull_request={
-        'issue':r['id'],
+        'issue':r['number'],
         'head':branch_name,
         'base':target_branch,
         'body':'Please review and merge changes for Issue #' +str(issue['number'])
