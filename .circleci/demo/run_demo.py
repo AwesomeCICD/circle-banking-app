@@ -164,8 +164,18 @@ def commitLocalChangeAgainstIssue(branch_name,  issue, commit_message):
     call(['git','push','--set-upstream','origin',branch_name])
 
 def openPullRequestAgainstBranch(branch_name, issue):
-    pull_request={
+    """Create a PR against changes."""
+    #only issues allow tags, start as issue, promote to PR.
+    base_issue={
         'title':'Merge ' + branch_name + ' into production stream',
+        'body':'Please review and merge changes for Issue #' +str(issue['number']),
+        'labels': f'demo-{github_login}'
+    }
+    url = base_url+'/issues'
+    r = request(url, payload=base_issue)
+
+    pull_request={
+        'issue':r['id'],
         'head':branch_name,
         'base':target_branch,
         'body':'Please review and merge changes for Issue #' +str(issue['number']),
