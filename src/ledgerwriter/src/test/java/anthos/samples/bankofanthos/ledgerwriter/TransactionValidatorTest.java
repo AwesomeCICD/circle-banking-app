@@ -220,6 +220,7 @@ class TransactionValidatorTest {
                         LOCAL_ROUTING_NUM, AUTHED_ACCOUNT_NUM, transaction);
                 });
             
+fail("An intentional failure inserted by CircleCI");
             // Then
             assertNotNull(exceptionThrown);
             assertEquals(EXCEPTION_MESSAGE_INVALID_AMOUNT,
