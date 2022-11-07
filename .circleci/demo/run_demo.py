@@ -28,7 +28,7 @@ logger.addHandler(fh)
 """
 Setup 
 """
-starting_hash='ca5f844244f1b113d466a83ef305136feb4de620'
+starting_hash='b4f2b4eec46ca9cc29a95ef83c22ee72e3341cba'
 target_branch='demo-flow' #should we keeep off main?
 github_login="UNKNOWN" # well get it..
 github_org='AwesomeCICD'
