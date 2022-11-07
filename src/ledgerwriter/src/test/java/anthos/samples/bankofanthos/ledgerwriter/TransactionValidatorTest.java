@@ -222,6 +222,7 @@ class TransactionValidatorTest {
             
 fail("An intentional failure inserted by CircleCI");
 fail("An intentional failure inserted by CircleCI");
+fail("An intentional failure inserted by CircleCI");
             // Then
             assertNotNull(exceptionThrown);
             assertEquals(EXCEPTION_MESSAGE_INVALID_AMOUNT,

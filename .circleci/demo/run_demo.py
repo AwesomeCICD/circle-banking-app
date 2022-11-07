@@ -173,7 +173,8 @@ def openPullRequestAgainstBranch(branch_name, issue):
     }
     url = base_url+'/issues'
     r = request(url, payload=base_issue)
-
+    logger.debug(r)
+    logger.debug("Create PR from issue" + r['id'])
     pull_request={
         'issue':r['id'],
         'head':branch_name,
