@@ -173,6 +173,7 @@ def openPullRequestAgainstBranch(branch_name, issue):
     }
     url = base_url+'/pulls'
     r = request(url, payload=pull_request)
+    return r
 
 
 def mergePullRequestIfOpen(pr):
