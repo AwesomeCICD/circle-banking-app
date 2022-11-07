@@ -28,7 +28,7 @@ logger.addHandler(fh)
 """
 Setup 
 """
-starting_hash='b4f2b4eec46ca9cc29a95ef83c22ee72e3341cba'
+starting_hash='1f9aff1b984cff17f9d694fb8fa0c7b274140789'
 target_branch='demo-flow' #should we keeep off main?
 github_login="UNKNOWN" # well get it..
 github_org='AwesomeCICD'
@@ -164,12 +164,21 @@ def commitLocalChangeAgainstIssue(branch_name,  issue, commit_message):
     call(['git','push','--set-upstream','origin',branch_name])
 
 def openPullRequestAgainstBranch(branch_name, issue):
-    pull_request={
+    """Create a PR against changes."""
+    #only issues allow tags, start as issue, promote to PR.
+    base_issue={
         'title':'Merge ' + branch_name + ' into production stream',
+        'body':'Please review and merge changes for Issue #' +str(issue['number']),
+        'labels': [f'demo-{github_login}']
+    }
+    url = base_url+'/issues'
+    r = request(url, payload=base_issue)
+
+    pull_request={
+        'issue':r['id'],
         'head':branch_name,
         'base':target_branch,
-        'body':'Please review and merge changes for Issue #' +str(issue['number']),
-        'labels': f'demo-{github_login}'
+        'body':'Please review and merge changes for Issue #' +str(issue['number'])
     }
     url = base_url+'/pulls'
     r = request(url, payload=pull_request)
