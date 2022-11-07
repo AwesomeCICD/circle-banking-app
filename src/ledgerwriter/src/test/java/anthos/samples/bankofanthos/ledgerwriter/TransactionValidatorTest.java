@@ -219,6 +219,7 @@ class TransactionValidatorTest {
                     transactionValidator.validateTransaction(
                         LOCAL_ROUTING_NUM, AUTHED_ACCOUNT_NUM, transaction);
                 });
+            
 
             // Then
             assertNotNull(exceptionThrown);
