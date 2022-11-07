@@ -80,21 +80,32 @@ jobs:
             - ~/.m2
       - run: |
           ./mvnw test
-          for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-          echo "checking $SERVICE..."
-          # save current working dir to memory and cd to src/$SERVICE
-          pushd src/$SERVICE
-          ../../mvnw jacoco:report
-          echo "Coverage for $SERVICE:"
-          awk -F, \
-          '{ instructions += $4 + $5; covered += $5 } END \
-          { print covered, "/", instructions, " instructions covered"; \
-          print int(100*covered/instructions), "% covered" }' \
-          target/site/jacoco/jacoco.csv
-          cp target/surefire-reports/*.xml ../../test-reports
-          # return to previously saved path
-          popd
-          done
+      - run:
+          name: Code Coverage
+          command: |
+            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+            echo "checking $SERVICE..."
+            # save current working dir to memory and cd to src/$SERVICE
+            pushd src/$SERVICE
+            ../../mvnw jacoco:report
+            echo "Coverage for $SERVICE:"
+            awk -F, \
+            '{ instructions += $4 + $5; covered += $5 } END \
+            { print covered, "/", instructions, " instructions covered"; \
+            print int(100*covered/instructions), "% covered" }' \
+            target/site/jacoco/jacoco.csv
+            # return to previously saved path
+            popd
+            done
+      - run: 
+          when: always
+          name: Collect all test reports
+          command: |
+            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+            pushd src/$SERVICE
+            cp target/surefire-reports/*.xml ../../test-reports
+            popd
+            done
       - store_test_results:
           path: test-reports
       - store_artifacts:
@@ -241,4 +252,4 @@ commands:
             echo "export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $BASH_ENV
             source $BASH_ENV
 
-# VS Code Extension Version: 1.0.0
+# VS Code Extension Version: 1.0.1
