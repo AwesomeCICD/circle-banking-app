@@ -183,8 +183,10 @@ workflows:
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
-      - cypress/run:
+      - cypress/install:
           requires: [ skaffold-build-push, java-checkstyle, python-checkstyle ]
+      - cypress/run:
+          requires: [ cypress/install ]
           attach-workspace: yes
       - deploy:
           name: Deploy Dev
