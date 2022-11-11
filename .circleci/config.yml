@@ -185,6 +185,7 @@ workflows:
           context: reference-arch-aws-oidc
       - cypress/install:
           requires: [ skaffold-build-push, java-checkstyle, python-checkstyle ]
+          cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
       - cypress/run:
           requires: [ cypress/install ]
           attach-workspace: yes
