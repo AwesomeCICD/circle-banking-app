@@ -190,6 +190,9 @@ workflows:
           requires: [ cypress/install ]
           attach-workspace: yes
           store_artifacts: true
+          post-steps:
+            - store_test_results:
+                path: cypress/results
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push, cypress/run ]
