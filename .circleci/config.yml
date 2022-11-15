@@ -176,15 +176,14 @@ jobs:
 workflows:
   main:
     jobs:
-      - java-checkstyle
-      - java-test-and-code-cov
-      - python-checkstyle
-      - python-test
-      - skaffold-build-push:
-          requires: [ python-test, java-test-and-code-cov ]
-          context: reference-arch-aws-oidc
+#      - java-checkstyle
+#      - java-test-and-code-cov
+#      - python-checkstyle
+#      - python-test
+#      - skaffold-build-push:
+#          requires: [ python-test, java-test-and-code-cov ]
+#          context: reference-arch-aws-oidc
       - cypress/install:
-          requires: [ skaffold-build-push, java-checkstyle, python-checkstyle ]
           cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
       - cypress/run:
           requires: [ cypress/install ]
@@ -193,14 +192,14 @@ workflows:
           post-steps:
             - store_test_results:
                 path: cypress/results
-      - deploy:
-          name: Deploy Dev
-          requires: [ skaffold-build-push, cypress/run ]
-          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
+#      - deploy:
+#          name: Deploy Dev
+#          requires: [ skaffold-build-push, cypress/run ]
+#          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
+#          post-steps:
+#            - compass/notify_deployment:
+#                token_name: COMPASS_CCI_TOKEN
+#                environment_type: development
       - deploy:
           name: Deploy Production
           requires: [ Deploy Dev ]
