@@ -1,6 +1,6 @@
 describe('Simple tests', () => {
   it.only('click command', () => {
     cy.visit('https://dev.cera.circleci-labs.com/login');
-    cy.get('input[id=create-account-btn]').click() // Click on 'Create an Account' button
+    cy.get('.card-body sign-in').contains('Sign In').click()
   });
 });
