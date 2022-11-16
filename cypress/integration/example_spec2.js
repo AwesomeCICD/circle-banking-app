@@ -1,6 +1,10 @@
 describe('Simple tests', () => {
-  it('Visit Test website', () => {
+    before(() => {
+        // cy.visit('/')
+    }}
+
+  it.only('click command', () => {
     cy.visit('https://dev.cera.circleci-labs.com/login');
-    cy.get('.btn-sign-in'). click() // Click on 'Sign In' button
+    cy.get('input[id=create-account-btn]').click() // Click on 'Create an Account' button
   });
 });
