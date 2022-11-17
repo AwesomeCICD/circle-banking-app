@@ -191,7 +191,7 @@ workflows:
       - cypress/run:
           requires: [ cypress/install ]
           executor: with-chrome
-          browser: chrome
+          browser: firefox
           attach-workspace: yes
           store_artifacts: true
           post-steps:
