@@ -187,7 +187,7 @@ workflows:
           cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
       - cypress/run:
           requires: [ cypress/install ]
-          executor: with-chrome
+          executor: browsers-chrome100-ff99-edge
           browser: chrome
           attach-workspace: yes
           store_artifacts: true
