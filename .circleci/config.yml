@@ -189,6 +189,7 @@ workflows:
           requires: [ cypress/install ]
           attach-workspace: yes
           store_artifacts: true
+          timeout: 5m
           post-steps:
             - store_test_results:
                 path: cypress/results
