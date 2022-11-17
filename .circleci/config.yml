@@ -5,6 +5,9 @@ orbs:
   cypress: cypress-io/cypress@2.2.0
           
 executors:
+  with-chrome:
+    docker:
+      - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
   base:
     docker:
       - image: cimg/deploy:2022.07
@@ -187,7 +190,7 @@ workflows:
           cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
       - cypress/run:
           requires: [ cypress/install ]
-          executor: browsers-chrome100-ff99-edge
+          executor: with-chrome
           browser: chrome
           attach-workspace: yes
           store_artifacts: true
