@@ -179,44 +179,45 @@ jobs:
 workflows:
   main:
     jobs:
-#      - java-checkstyle
-#      - java-test-and-code-cov
-#      - python-checkstyle
-#      - python-test
-#      - skaffold-build-push:
-#          requires: [ python-test, java-test-and-code-cov ]
-#          context: reference-arch-aws-oidc
-      - cypress/install:
-          cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
+      - java-checkstyle
+      - java-test-and-code-cov
+      - python-checkstyle
+      - python-test
+      - skaffold-build-push:
+          requires: [ python-test, java-test-and-code-cov ]
+          context: reference-arch-aws-oidc
+      - deploy:
+          name: Deploy Dev
+          requires: [ skaffold-build-push ]
+          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
+                environment_type: development
       - cypress/run:
-          requires: [ cypress/install ]
+          requires: [ Deploy Dev ]
+          name: e2e
           executor: with-chrome
+          config: baseUrl=https://dev.cera.circleci-labs.com
           browser: firefox
-          attach-workspace: yes
+          #attach-workspace: yes
           store_artifacts: true
+          working_directory: /home/circleci/project/.github/workflows/ui-tests
           post-steps:
             - store_test_results:
                 path: cypress/results
-#      - deploy:
-#          name: Deploy Dev
-#          requires: [ skaffold-build-push, cypress/run ]
-#          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
-#          post-steps:
-#            - compass/notify_deployment:
-#                token_name: COMPASS_CCI_TOKEN
-#                environment_type: development
-#      - deploy:
-#          name: Deploy Production
-#          requires: [ Deploy Dev ]
-#          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
-#          filters:
-#            branches:
-#              only: [ main ]
-#          post-steps:
-#            - compass/notify_deployment:
-#                token_name: COMPASS_CCI_TOKEN
-#                environment_type: production
-#                environment: CERA-Cluster-Namer-Prod
+      - deploy:
+          name: Deploy Production
+          requires: [ e2e ]
+          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
+          filters:
+            branches:
+              only: [ main ]
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
+                environment_type: production
+                environment: CERA-Cluster-Namer-Prod
 
 
 commands:
@@ -260,4 +261,4 @@ commands:
 
 # VS Code Extension Version: 1.0.0
 
-# VS Code Extension Version: 1.0.0
+# VS Code Extension Version: 1.1.1
