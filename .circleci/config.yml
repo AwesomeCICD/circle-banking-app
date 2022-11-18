@@ -213,7 +213,7 @@ workflows:
           executor: with-chrome
           config: baseUrl=https://dev.cera.circleci-labs.com
           browser: firefox
-          install-command: npm install -g cypress
+          install-command: pwd #no install neeeded
           store_artifacts: true
           working_directory: /home/circleci/project/.github/workflows/ui-tests
           post-steps:
