@@ -191,9 +191,9 @@ jobs:
       - store_test_results:
           path: ui-tests/results
       - store_artifacts:
-          path: cypress/videos
+          path: ui-tests/videos
       - store_artifacts:
-          path: cypress/screenshots    
+          path: ui-tests/screenshots    
    
 workflows:
   main:
