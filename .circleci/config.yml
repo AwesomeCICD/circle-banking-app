@@ -207,9 +207,6 @@ workflows:
           post-steps:
             - store_test_results:
                 path: cypress/results
-#      - deploy:
-#          name: Deploy Production
-#          requires: [ Deploy Dev ]
       - cypress/run:
           requires: [ Deploy Dev ]
           name: e2e
@@ -222,18 +219,18 @@ workflows:
           post-steps:
             - store_test_results:
                 path: cypress/results
-#      - deploy:
-#          name: Deploy Production
-#          requires: [ e2e ]
-#          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
-#          filters:
-#            branches:
-#              only: [ main ]
-#          post-steps:
-#            - compass/notify_deployment:
-#                token_name: COMPASS_CCI_TOKEN
-#                environment_type: production
-#                environment: CERA-Cluster-Namer-Prod
+      - deploy:
+          name: Deploy Production
+          requires: [ e2e ]
+          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
+          filters:
+            branches:
+              only: [ main ]
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
+                environment_type: production
+                environment: CERA-Cluster-Namer-Prod
 
 
 commands:
