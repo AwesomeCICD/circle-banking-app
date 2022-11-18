@@ -186,17 +186,6 @@ workflows:
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
-#      - cypress/install:
-#          cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
-#      - cypress/run:
-#          requires: [ cypress/install ]
-#          executor: with-chrome
-#          browser: firefox
-#          attach-workspace: yes
-#          store_artifacts: true
-#          post-steps:
-#            - store_test_results:
-#                path: cypress/results
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push ]
@@ -205,6 +194,18 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
+      - cypress/install:
+          cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
+      - cypress/run:
+          requires: [ cypress/install ]
+          executor: with-chrome
+          config: baseUrl=https://dev.cera.circleci-labs.com
+          browser: firefox
+          attach-workspace: yes
+          store_artifacts: true
+          post-steps:
+            - store_test_results:
+                path: cypress/results
 #      - deploy:
 #          name: Deploy Production
 #          requires: [ Deploy Dev ]
