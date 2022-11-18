@@ -213,11 +213,10 @@ workflows:
       - cypress/run:
           requires: [ Deploy Dev ]
           name: e2e
-          build: 'echo "not a npm project, skip install"'
           executor: with-chrome
           config: baseUrl=https://dev.cera.circleci-labs.com
           browser: firefox
-          #attach-workspace: yes
+          build: 'echo "skip npm build"'
           store_artifacts: true
           working_directory: /home/circleci/project/.github/workflows/ui-tests
           post-steps:
