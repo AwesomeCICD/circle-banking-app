@@ -183,7 +183,7 @@ jobs:
           name: Run Cypress Tests
           command: |
             cd ui-tests
-            npx cypress run \
+            npx cypress run --record --spec "ui-tests/cypress/e2e/*.js \
             --config baseUrl=https://dev.cera.circleci-labs.com \
             --browser firefox \
             --reporter junit \
@@ -191,9 +191,9 @@ jobs:
       - store_test_results:
           path: ui-tests/results
       - store_artifacts:
-          path: cypress/videos
+          path: ui-tests/cypress/videos
       - store_artifacts:
-          path: cypress/screenshots    
+          path: ui-tests/cypress/screenshots    
    
 workflows:
   main:
