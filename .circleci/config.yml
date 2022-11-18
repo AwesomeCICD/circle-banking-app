@@ -197,6 +197,7 @@ workflows:
       - cypress/run:
           requires: [ Deploy Dev ]
           name: e2e
+          build: 'echo "not a npm project, skip install"'
           executor: with-chrome
           config: baseUrl=https://dev.cera.circleci-labs.com
           browser: firefox
