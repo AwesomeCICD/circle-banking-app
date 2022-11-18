@@ -183,7 +183,13 @@ jobs:
           name: Run Cypress Tests
           command: |
             cd ui-tests
-            npx cypress run --config baseUrl=https://dev.cera.circleci-labs.com --browser firefox
+            npx cypress run \
+            --config baseUrl=https://dev.cera.circleci-labs.com \
+            --browser firefox \
+            --reporter junit \
+            --reporter-options "mochaFile=results/my-test-output-[hash].xml"
+      - store_test_results:
+          path: ui-tests/results
     
    
 workflows:
