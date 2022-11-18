@@ -1,7 +1,7 @@
 module.exports = {
   CI: true,
   retries: 1,
-  video: true,
+  video: false,
   fixturesFolder: false,
   env: {
     messages: {
