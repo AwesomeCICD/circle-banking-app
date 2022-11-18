@@ -186,7 +186,6 @@ workflows:
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
-<<<<<<< HEAD
 #      - cypress/install:
 #          cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
 #      - cypress/run:
@@ -200,22 +199,15 @@ workflows:
 #                path: cypress/results
       - deploy:
           name: Deploy Dev
-          requires: [ skaffold-build-push, cypress/run ]
-=======
-      - deploy:
-          name: Deploy Dev
           requires: [ skaffold-build-push ]
->>>>>>> c40191da78c31bffdeea6b2ce873c2493848af93
           context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
-<<<<<<< HEAD
-      - deploy:
-          name: Deploy Production
-          requires: [ Deploy Dev ]
-=======
+#      - deploy:
+#          name: Deploy Production
+#          requires: [ Deploy Dev ]
       - cypress/run:
           requires: [ Deploy Dev ]
           name: e2e
@@ -231,7 +223,6 @@ workflows:
       - deploy:
           name: Deploy Production
           requires: [ e2e ]
->>>>>>> c40191da78c31bffdeea6b2ce873c2493848af93
           context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
           filters:
             branches:
