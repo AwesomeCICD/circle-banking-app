@@ -175,6 +175,18 @@ jobs:
       - run: 
           name: Print Frontend URL
           command: kubectl get service frontend -n ${K8_NAMESPACE} | awk '{print $4}'
+  e2e:
+    executor: with-chrome
+    steps:
+      - checkout
+      - run: 
+          name: Run Cypress Tests
+          command: |
+            cd .github/workflows/ui-tests
+            cypress --config baseUrl=https://dev.cera.circleci-labs.com --browser firefox
+    
+   
+
 
 workflows:
   main:
@@ -207,18 +219,8 @@ workflows:
           post-steps:
             - store_test_results:
                 path: cypress/results
-      - cypress/run:
+      - e2e:
           requires: [ Deploy Dev ]
-          name: e2e
-          executor: with-chrome
-          config: baseUrl=https://dev.cera.circleci-labs.com
-          browser: firefox
-          install-command: pwd #no install neeeded
-          store_artifacts: true
-          working_directory: .github/workflows/ui-tests
-          post-steps:
-            - store_test_results:
-                path: cypress/results
       - deploy:
           name: Deploy Production
           requires: [ e2e ]
