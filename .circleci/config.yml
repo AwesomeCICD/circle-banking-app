@@ -190,7 +190,10 @@ jobs:
             --reporter-options "mochaFile=results/my-test-output-[hash].xml"
       - store_test_results:
           path: ui-tests/results
-    
+      - store_artifacts:
+          path: cypress/videos
+      - store_artifacts:
+          path: cypress/screenshots    
    
 workflows:
   main:
@@ -210,19 +213,6 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
-      - cypress/install:
-          requires: [ Deploy Dev ]
-          cache-key: 'cache2-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}'
-      - cypress/run:
-          requires: [ cypress/install ]
-          executor: with-chrome
-          config: baseUrl=https://dev.cera.circleci-labs.com
-          browser: firefox
-          attach-workspace: yes
-          store_artifacts: true
-          post-steps:
-            - store_test_results:
-                path: cypress/results
       - e2e:
           requires: [ Deploy Dev ]
       - deploy:
