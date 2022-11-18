@@ -182,7 +182,7 @@ jobs:
       - run: 
           name: Run Cypress Tests
           command: |
-            cd .github/workflows/ui-tests
+            cd ui-tests
             npx cypress run --config baseUrl=https://dev.cera.circleci-labs.com --browser firefox
     
    
