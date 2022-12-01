@@ -85,7 +85,7 @@ class TestContacts(unittest.TestCase):
         # send get request to test client
         response = self.test_app.get("/version")
         # assert 200 response code
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         # assert both versions are equal
         self.assertEqual(response.data, version.encode())
 
