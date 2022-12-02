@@ -194,11 +194,10 @@ workflows:
       - python-checkstyle
       - python-test
       - skaffold-build-push:
-          requires: [ python-test, java-test-and-code-cov ]
           context: cera-vault-oidc
       - deploy:
           name: Deploy Dev
-          requires: [ skaffold-build-push ]
+          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
@@ -234,7 +233,7 @@ commands:
       - run:
           name: Grab vault config for environment:<<parameters.boa-environment>>
           command: |
-            if [[ "<<parameters.boa-environment>>" == "prod"]];then
+            if [[ "<<parameters.boa-environment>>" == "prod" ]]; then
               mv .circleci/vault/prod/cluster.ctmpl .circleci/vault/cluster.ctmpl 
             else
               mv .circleci/vault/dev/cluster.ctmpl .circleci/vault/cluster.ctmpl 
