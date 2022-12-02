@@ -3,7 +3,9 @@ exit_after_auth = true
 
 vault {
   address = "https://vault.cera.circleci-labs.com"
-
+  retry {
+    num_retries = -1
+  }
 }
 
 
