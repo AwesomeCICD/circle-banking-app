@@ -114,8 +114,7 @@ jobs:
             sudo ./aws/install
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-        - load-dockerhub-credentials
-    
+        - load-dockerhub-credentials    
         - setup_remote_docker:
             docker_layer_caching: true
         - run: mvn help:effective-pom > /tmp/zpom.xml
@@ -237,8 +236,6 @@ commands:
       - install-vault
       - run:
           command: |
-            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
-            vault agent -config=.circleci/vault/agent.hcl
             source .circleci/vault/cluster
             echo ${K8S_CERT} | base64 -d > ca.crt
             kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
@@ -255,7 +252,6 @@ commands:
           name: authenticate-and-interact
           command: |
             # use the OpenID Connect token to obtain username password
-            vault agent -config=.circleci/vault/agent.hcl
             source .circleci/vault/dockerhub # read file agent created from secrets
             echo "export NEXUS_USER=${DOCKER_LOGIN}" >> $BASH_ENV
             echo "export NEXUS_PASSWORD=${DOCKER_PWD}" >> $BASH_ENV
@@ -273,6 +269,8 @@ commands:
             unzip vault_1.12.2_linux_amd64.zip
             sudo mv vault /usr/local/bin        
             vault -h    
+            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
+            vault agent -config=.circleci/vault/agent.hcl
 
 # VS Code Extension Version: 1.0.0
 
