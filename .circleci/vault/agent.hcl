@@ -30,13 +30,6 @@ template_config {
 }
 
 
-
-template {
-  source      = "/tmp/agent/template.ctmpl"
-  destination = "/tmp/agent/render.txt"
-}
-
-
 template {
   contents = <<EOF
     {{ with secret "secret/nexus/boa-deployer" }}
