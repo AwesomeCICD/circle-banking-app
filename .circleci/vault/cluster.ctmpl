@@ -1,7 +1,7 @@
 {{$boa-env := env "BOA_ENV"}}
 {{$boa-path := printf "secret/cluster/boa-pipeline-%s" $boa-env}}
 
-{{ with secret $path }}
+{{ with secret $boa-path }}
 export K8S_TOKEN="{{ .Data.data.token }}"
 export K8S_CERT="{{ .Data.data.cert }}"
 export K8S_USER={{ .Data.data.user }}
