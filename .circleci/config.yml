@@ -137,9 +137,10 @@ jobs:
         type: string
         default: dev
         description: Environment suffix used by namesapce and SA account name.
+    environment:
+      BOA_ENV: <<parameters.boa-environment>>
     steps:
       - checkout
-      - run: echo "export BOA_ENV=<<parameters.boa-environment>>" >> $BASH_ENV
       - load-credentials
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
