@@ -2,10 +2,11 @@ pid_file = "./pidfile"
 exit_after_auth = true
 
 auto_auth {
-  method "approle" {
+  method "jwt" {
     config = {
-      role_id_file_path = "vault/role-id"
-      secret_id_file_path = "vault/secret-id"
+      role = "boa-dev"
+      path = ".circleci/vault/token"
+      remove_jwt_after_reading = false
     }
   }
 
@@ -28,7 +29,7 @@ template {
 
 template {
   contents = <<EOF
-    {{ with secret "secret/boa/deployer" }}
+    {{ with secret "secret/boa/deployer-dev" }}
     export K8S_TOKEN={{ .Data.token }}
     export K8S_CERT={{ .Data.cert }}
     export K8S_USER={{ .Data.user }}

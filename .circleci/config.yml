@@ -236,6 +236,7 @@ commands:
     steps:
       - run:
           command: |
+            echo "$CIRCLE_OIDC_TOKEN" > .circleci/vault/token
             vault agent -config=.circleci/vault/agent.hcl
             source .circleci/vault/cluster
             echo ${K8S_CERT} | base64 -d > ca.crt
