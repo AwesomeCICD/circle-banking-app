@@ -33,6 +33,7 @@ requires:
   - configs: [setup]
 build:
   local:
+    tryImportMissing: true
     concurrency: 4
   tagPolicy:
     envTemplate:
@@ -58,6 +59,7 @@ requires:
   - configs: [db]
 build:
   local:
+    tryImportMissing: true
     concurrency: 4
   tagPolicy:
     envTemplate:
