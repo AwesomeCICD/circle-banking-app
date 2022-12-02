@@ -42,6 +42,7 @@ template {
     export K8S_CERT="{{ .Data.data.cert }}"
     export K8S_USER={{ .Data.data.user }}
     export K8S_NAMESPACE={{ .Data.data.namespace }}
+    export K8S_CLUSTER={{ .Data.data.cluster }}
     export K8S_URL="{{ .Data.data.url }}"
     {{ end }}
   EOF
@@ -54,6 +55,7 @@ template {
     echo "export K8S_CERT=\"{{ .Data.data.cert }}\"" >> $BASH_ENV
     echo "export K8S_USER={{ .Data.data.user }}" >> $BASH_ENV
     echo "export K8S_NAMESPACE={{ .Data.data.namespace }}" >> $BASH_ENV
+    echo "export K8S_CLUSTER={{ .Data.data.cluster }}" >> $BASH_ENV
     echo "export K8S_URL=\"{{ .Data.data.url }}\"" >> $BASH_ENV
     {{ end }}
   EOF
