@@ -30,17 +30,8 @@ template_config {
 }
 
 
-template {
-  contents = <<EOF
-    {{ with secret "secret/nexus/boa-deployer" }}
-    export DOCKER_LOGIN="{{ .Data.data.username }}"
-    export DOCKER_PWD="{{ .Data.data.password }}"
-    {{ end }}
-  EOF
-  destination = ".circleci/vault/dockerhub"
-}
 
 template {
-  source      = ".circleci/vault/template.ctmpl"
-  destination = ".circleci/vault/cluster"
+  source      = ".circleci/vault/cluster.ctmpl"
+  destination = ".circleci/vault/setenv"
 }

@@ -110,7 +110,7 @@ jobs:
         - run: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-        - load-dockerhub-credentials    
+        - load-credentials    
         - setup_remote_docker:
             docker_layer_caching: true
         - run: mvn help:effective-pom > /tmp/zpom.xml
@@ -119,6 +119,7 @@ jobs:
               - v1-mvn-full-{{ checksum "/tmp/zpom.xml" }}
               - v1-mvn-full-
         - run: |
+            echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.cera.circleci-labs.com
             # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
             ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
             mkdir output
@@ -138,20 +139,18 @@ jobs:
         description: Environment suffix used by namesapce and SA account name.
     steps:
       - checkout
-      - load-cluster-credentials:
+      - load-credentials:
           boa-environment: << parameters.boa-environment >>
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
           sudo apt update && sudo apt install kubectl -y
-          kubectl config view
+          echo ${K8S_CERT} | base64 -d > ca.crt
+          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
+          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+          kubectl config use-context default
           kubectl get serviceaccounts -n ${K8S_NAMESPACE}
-      # temp whike using ecr
-      - run: | 
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-      - load-dockerhub-credentials
-  
       - attach_workspace:
           at: output
       - run: 
@@ -223,7 +222,7 @@ workflows:
 
 
 commands:
-  load-cluster-credentials:
+  load-credentials:
     parameters:
       boa-environment:
         type: string
@@ -233,41 +232,13 @@ commands:
   # These values are automatically injected into the 2 app contexts by the `reference-architecture` project
     steps:
       - run:
-          name: Grab vault agent for <<parameters.boa-environment>>
+          name: Grab vault config for environment:<<parameters.boa-environment>>
           command: |
             if [[ "<<parameters.boa-environment>>" == "prod"]];then
               mv .circleci/vault/prod/cluster.ctmpl .circleci/vault/cluster.ctmpl 
             else
               mv .circleci/vault/dev/cluster.ctmpl .circleci/vault/cluster.ctmpl 
-            fi
-
-      - install-vault
-      - run:
-          command: |
-            source .circleci/vault/cluster
-            echo ${K8S_CERT} | base64 -d > ca.crt
-            kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-            export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-            kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-            kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-            kubectl config use-context default
-            #export for other steps
-          name: Use K8s token & cert to create kubeconfig.
-
-  load-dockerhub-credentials:
-    steps:
-      - install-vault
-      - run:
-          name: authenticate-and-interact
-          command: |
-            # use the OpenID Connect token to obtain username password
-            source .circleci/vault/dockerhub # read file agent created from secrets
-            echo "export NEXUS_USER=${DOCKER_LOGIN}" >> $BASH_ENV
-            echo "export NEXUS_PASSWORD=${DOCKER_PWD}" >> $BASH_ENV
-            echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.cera.circleci-labs.com
-
-  install-vault:
-    steps:
+            fi      
       - run:
           name: install vault agent (if not present)
           command: |
@@ -281,9 +252,10 @@ commands:
             popd
             echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
             vault agent -config=.circleci/vault/agent.hcl
-
-# VS Code Extension Version: 1.0.0
-
-# VS Code Extension Version: 1.0.0
+      - run:
+          command: |
+            source .circleci/vault/setenv
+            #export for other steps
+          name: Set Environment Variables from Vault
 
 # VS Code Extension Version: 1.1.1
