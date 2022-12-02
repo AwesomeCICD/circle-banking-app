@@ -271,7 +271,8 @@ commands:
             cd /tmp
             wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
             unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/vault            
+            sudo mv vault /usr/local/bin        
+            vault -h    
 
 # VS Code Extension Version: 1.0.0
 
