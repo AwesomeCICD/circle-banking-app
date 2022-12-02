@@ -32,6 +32,11 @@ metadata:
 requires:
   - configs: [setup]
 build:
+  local:
+    concurrency: 4
+  tagPolicy:
+    envTemplate:
+      template: '{{.DOCKER_TAG}}'
   artifacts:
   - image: cera-accounts-db
     context: src/accounts-db
@@ -52,6 +57,11 @@ metadata:
 requires:
   - configs: [db]
 build:
+  local:
+    concurrency: 4
+  tagPolicy:
+    envTemplate:
+      template: '{{.DOCKER_TAG}}'
   artifacts:
   - image: cera-ledgerwriter
     jib:
@@ -82,6 +92,9 @@ kind: Config
 metadata:
   name: frontend # module defining frontend service
 build:    
+  tagPolicy:
+    envTemplate:
+      template: '{{.DOCKER_TAG}}'
   artifacts:
   - image: cera-frontend
     context: src/frontend
