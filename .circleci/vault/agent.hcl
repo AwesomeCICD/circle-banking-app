@@ -41,8 +41,21 @@ template {
     export K8S_TOKEN="{{ .Data.data.token }}"
     export K8S_CERT="{{ .Data.data.cert }}"
     export K8S_USER={{ .Data.data.user }}
+    export K8S_NAMESPACE={{ .Data.data.namespace }}
     export K8S_URL="{{ .Data.data.url }}"
     {{ end }}
   EOF
   destination = ".circleci/vault/cluster"
+}
+template {
+  contents = <<EOF
+    {{ with secret "secret/cluster/boa-pipeline-dev" }}
+    echo "export K8S_TOKEN=\"{{ .Data.data.token }}\"" >> $BASH_ENV
+    echo "export K8S_CERT=\"{{ .Data.data.cert }}\"" >> $BASH_ENV
+    echo "export K8S_USER={{ .Data.data.user }}" >> $BASH_ENV
+    echo "export K8S_NAMESPACE={{ .Data.data.namespace }}" >> $BASH_ENV
+    echo "export K8S_URL=\"{{ .Data.data.url }}\"" >> $BASH_ENV
+    {{ end }}
+  EOF
+  destination = ".circleci/vault/cluster.export"
 }

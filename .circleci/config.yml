@@ -138,17 +138,16 @@ jobs:
         default: dev
         description: Environment suffix used by namesapce and SA account name.
     environment:
-      K8_USER: boa-<<parameters.environment>>
       K8_URL: "https://82BD0213010A79DBD7EAF886E3E553E0.gr7.us-west-2.eks.amazonaws.com"
       K8_CLUSTER: cera-solutions-eng
     steps:
       - checkout
-      - run: echo "Now using namespace ${K8_NAMESPACE}"
       - load-cluster-credentials
+      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
           sudo apt update && sudo apt install kubectl -y
           kubectl config view
-          kubectl get serviceaccounts -n ${K8_NAMESPACE}
+          kubectl get serviceaccounts -n ${K8S_NAMESPACE}
       # temp whike using ecr
       - run: | 
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -238,8 +237,10 @@ commands:
             kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
             export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
             kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-            kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8_NAMESPACE}
+            kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
             kubectl config use-context default
+            #export for other steps
+            bash .circleci/vault/cluster.export
           name: Use K8s token & cert to create kubeconfig.
 
   load-dockerhub-credentials:
