@@ -1,5 +1,5 @@
 {{$boaenv := env "BOA_ENV"}}
-{{ if key $boaenv }}
+{{ if $boaenv }}
     {{$boapath := printf "secret/cluster/boa-pipeline-%s" $boaenv}}
     {{ with secret $boapath }}
         export K8S_TOKEN="{{ .Data.data.token }}"
