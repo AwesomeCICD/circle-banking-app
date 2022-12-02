@@ -26,8 +26,8 @@ auto_auth {
 template {
   contents = <<EOF
     {{ with secret "secret/nexus/boa-deployer" }}
-    export DOCKER_LOGIN={{ .Data.data.username }}
-    export DOCKER_PWD={{ .Data.data.password }}
+    export DOCKER_LOGIN="{{ .Data.data.username }}"
+    export DOCKER_PWD="{{ .Data.data.password }}"
     {{ end }}
   EOF
   destination = ".circleci/vault/dockerhub"
@@ -36,10 +36,10 @@ template {
 template {
   contents = <<EOF
     {{ with secret "secret/cluster/boa-pipeline-dev" }}
-    export K8S_TOKEN={{ .Data.data.token }}
-    export K8S_CERT={{ .Data.data.cert }}
+    export K8S_TOKEN="{{ .Data.data.token }}"
+    export K8S_CERT="{{ .Data.data.cert }}"
     export K8S_USER={{ .Data.data.user }}
-    export K8S_URL={{ .Data.data.url }}
+    export K8S_URL="{{ .Data.data.url }}"
     {{ end }}
   EOF
   destination = ".circleci/vault/cluster"

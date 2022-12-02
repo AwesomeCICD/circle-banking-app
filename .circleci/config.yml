@@ -141,7 +141,7 @@ jobs:
         default: dev
         description: Environment suffix used by namesapce and SA account name.
     environment:
-      K8_USER: boa-pipeline-<<parameters.environment>>
+      K8_USER: boa-<<parameters.environment>>
       K8_URL: "https://82BD0213010A79DBD7EAF886E3E553E0.gr7.us-west-2.eks.amazonaws.com"
       K8_CLUSTER: cera-solutions-eng
     steps:
