@@ -2,7 +2,6 @@ version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.3.0
-  cypress: cypress-io/cypress@2.2.0
           
 executors:
   with-chrome:
@@ -133,13 +132,14 @@ jobs:
   deploy:
     executor: base
     parameters:
-      environment:
+      boa-environment:
         type: string
         default: dev
         description: Environment suffix used by namesapce and SA account name.
     steps:
       - checkout
-      - load-cluster-credentials
+      - load-cluster-credentials:
+          boa-environment: << parameters.boa-environment >>
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
           sudo apt update && sudo apt install kubectl -y
@@ -210,6 +210,7 @@ workflows:
       - deploy:
           name: Deploy Production
           requires: [ e2e ]
+          boa-environment: prod
           context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
           filters:
             branches:
@@ -223,9 +224,23 @@ workflows:
 
 commands:
   load-cluster-credentials:
+    parameters:
+      boa-environment:
+        type: string
+        default: dev
+        description: Environment suffix used by namesapce and SA account name.
   # This command uses the assigned context to hydrate a kubeconfig from the given service account.
   # These values are automatically injected into the 2 app contexts by the `reference-architecture` project
     steps:
+      - run:
+          name: Grab vault agent for <<parameters.boa-environment>>
+          command: |
+            if [[ "<<parameters.boa-environment>>" == "prod"]];then
+              mv .circleci/vault/prod/cluster.ctmpl .circleci/vault/cluster.ctmpl 
+            else
+              mv .circleci/vault/dev/cluster.ctmpl .circleci/vault/cluster.ctmpl 
+            fi
+
       - install-vault
       - run:
           command: |
@@ -237,7 +252,6 @@ commands:
             kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
             kubectl config use-context default
             #export for other steps
-            bash .circleci/vault/cluster.export
           name: Use K8s token & cert to create kubeconfig.
 
   load-dockerhub-credentials:

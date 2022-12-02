@@ -25,6 +25,18 @@ auto_auth {
   }
 }
 
+template_config {
+  exit_on_retry_failure = true
+}
+
+
+
+template {
+  source      = "/tmp/agent/template.ctmpl"
+  destination = "/tmp/agent/render.txt"
+}
+
+
 template {
   contents = <<EOF
     {{ with secret "secret/nexus/boa-deployer" }}
@@ -36,28 +48,6 @@ template {
 }
 
 template {
-  contents = <<EOF
-    {{ with secret "secret/cluster/boa-pipeline-dev" }}
-    export K8S_TOKEN="{{ .Data.data.token }}"
-    export K8S_CERT="{{ .Data.data.cert }}"
-    export K8S_USER={{ .Data.data.user }}
-    export K8S_NAMESPACE={{ .Data.data.namespace }}
-    export K8S_CLUSTER={{ .Data.data.cluster }}
-    export K8S_URL="{{ .Data.data.url }}"
-    {{ end }}
-  EOF
+  source      = ".circleci/vault/template.ctmpl"
   destination = ".circleci/vault/cluster"
-}
-template {
-  contents = <<EOF
-    {{ with secret "secret/cluster/boa-pipeline-dev" }}
-    echo "export K8S_TOKEN=\"{{ .Data.data.token }}\"" >> $BASH_ENV
-    echo "export K8S_CERT=\"{{ .Data.data.cert }}\"" >> $BASH_ENV
-    echo "export K8S_USER={{ .Data.data.user }}" >> $BASH_ENV
-    echo "export K8S_NAMESPACE={{ .Data.data.namespace }}" >> $BASH_ENV
-    echo "export K8S_CLUSTER={{ .Data.data.cluster }}" >> $BASH_ENV
-    echo "export K8S_URL=\"{{ .Data.data.url }}\"" >> $BASH_ENV
-    {{ end }}
-  EOF
-  destination = ".circleci/vault/cluster.export"
 }
