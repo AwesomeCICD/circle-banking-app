@@ -35,7 +35,7 @@ template {
 
 template {
   contents = <<EOF
-    {{ with secret "secret/boa/deployer-dev" }}
+    {{ with secret "secret/cluster/boa-pipeline-dev" }}
     export K8S_TOKEN={{ .Data.token }}
     export K8S_CERT={{ .Data.cert }}
     export K8S_USER={{ .Data.user }}
