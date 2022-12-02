@@ -1,11 +1,17 @@
 pid_file = "./pidfile"
 exit_after_auth = true
 
+vault {
+  address = "https://vault.cera.circleci-labs.com"
+
+}
+
+
 auto_auth {
   method "jwt" {
     config = {
-      role = "boa-dev"
-      path = ".circleci/vault/token"
+      role = "boa-dev-deploy"
+      path = ".circleci/vault/token.json"
       remove_jwt_after_reading = false
     }
   }

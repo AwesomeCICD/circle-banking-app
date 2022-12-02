@@ -234,9 +234,10 @@ commands:
   # This command uses the assigned context to hydrate a kubeconfig from the given service account.
   # These values are automatically injected into the 2 app contexts by the `reference-architecture` project
     steps:
+      - install-vault
       - run:
           command: |
-            echo "$CIRCLE_OIDC_TOKEN" > .circleci/vault/token
+            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
             vault agent -config=.circleci/vault/agent.hcl
             source .circleci/vault/cluster
             echo ${K8S_CERT} | base64 -d > ca.crt
@@ -249,6 +250,7 @@ commands:
 
   load-dockerhub-credentials:
     steps:
+      - install-vault
       - run:
           name: authenticate-and-interact
           command: |
@@ -258,7 +260,18 @@ commands:
             echo "export NEXUS_USER=${DOCKER_LOGIN}" >> $BASH_ENV
             echo "export NEXUS_PASSWORD=${DOCKER_PWD}" >> $BASH_ENV
             echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.cera.circleci-labs.com
-            
+
+  install-vault:
+    steps:
+      - run:
+          name: install vault agent (if not present)
+          command: |
+            vault -h && exit 0 || echo "Installing vault"
+            #only runs if vault command avbove failed
+            cd /tmp
+            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
+            unzip vault_1.12.2_linux_amd64.zip
+            sudo mv vault /usr/local/vault            
 
 # VS Code Extension Version: 1.0.0
 
