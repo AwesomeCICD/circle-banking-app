@@ -137,10 +137,11 @@ jobs:
         type: string
         default: dev
         description: Environment suffix used by namesapce and SA account name.
+    environment:
+      BOA_ENV: <<parameters.boa-environment>>
     steps:
       - checkout
-      - load-credentials:
-          boa-environment: << parameters.boa-environment >>
+      - load-credentials
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
           sudo apt update && sudo apt install kubectl -y
@@ -222,22 +223,7 @@ workflows:
 
 commands:
   load-credentials:
-    parameters:
-      boa-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-  # This command uses the assigned context to hydrate a kubeconfig from the given service account.
-  # These values are automatically injected into the 2 app contexts by the `reference-architecture` project
     steps:
-      - run:
-          name: Grab vault config for environment:<<parameters.boa-environment>>
-          command: |
-            if [[ "<<parameters.boa-environment>>" == "prod" ]]; then
-              mv .circleci/vault/prod/cluster.ctmpl .circleci/vault/cluster.ctmpl 
-            else
-              mv .circleci/vault/dev/cluster.ctmpl .circleci/vault/cluster.ctmpl 
-            fi      
       - run:
           name: install vault agent (if not present)
           command: |
