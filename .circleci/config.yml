@@ -70,15 +70,14 @@ jobs:
     executor: jdk17
     steps:
       - checkout
-      - run: mkdir test-reports   && 
-            export DOCKER_TAG=build$(git rev-parse HEAD:src)
+      - run: mkdir test-reports
       - restore_cache:
           keys:
-            - v2-mvn-full-{{ .Environment.DOCKER_TAG }}
+            - v2-mvn-full-{{ .Branch }}
             - v2-mvn-full-
       - run: mvn dependency:go-offline
       - save_cache:
-          key: v2-mvn-full-{{ .Environment.DOCKER_TAG }}
+          key: v2-mvn-full-{{ .Branch }}
           paths:
             - ~/.m2
       - run: |
@@ -108,7 +107,6 @@ jobs:
       steps:
         - checkout
         - run: |
-            export DOCKER_TAG=build$(git rev-parse HEAD:src)
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
         - load-credentials    
@@ -116,13 +114,14 @@ jobs:
             docker_layer_caching: true
         - restore_cache:
             keys:
-              - v2-mvn-full-{{ .Environment.DOCKER_TAG }}
+              - v2-mvn-full-{{ .Branch }}
               - v2-mvn-full-
         - restore_cache:
             keys:
-              - v1-skaffold-{{ .branch }}
+              - v1-skaffold-{{ .Branch }}
               - v1-skaffold-
         - run: |
+            export DOCKER_TAG=build$(git rev-parse HEAD:src)
             echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.cera.circleci-labs.com
             # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
             ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
@@ -130,7 +129,7 @@ jobs:
             skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
             ls /tmp/
         - save_cache:
-            key: v1-skaffold-{{ .branch }}
+            key: v1-skaffold-{{ .Branch }}
             paths:
               - ~/.skaffold/cache
         - persist_to_workspace:
