@@ -21,3 +21,18 @@ vault write auth/jwt/role/boa-dev-deploy -<<EOF
   "ttl": "10m"
 }
 EOF
+
+
+vault write auth/jwt/role/boa-prod-deploy -<<EOF
+{
+  "role_type": "jwt",
+  "user_claim": "sub",
+  "user_claim_json_pointer": "true",
+  "bound_claims": {
+    "oidc.circleci.com/context-ids": [ "87c698a8-77fd-4ec0-935a-51ee55904aae" ],
+    "oidc.circleci.com/project-id" :  "788dd296-2fca-4718-82f8-07db1637a58e" 
+  },
+  "policies": ["boa-prod-deploy"],
+  "ttl": "10m"
+}
+EOF

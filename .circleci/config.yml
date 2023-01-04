@@ -246,7 +246,11 @@ commands:
           command: |
             echo "Environment (BOA_ENV will be empty on docker jobs): $BOA_ENV"
             echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
-            vault agent -config=.circleci/vault/agent.hcl
+            CONFIGS="-config=.circleci/vault/agent.hcl"
+            if [[ "z$BOA_ENV" == "zprod" ]];then
+              CONFIGS="$CONFIGS -config=.circleci/vault/agent-prod.hcl"
+            fi
+            vault agent ${CONFIGS}
       - run:
           command: |
             source .circleci/vault/setenv
