@@ -14,5 +14,5 @@ kickOffPass () {
     git push origin rp/cool-feature
 }
 
-kickOffFail
 kickOffPass
+kickOffFail
