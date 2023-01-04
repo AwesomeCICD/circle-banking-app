@@ -1,8 +1,38 @@
 version: 2.1
-orbs:
-  compass: atlassian-labs/compass@0.1.2
-  maven: circleci/maven@1.3.0
-          
+      
+workflows:
+  main:
+    jobs:
+      - java-checkstyle
+      - java-test-and-code-cov
+      - python-checkstyle
+      - python-test
+      - skaffold-build-push:
+          context: cera-vault-oidc
+      - deploy:
+          name: Deploy Dev
+          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
+                environment_type: development
+      - e2e:
+          requires: [ Deploy Dev ]
+      - deploy:
+          name: Deploy Production
+          requires: [ e2e ]
+          boa-environment: prod
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          filters:
+            branches:
+              only: [ main ]
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
+                environment_type: production
+                environment: CERA-Cluster-Namer-Prod
+
 executors:
   with-chrome:
     docker:
@@ -18,7 +48,6 @@ executors:
   python38:
     docker:
       - image: cimg/python:3.8
-
 
 jobs:
   python-checkstyle:
@@ -193,40 +222,6 @@ jobs:
           path: ui-tests/cypress/videos
       - store_artifacts:
           path: ui-tests/cypress/screenshots    
-   
-workflows:
-  main:
-    jobs:
-      - java-checkstyle
-      - java-test-and-code-cov
-      - python-checkstyle
-      - python-test
-      - skaffold-build-push:
-          context: cera-vault-oidc
-      - deploy:
-          name: Deploy Dev
-          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
-      - e2e:
-          requires: [ Deploy Dev ]
-      - deploy:
-          name: Deploy Production
-          requires: [ e2e ]
-          boa-environment: prod
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
-          filters:
-            branches:
-              only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-Namer-Prod
-
 
 commands:
   load-credentials:
@@ -253,4 +248,7 @@ commands:
             #export for other steps
           name: Set Environment Variables from Vault
 
-# VS Code Extension Version: 1.1.1
+orbs:
+  compass: atlassian-labs/compass@0.1.2
+  maven: circleci/maven@1.3.0
+    
