@@ -244,6 +244,7 @@ commands:
       - run:
           name: Activate Vault Agent
           command: |
+<<<<<<< HEAD
             ROLE=${BOA_ENV:-dev} #fallback to dev when empty
             echo "Environment (BOA_ENV ): $BOA_ENV"
             export VAULT_ADDR="https://vault.cera.circleci-labs.com"
@@ -252,5 +253,19 @@ commands:
             jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
             vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
             jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
+=======
+            echo "Environment (BOA_ENV will be empty on docker jobs): $BOA_ENV"
+            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
+            CONFIGS="-config=.circleci/vault/agent.hcl"
+            if [[ "z$BOA_ENV" == "zprod" ]];then
+              CONFIGS="$CONFIGS -config=.circleci/vault/agent-prod.hcl"
+            fi
+            vault agent ${CONFIGS}
+      - run:
+          command: |
+            source .circleci/vault/setenv
+            #export for other steps
+          name: Set Environment Variables from Vault
+>>>>>>> main
 
 # VS Code Extension Version: 1.5.1
