@@ -5,6 +5,7 @@ kickOffFail () {
     git checkout rp/failed-test
     git commit --allow-empty -m "test commit"
     git push origin rp/failed-test
+    git checkout rp/cool-feature
 }
 
 kickOffPass () {
