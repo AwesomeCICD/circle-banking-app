@@ -4,9 +4,12 @@ workflows:
   main:
     jobs:
       - java-checkstyle
-      - java-test-and-code-cov
+      - java-test-and-code-cov:
+          requires: [ java-checkstyle, python-checkstyle ]
       - python-checkstyle
-      - python-test
+      - python-test:
+          requires: [ java-checkstyle, python-checkstyle ]
+
       - skaffold-build-push:
           context: cera-vault-oidc
       - deploy:
