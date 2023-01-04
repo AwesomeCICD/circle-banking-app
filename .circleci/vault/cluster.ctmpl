@@ -1,0 +1,28 @@
+{{$boaenv := env "BOA_ENV"}}
+{{ if $boaenv }}
+    {{$boapath := printf "secret/cluster/boa-pipeline-%s" $boaenv}}
+    {{ with secret $boapath }}
+        export K8S_TOKEN="{{ .Data.data.token }}"
+        export K8S_CERT="{{ .Data.data.cert }}"
+        export K8S_USER={{ .Data.data.user }}
+        export K8S_NAMESPACE={{ .Data.data.namespace }}
+        export K8S_CLUSTER={{ .Data.data.cluster }}
+        export K8S_URL="{{ .Data.data.url }}"
+
+        echo "export K8S_TOKEN=\"{{ .Data.data.token }}\"" >> $BASH_ENV
+        echo "export K8S_CERT=\"{{ .Data.data.cert }}\"" >> $BASH_ENV
+        echo "export K8S_USER={{ .Data.data.user }}" >> $BASH_ENV
+        echo "export K8S_NAMESPACE={{ .Data.data.namespace }}" >> $BASH_ENV
+        echo "export K8S_CLUSTER={{ .Data.data.cluster }}" >> $BASH_ENV
+        echo "export K8S_URL=\"{{ .Data.data.url }}\"" >> $BASH_ENV
+    {{ end }}
+{{ end }}
+
+
+## Nexus Credentials
+{{ with secret "secret/nexus/boa-deployer" }}
+    export DOCKER_LOGIN="{{ .Data.data.username }}"
+    export DOCKER_PWD="{{ .Data.data.password }}"
+    echo "export DOCKER_LOGIN=\"{{ .Data.data.username }}\"" >> $BASH_ENV
+    echo "export DOCKER_PWD=\"{{ .Data.data.password }}\"" >> $BASH_ENV
+{{ end }}
