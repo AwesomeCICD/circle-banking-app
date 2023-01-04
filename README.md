@@ -35,7 +35,7 @@ We forked it from Google, chosen for it's multi-language monorepo structure with
 
 
 ### Concepts
- The credentials are comprised of a CA certificate and a secret token, pulled from K8s cluster. (See reference-architecture).  Those are provided to Dev team as a CCI Context for each environment.
+ The credentials are comprised of a CA certificate and a secret token, pulled from CERA vault (Hashicorp). (See reference-architecture).  Those are provided to Dev team as a CCI Context for each environment via OIDC claims in vault.
  - `cera-boa-dev` a dev context
  - `cera-boa-prod` a prod context
  The appropriate deployment jobs access a `K8_TOKEN` and `K8_CERT` that is used to define connection along with the URL, CLUSTER_NAME, and NAMESPACE

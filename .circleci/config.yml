@@ -244,7 +244,7 @@ commands:
       - run:
           name: Activate Vault Agent
           command: |
-            echo $BOA_ENV
+            echo "Environment (BOA_ENV will be empty on docker jobs): $BOA_ENV"
             echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
             vault agent -config=.circleci/vault/agent.hcl
       - run:
@@ -253,4 +253,4 @@ commands:
             #export for other steps
           name: Set Environment Variables from Vault
 
-# VS Code Extension Version: 1.1.1
+# VS Code Extension Version: 1.5.1
