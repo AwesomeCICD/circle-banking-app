@@ -249,8 +249,8 @@ commands:
             export VAULT_ADDR="https://vault.cera.circleci-labs.com"
             export VAULT_TOKEN=`vault write -field=token auth/jwt/login role=boa-$ROLE-deploy jwt=$CIRCLE_OIDC_TOKEN`
             vault read -format=json secret/data/cluster/boa-pipeline-$ROLE > /tmp/cluster-secret.json
-            jq '.data.data | to_entries[] | "K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
+            jq '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
             vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
-            jq '.data.data | to_entries[] | "NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
+            jq '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
 
 # VS Code Extension Version: 1.5.1
