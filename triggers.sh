@@ -11,7 +11,7 @@ kickOffFail () {
 kickOffPass () {
     git checkout rp/cool-feature
     git add .
-    git commit -m "fixed policy"
+    git commit -m --allow-empty "fixed policy"
     git push origin rp/cool-feature
 }
 
