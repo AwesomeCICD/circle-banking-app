@@ -40,21 +40,26 @@ executors:
   with-chrome:
     docker:
       - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
+  runner:
+    docker:
+      - image: cimg/python:3.8
+    resource_class: awesomecicd/opensource-runner
+
   base:
     docker:
       - image: cimg/deploy:2022.08
   jdk17:
     docker:
       - image: cimg/openjdk:17.0.3
-    
     resource_class: xlarge
+
   python38:
     docker:
       - image: cimg/python:3.8
 
 jobs:
   python-checkstyle:
-    executor: python38
+    executor: runner
     steps:
       - checkout
       - run: pip install pylint
