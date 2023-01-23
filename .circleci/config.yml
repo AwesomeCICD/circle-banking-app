@@ -15,7 +15,7 @@ workflows:
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
