@@ -20,6 +20,7 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
+                
       - e2e:
           requires: [ Deploy Dev ]
       - deploy:
