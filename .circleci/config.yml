@@ -10,7 +10,7 @@ workflows:
       - python-test:
           requires: [ java-checkstyle, python-checkstyle ]
       - skaffold-build-push:
-          context: cera-vault-oidc
+          context: cera-boa-dev
           requires: [ java-test-and-code-cov, python-test ]
       - deploy:
           name: Deploy Dev
