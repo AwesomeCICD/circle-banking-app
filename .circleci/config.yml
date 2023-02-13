@@ -15,7 +15,7 @@ workflows:
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push ]
-          context: [ cera-boa-prod ]
+          context: [ cera-boa-dev ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
