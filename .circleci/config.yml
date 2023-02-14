@@ -3,7 +3,7 @@ version: 2.1
 workflows:
   main:
     jobs:
-      - statit-analysis
+      - static-analysis
       - java-checkstyle
       - java-test-and-code-cov:
           requires: [ java-checkstyle, python-checkstyle ]
