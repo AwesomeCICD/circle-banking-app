@@ -10,7 +10,7 @@ workflows:
       - python-test:
           requires: [ java-checkstyle, python-checkstyle ]
       - skaffold-build-push:
-          context: cera-boa-dev
+          context: [ cera-boa-dev, cera-vault-oidc ]
           requires: [ java-test-and-code-cov, python-test ]
       - deploy:
           name: Deploy Dev
@@ -26,7 +26,7 @@ workflows:
           name: Deploy Production
           requires: [ e2e ]
           boa-environment: prod
-          context: [ cera-boa-prod ]
+          context: [ cera-boa-prod, cera-vault-oidc ]
           filters:
             branches:
               only: [ main ]
@@ -226,7 +226,6 @@ executors:
   python38:
     docker:
       - image: cimg/python:3.8
-
 
 commands:
   load-credentials:
