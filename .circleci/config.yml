@@ -36,21 +36,6 @@ workflows:
                 environment_type: production
                 environment: CERA-Cluster-Namer-Prod
 
-executors:
-  with-chrome:
-    docker:
-      - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
-  base:
-    docker:
-      - image: cimg/deploy:2022.08
-  jdk17:
-    docker:
-      - image: cimg/openjdk:17.0.3
-    resource_class: xlarge
-  python38:
-    docker:
-      - image: cimg/python:3.8
-
 jobs:
   python-checkstyle:
     executor: python38
@@ -225,6 +210,23 @@ jobs:
           path: ui-tests/cypress/videos
       - store_artifacts:
           path: ui-tests/cypress/screenshots    
+
+### Reusable Config
+executors:
+  with-chrome:
+    docker:
+      - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
+  base:
+    docker:
+      - image: cimg/deploy:2022.08
+  jdk17:
+    docker:
+      - image: cimg/openjdk:17.0.3
+    resource_class: xlarge
+  python38:
+    docker:
+      - image: cimg/python:3.8
+
 
 commands:
   load-credentials:
