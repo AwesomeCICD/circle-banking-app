@@ -52,6 +52,11 @@ executors:
       - image: cimg/python:3.8
 
 jobs:
+  extra:
+    executor: python38
+    steps:
+      - checkout
+      
   python-checkstyle:
     executor: python38
     steps:
