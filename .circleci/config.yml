@@ -12,9 +12,12 @@ workflows:
       - skaffold-build-push:
           context: [ cera-boa-dev, cera-vault-oidc ]
           requires: [ java-test-and-code-cov, python-test ]
+      - hold-for-approval:
+          type: approval
+          requires: [ skaffold-build-push ]
       - deploy:
           name: Deploy Dev
-          requires: [ skaffold-build-push ]
+          requires: [ hold-for-approval ]
           context: [ cera-boa-dev, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
