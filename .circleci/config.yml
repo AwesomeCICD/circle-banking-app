@@ -197,8 +197,7 @@ jobs:
 workflows:
   main:
     jobs:
-      - java-checkstyle:
-          context: [ cera-vault-oidc-prod ]
+      - java-checkstyle
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
