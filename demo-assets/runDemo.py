@@ -32,16 +32,16 @@ def main():
     commit_policy_failure()
     push_changes(happy_branch)
    
-    # TODO: Add Config violation fix, spawn pass and fail branches & pause
+    #Add Config violation fix, spawn pass and fail branches & pause
     input("Hit enter to FIX policy failure, and spawn test failures and pass")
     remove_policy_failure()
     push_changes(happy_branch)
 
     # TODO: failed tests too
-    fail_branch = f'demo-{settings.username}-fails'
-    sync_or_create_branch(fail_branch)
-    commit_bad_tests()
-    push_changes(fail_branch)
+    #fail_branch = f'demo-{settings.username}-fails'
+   # sync_or_create_branch(fail_branch)
+   # commit_bad_tests()
+   # push_changes(fail_branch)
 
 
 
