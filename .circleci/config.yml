@@ -198,7 +198,7 @@ workflows:
   main:
     jobs:
       - java-checkstyle:
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          context: [ compass-integration-bank-of-aion ]
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
