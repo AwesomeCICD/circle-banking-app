@@ -114,12 +114,12 @@ We recommend you test and build directly on Kubernetes, from your local environm
 
 You can use the `skaffold` tool to build and deploy your code to the GKE cluster in your project. 
 
-**NOTE:** You must set docker to login to ECR with
+**NOTE:** You must set docker to login to  Nexus!
 
 ```shell
-aws sso login #see SE WIki for guidance
-aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 483285841698.dkr.ecr.us-west-2.amazonaws.com 
+echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
 ```
+Nexus password can be created per SE.  Admin creds in team vault.
 
 ### Option 1 - Build and deploy continuously 
 
@@ -127,7 +127,7 @@ The [`skaffold dev`](https://skaffold.dev/docs/references/cli/#skaffold-dev) com
 
 ```
 # kubectl config use-context <CLUSTER_CONTEXT_TO_TARGET>
-skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com -n MY_NAMESPACE
+skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com -n MY_NAMESPACE
 ```
 
 
@@ -136,7 +136,7 @@ skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com -n MY_N
 The [`skaffold run`](https://skaffold.dev/docs/references/cli/#skaffold-run) command build and deploys the services to your GKE cluster one time, then exits. 
 
 ```
-skaffold run --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com 
+skaffold run --default-repo=docker.nexus.cera.circleci-labs.com 
 ```
 
 ### Running services selectively
@@ -151,13 +151,13 @@ Skaffold reads the [skaffold.yaml](../skaffold.yaml) file to understand the proj
 To work with only the `frontend` module, run:
 
 ```
-skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m setup,frontend
+skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com  -m setup,frontend
 ```
 
 To work with both `frontend` and `backend` modules, run:
 
 ```
-skaffold dev --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com  -m setup -m frontend -m backend
+skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com  -m setup -m frontend -m backend
 ```
 
 ## Continuous Integration
