@@ -254,4 +254,4 @@ commands:
             jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
 
 # VS Code Extension Version: 1.5.1 - test, demo FFT
-# test
+# test permissions
