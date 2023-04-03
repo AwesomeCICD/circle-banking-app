@@ -6,7 +6,7 @@ import re
 from subprocess import call,run
 import user_info, config_changer
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('runDemo')
 
 main_branch = 'feature-demo-script'
@@ -126,6 +126,8 @@ def commit_bad_tests():
     run(['git','commit', '-m',"Dev work with failing tests.."],capture_output=True)
 
 def refresh():
+    global current_hash
+    current_hash = run(['git','hash-object',__file__],capture_output=True).stdout
     with open(__file__) as fo:
         source_code = fo.read()
         byte_code = compile(source_code, __file__, "exec")
