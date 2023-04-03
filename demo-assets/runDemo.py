@@ -9,7 +9,7 @@ import user_info, config_changer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('runDemo')
 
-main_branch = 'main'
+main_branch = 'feature-demo-script'
 
 base_url = None
 auth    = None
