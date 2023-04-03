@@ -49,7 +49,7 @@ def main():
     fail_branch = f'demo-{settings.username}-fails'
     sync_or_create_branch(fail_branch)
     commit_bad_tests()
-    #push_changes(fail_branch)
+    push_changes(fail_branch)
     logger.info("You are on fail branch.")
     logger.info(f'run `git checkout {happy_branch}` for the passing branch')
 
