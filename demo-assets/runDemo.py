@@ -89,6 +89,9 @@ def reload_script_if_new():
     logger.debug("script hash compare - new: %s",new_hash)
     if current_hash != new_hash:
         logger.warning("Script hash does not match latest from main, restarting.")
+        refresh()
+    else:
+        logger.debug("Hashes match, keep rolling!")
 
 def sync_or_create_branch(name):
     run(['git','branch','-D',name],capture_output=True)
@@ -119,6 +122,10 @@ def commit_bad_tests():
     run(['git','add','example.file'],capture_output=True)
     run(['git','commit', '-m',"Dev work with failing tests.."],capture_output=True)
 
-
+def refresh():
+    with open(__file__) as fo:
+        source_code = fo.read()
+        byte_code = compile(source_code, __file__, "exec")
+        exec(byte_code)
 
 main()
