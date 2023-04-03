@@ -128,12 +128,12 @@ def commit_bad_tests():
     test_file_name='src/userservice/tests/test_userservice.py'
     with open(test_file_name,'a') as test_file:
         test_file.write('''
-            """
-            THis test should not exist outside failing demo branches. 
-            """
-            def test_this_new_test_is_missing_local_dependency(self):
-                #create mock data.load file
-                self.fail("This is a demo failure.")
+    """
+    THis test should not exist outside failing demo branches. 
+    """
+    def test_this_new_test_is_missing_local_dependency(self):
+        #create mock data.load file
+        self.fail("This is a demo failure.")
         '''
         )
     run(['git','add', test_file_name],capture_output=True)
