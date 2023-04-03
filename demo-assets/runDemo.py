@@ -125,7 +125,7 @@ def push_changes(branch_name):
 
 
 def commit_bad_tests():
-    test_file_name='../src/userservice/tests/test_userservice.py'
+    test_file_name='src/userservice/tests/test_userservice.py'
     with open(test_file_name) as test_file:
         test_file.write('''
             """
