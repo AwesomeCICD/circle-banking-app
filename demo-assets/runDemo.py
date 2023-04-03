@@ -13,12 +13,14 @@ auth    = None
 headers = None
 settings = None
 configHelper = config_changer.ConfigChanger()
+current_hash = run(['git','hash-object',__file__],capture_output=True)
 
 """
 This is the primary flow of demo
 """
 def main():
-    loadConfiguration()
+    global configHelper
+    collectValues()
     get_gh_user()
 
     #reset state
@@ -29,6 +31,7 @@ def main():
    
     #Add config violation & pause
     input("Hit enter to push policy failure")
+    configHelper.load_config('.circleci/config.yml')
     commit_policy_failure()
     push_changes(happy_branch)
    
@@ -48,9 +51,8 @@ def main():
 
 
 
-def loadConfiguration():
-    global auth,headers, settings, configHelper
-    configHelper.load_config('.circleci/config.yml')
+def collectValues():
+    global auth,headers, settings
     settings = user_info.UserInfo.from_file()
     auth=(settings.username,settings.github_token)
     headers={"Authorization":f'Bearer {settings.github_token}',"X-GitHub-Api-Version":"2022-11-28"}
@@ -74,8 +76,19 @@ def force_latest_on_main():
         output = run(['git','checkout','main'],capture_output=True)
     logger.info("\tPulling latest changes into main..")
     run(['git','pull'],capture_output=True)
+    reload_script_if_new()
     logger.info('\tReady on Main\n')
 
+"""
+Script runs from memory, and may not reflect latest on main.  
+Check hash of script and reload if different.
+"""
+def reload_script_if_new():
+    new_hash = run(['git','hash-object',__file__],capture_output=True)
+    logger.debug("script hash compare - running: %s",current_hash)
+    logger.debug("script hash compare - new: %s",new_hash)
+    if current_hash != new_hash:
+        logger.warning("Script hash does not match latest from main, restarting.")
 
 def sync_or_create_branch(name):
     run(['git','branch','-D',name],capture_output=True)
