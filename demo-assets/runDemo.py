@@ -11,19 +11,20 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('runDemo')
 
 main_branch = 'feature-demo-script'
-
+demo_assets = 'demo-assets'
 base_url = None
 auth    = None
 headers = None
 settings = None
 configHelper = config_changer.ConfigChanger()
-current_hash = run(['git','hash-object',__file__],capture_output=True).stdout
+current_hash =""
 
 """
 This is the primary flow of demo
 """
 def main():
-    global configHelper
+    global configHelper, current_hash
+    current_hash = get_git_hash(demo_assets)
     collectValues()
     get_gh_user()
 
@@ -88,7 +89,7 @@ Script runs from memory, and may not reflect latest on main.
 Check hash of script and reload if different.
 """
 def reload_script_if_new():
-    new_hash = run(['git','hash-object',__file__],capture_output=True).stdout
+    new_hash = get_git_hash(demo_assets)
     logger.debug("script hash compare - running: %s",current_hash)
     logger.debug("script hash compare - new: %s",new_hash)
     if current_hash != new_hash:
@@ -128,12 +129,15 @@ def commit_bad_tests():
 
 def refresh():
     global current_hash
-    current_hash = run(['git','hash-object',__file__],capture_output=True).stdout
+    current_hash = get_git_hash(__file__)
     with open(__file__) as fo:
         source_code = fo.read()
         byte_code = compile(source_code, __file__, "exec")
         exec(byte_code)
     logger.debug("Dynamically loaded script execution ended. Exiting parent process.")
     exit(0) # do not resume 'old' script
+
+def get_git_hash(path):
+    run(['git','rev-parse',f'HEAD:{path}'],capture_output=True).stdout
 
 main()
