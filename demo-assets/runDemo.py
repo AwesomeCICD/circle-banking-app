@@ -133,7 +133,7 @@ def refresh():
         source_code = fo.read()
         byte_code = compile(source_code, __file__, "exec")
         exec(byte_code)
-    logger.debug("Dynamically loaded script execution ended. Exiting paren process.")
+    logger.debug("Dynamically loaded script execution ended. Exiting parent process.")
     exit(0) # do not resume 'old' script
 
 main()
