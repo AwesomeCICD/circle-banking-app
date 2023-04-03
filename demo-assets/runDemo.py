@@ -6,6 +6,7 @@ import re
 from subprocess import call,run
 import user_info, config_changer
 
+# TODO: move debug level outside script to persist across dynamic reload.
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('runDemo')
 
