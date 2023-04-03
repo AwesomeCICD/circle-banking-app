@@ -13,7 +13,7 @@ auth    = None
 headers = None
 settings = None
 configHelper = config_changer.ConfigChanger()
-current_hash = run(['git','hash-object',__file__],capture_output=True)
+current_hash = run(['git','hash-object',__file__],capture_output=True).stdout
 
 """
 This is the primary flow of demo
@@ -84,7 +84,7 @@ Script runs from memory, and may not reflect latest on main.
 Check hash of script and reload if different.
 """
 def reload_script_if_new():
-    new_hash = run(['git','hash-object',__file__],capture_output=True)
+    new_hash = run(['git','hash-object',__file__],capture_output=True).stdout
     logger.debug("script hash compare - running: %s",current_hash)
     logger.debug("script hash compare - new: %s",new_hash)
     if current_hash != new_hash:
