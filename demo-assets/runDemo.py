@@ -7,9 +7,10 @@ from subprocess import call,run
 import user_info, config_changer
 
 # TODO: move debug level outside script to persist across dynamic reload.
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('runDemo')
 
+# TODO: change to main before merge after all UAT (this is only intial merge checikenand egg situation since script will reload itself but not on main yet,..)
 main_branch = 'feature-demo-script'
 demo_assets = 'demo-assets'
 base_url = None
