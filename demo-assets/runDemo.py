@@ -46,10 +46,12 @@ def main():
     push_changes(happy_branch)
 
     # TODO: failed tests too
-    #fail_branch = f'demo-{settings.username}-fails'
-   # sync_or_create_branch(fail_branch)
-   # commit_bad_tests()
-   # push_changes(fail_branch)
+    fail_branch = f'demo-{settings.username}-fails'
+    sync_or_create_branch(fail_branch)
+    commit_bad_tests()
+    #push_changes(fail_branch)
+    logger.info("You are on fail branch.")
+    logger.info(f'run `git checkout {happy_branch}` for the passing branch')
 
 
 
@@ -123,8 +125,18 @@ def push_changes(branch_name):
 
 
 def commit_bad_tests():
-    run(["touch","example.file"],capture_output=True)
-    run(['git','add','example.file'],capture_output=True)
+    test_file_name='../src/userservice/tests/test_userservice.py'
+    with open(test_file_name) as test_file:
+        test_file.write('''
+            """
+            THis test should not exist outside failing demo branches. 
+            """
+            def test_this_new_test_is_missing_local_dependency(self):
+                #create mock data.load file
+                self.fail("This is a demo failure.")
+        '''
+        )
+    run(['git','add', test_file_name],capture_output=True)
     run(['git','commit', '-m',"Dev work with failing tests.."],capture_output=True)
 
 def refresh():
