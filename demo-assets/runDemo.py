@@ -8,6 +8,9 @@ import user_info, config_changer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('runDemo')
+
+main_branch = 'main'
+
 base_url = None
 auth    = None
 headers = None
@@ -70,10 +73,10 @@ def get_gh_user():
 
 def force_latest_on_main():
     cur_branch = run(['git','branch','--show-current'], capture_output=True)
-    if cur_branch.stdout != 'main':
+    if cur_branch.stdout != main_branch:
         logger.info("\tNot on main,switching..")
         output = run(['git','stash','push'],capture_output=True)
-        output = run(['git','checkout','main'],capture_output=True)
+        output = run(['git','checkout',main_branch],capture_output=True)
     logger.info("\tPulling latest changes into main..")
     run(['git','pull'],capture_output=True)
     reload_script_if_new()
@@ -98,7 +101,7 @@ def sync_or_create_branch(name):
     run(['git','checkout', '-b',name],capture_output=True)
     logger.debug("\tNew branch %s created",name)
     logger.debug(f'Ensuring {name} has latest from main..')
-    run(['git','reset','--hard', 'main'],capture_output=True)
+    run(['git','reset','--hard', main_branch],capture_output=True)
     logger.info("\t%s ready",name)
 
 
