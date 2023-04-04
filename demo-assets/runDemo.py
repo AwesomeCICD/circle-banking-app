@@ -9,7 +9,6 @@ import user_info, config_changer
 # TODO: change to main before merge after all UAT (this is only intial merge checikenand egg situation since script will reload itself but not on main yet,..)
 main_branch = 'feature-demo-script'
 demo_assets = 'demo-assets'
-base_url = None
 auth    = None
 settings = None
 configHelper = config_changer.ConfigChanger()
@@ -65,11 +64,9 @@ def setup_logging():
 
 
 def collectValues():
-    global auth,headers, settings
+    global auth, settings
     settings = user_info.UserInfo.from_file()
     auth=(settings.username,settings.github_token)
-    base_url=f'https://api.github.com/repos/{settings.orgname}/{settings.reponame}'
-    logger.debug("using base URL: " + base_url )
 
 def get_gh_user():
     r = requests.get("https://api.github.com/user",auth=auth)
