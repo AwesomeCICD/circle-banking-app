@@ -51,7 +51,7 @@ def main():
     commit_bad_tests()
     push_changes(fail_branch)
     logger.info("(You are on fail branch.)")
-    logger.info(f'run `git checkout {happy_branch}` for the passing branch')
+    logger.info(f'(run `git checkout {happy_branch}` for the passing branch)')
 
 
 
