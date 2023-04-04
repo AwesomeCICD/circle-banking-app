@@ -32,16 +32,16 @@ def main():
     force_latest_on_main()
     happy_branch = f'demo-{settings.username}'
     sync_or_create_branch(happy_branch)
-    logger.info('\n\tReady on My Demo Branch %s!!\n',happy_branch)
+    logger.info('\nReady on My Demo Branch %s!!\n',happy_branch)
    
     #Add config violation & pause
-    input("Hit enter to push policy failure")
+    input(">>> Hit enter to push policy failure")
     configHelper.load_config('.circleci/config.yml')
     commit_policy_failure()
     push_changes(happy_branch)
    
     #Add Config violation fix, spawn pass and fail branches & pause
-    input("Hit enter to FIX policy failure, and spawn test failures and pass")
+    input(">>> Hit enter to FIX policy failure, and spawn test failures and pass")
     remove_policy_failure()
     push_changes(happy_branch)
 
@@ -50,7 +50,7 @@ def main():
     sync_or_create_branch(fail_branch)
     commit_bad_tests()
     push_changes(fail_branch)
-    logger.info("You are on fail branch.")
+    logger.info("(You are on fail branch.)")
     logger.info(f'run `git checkout {happy_branch}` for the passing branch')
 
 
@@ -73,12 +73,12 @@ def collectValues():
     auth=(settings.username,settings.github_token)
     headers={"Authorization":f'Bearer {settings.github_token}',"X-GitHub-Api-Version":"2022-11-28"}
     base_url=f'https://api.github.com/repos/{settings.orgname}/{settings.reponame}'
-    logger.info("using base URL: " + base_url )
+    logger.debug("using base URL: " + base_url )
 
 def get_gh_user():
     r = requests.get("https://api.github.com/user",auth=auth)
     if r.status_code == 200:
-        logger.info('\t\tLet\'s do this demo %s!!\n',r.json()['name'])
+        logger.info('\nLet\'s do this demo %s!!\n',r.json()['name'])
     else:
         logger.error(f'GH check failed with response code: {r.status_code}')
         logger.error(r.text)
@@ -87,13 +87,13 @@ def get_gh_user():
 def force_latest_on_main():
     cur_branch = run(['git','branch','--show-current'], capture_output=True)
     if cur_branch.stdout != main_branch:
-        logger.info("\tNot on main,switching..")
+        logger.info("Not on main,switching..")
         output = run(['git','stash','push'],capture_output=True)
         output = run(['git','checkout',main_branch],capture_output=True)
-    logger.info("\tPulling latest changes into main..")
+    logger.info("Pulling latest changes into main..")
     run(['git','pull'],capture_output=True)
     reload_script_if_new()
-    logger.info('\tReady on Main\n')
+    logger.info('Ready on Main\n')
 
 """
 Script runs from memory, and may not reflect latest on main.  
@@ -112,10 +112,10 @@ def reload_script_if_new():
 def sync_or_create_branch(name):
     run(['git','branch','-D',name],capture_output=True)
     run(['git','checkout', '-b',name],capture_output=True)
-    logger.debug("\tNew branch %s created",name)
+    logger.debug("New branch %s created",name)
     logger.debug(f'Ensuring {name} has latest from main..')
     run(['git','reset','--hard', main_branch],capture_output=True)
-    logger.info("\t%s ready",name)
+    logger.info("%s ready",name)
 
 
 def commit_policy_failure():
