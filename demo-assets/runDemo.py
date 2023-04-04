@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 import os
+import sys
 import logging
 import requests
 import re
 from subprocess import call,run
 import user_info, config_changer
 
-# TODO: move debug level outside script to persist across dynamic reload.
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('runDemo')
 
 # TODO: change to main before merge after all UAT (this is only intial merge checikenand egg situation since script will reload itself but not on main yet,..)
 main_branch = 'feature-demo-script'
@@ -56,7 +54,17 @@ def main():
 
 
 
-
+def setup_logging():
+    global logger
+    # TODO: move debug level outside script to persist across dynamic reload.
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger('runDemo')
+    fh = logging.FileHandler('demo-assets/demo.log')
+    fh.setLevel(logging.DEBUG)
+    logger.addHandler(fh)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    logger.addHandler(ch)
 
 
 def collectValues():
