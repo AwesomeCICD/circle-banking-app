@@ -23,6 +23,7 @@ This is the primary flow of demo
 """
 def main():
     global configHelper, current_hash
+    setup_logging()
     current_hash = get_git_hash(demo_assets)
     collectValues()
     get_gh_user()
@@ -56,14 +57,13 @@ def main():
 
 def setup_logging():
     global logger
-    # TODO: move debug level outside script to persist across dynamic reload.
-    logging.basicConfig(level=logging.DEBUG)
+    # default debug level logs go to file with detailed logging format (level, name, message) 
+    logging.basicConfig(level=logging.DEBUG, filename='demo-assets/demo.log')
     logger = logging.getLogger('runDemo')
-    fh = logging.FileHandler('demo-assets/demo.log')
-    fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
+    # console is INFO only and just (message)
     ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(ch)
 
 
