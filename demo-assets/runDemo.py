@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-import os
 import sys
 import logging
 import requests
-import re
 from subprocess import call,run
 import user_info, config_changer
 
@@ -13,7 +11,6 @@ main_branch = 'feature-demo-script'
 demo_assets = 'demo-assets'
 base_url = None
 auth    = None
-headers = None
 settings = None
 configHelper = config_changer.ConfigChanger()
 current_hash =""
@@ -40,12 +37,12 @@ def main():
     commit_policy_failure()
     push_changes(happy_branch)
    
-    #Add Config violation fix, spawn pass and fail branches & pause
+    #Add Config violation fix, spawn passing branch with dev deploy
     input(">>> Hit enter to FIX policy failure, and spawn test failures and pass")
     remove_policy_failure()
     push_changes(happy_branch)
 
-    # TODO: failed tests too
+    # Run a branch of fialing tests, no deploy
     fail_branch = f'demo-{settings.username}-fails'
     sync_or_create_branch(fail_branch)
     commit_bad_tests()
@@ -71,7 +68,6 @@ def collectValues():
     global auth,headers, settings
     settings = user_info.UserInfo.from_file()
     auth=(settings.username,settings.github_token)
-    headers={"Authorization":f'Bearer {settings.github_token}',"X-GitHub-Api-Version":"2022-11-28"}
     base_url=f'https://api.github.com/repos/{settings.orgname}/{settings.reponame}'
     logger.debug("using base URL: " + base_url )
 
