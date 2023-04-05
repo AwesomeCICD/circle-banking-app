@@ -193,11 +193,19 @@ jobs:
           path: ui-tests/cypress/videos
       - store_artifacts:
           path: ui-tests/cypress/screenshots    
-  
+
+  webinar:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run: |
+          # echo Hello, World!
   
 workflows:
   main:
     jobs:
+      - webinar
       - java-checkstyle
       - java-test-and-code-cov
       - python-checkstyle
