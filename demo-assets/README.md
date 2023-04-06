@@ -1,0 +1,25 @@
+# CERA Demo Assets
+
+Just run `./demo-assets/runDemo.py` and follow the prompts!
+
+
+## What Happens
+
+The script above will manage the creation and rebasing of your demo branch to ABC - Always Be Current.
+
+- `stash` any changes in current branch
+- delete existing SE Specific demo branches if existing
+- Pull latest `main`
+- Create SE SPecific branch using GH Handle naming
+  
+
+Additionally it will walk through a series of "experiences"
+
+- Starts with a clean, main rebased branch, but not pushed to origin (no build)
+  - HIT ENTER
+- policy violation - production context on dev branchs, pushed to main and warning in UI
+ - HIT ENTER
+- Fix policy issue, push to origin, healthy pipeline spawned in UI
+- Create alternate [name]-fail branch with test failure pushed, failing pipeline spawned in UI.
+  
+![Example result in UI](ui-result.png)
