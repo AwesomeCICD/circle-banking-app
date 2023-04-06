@@ -16,9 +16,10 @@ The script above will manage the creation and rebasing of your demo branch to AB
 Additionally it will walk through a series of "experiences"
 
 - Starts with a clean, main rebased branch, but not pushed to origin (no build)
+  You may opt to go ad-hoc here with changes, or continue on..
   - HIT ENTER
 - policy violation - production context on dev branchs, pushed to main and warning in UI
- - HIT ENTER
+  - HIT ENTER
 - Fix policy issue, push to origin, healthy pipeline spawned in UI
 - Create alternate [name]-fail branch with test failure pushed, failing pipeline spawned in UI.
   
