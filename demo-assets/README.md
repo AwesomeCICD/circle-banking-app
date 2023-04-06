@@ -23,3 +23,13 @@ Additionally it will walk through a series of "experiences"
 - Create alternate [name]-fail branch with test failure pushed, failing pipeline spawned in UI.
   
 ![Example result in UI](ui-result.png)
+
+## More Info
+
+### Demo Resources
+
+Start with the 'golden demo' deck in our shared drive, link on [wiki](https://circleci.atlassian.net/wiki/spaces/REV/pages/6836781833/Demoing+for+Discovery)
+
+### Dev Resources
+
+Please see [internal wiki](https://circleci.atlassian.net/wiki/spaces/CE/pages/6826524690/CERA+Demo+App+-+git+Branching+and+Naming+Conventions) for branch naming conventions process.
