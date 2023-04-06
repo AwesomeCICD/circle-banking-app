@@ -6,8 +6,7 @@ from subprocess import call,run
 import user_info, config_changer
 
 
-# TODO: change to main before merge after all UAT (this is only intial merge checikenand egg situation since script will reload itself but not on main yet,..)
-main_branch = 'feature-demo-script'
+main_branch = 'main'
 demo_assets = 'demo-assets'
 auth    = None
 settings = None
