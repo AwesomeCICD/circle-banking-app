@@ -31,8 +31,9 @@ jobs:
           name: Lint Python
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
 
-  python-test:
+   python-test:
     executor: python38
+    parallelism: 3
     steps:
       - checkout
       - run: mkdir test-reports
