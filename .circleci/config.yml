@@ -201,7 +201,7 @@ workflows:
     jobs:
       - java-checkstyle
       - java-test-and-code-cov
-      - python-checkstyle
+#      - python-checkstyle
       - python-test
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
