@@ -97,24 +97,13 @@ If you're adding a new feature to one or more of the Java services (`ledgerwrite
 2. Re-run `skaffold dev` or `skaffold run` to trigger a Jib container build using Maven and the updated pom file. 
 
 
-## Generating your own JWT public key. 
-
-The [extras](/extras/jwt) directory provides the RSA key/pair secret used for demos. To create your own: 
-
-```
-openssl genrsa -out jwtRS256.key 4096
-openssl rsa -in jwtRS256.key -outform PEM -pubout -out jwtRS256.key.pub
-kubectl create secret generic jwt-key --from-file=./jwtRS256.key --from-file=./jwtRS256.key.pub
-```
-
 ## Testing your changes locally 
-- [ ] TODO: CHANGES NEEDED TO APPLY TO AWS EKS ONCE NEXUS IS READY
 
-We recommend you test and build directly on Kubernetes, from your local environment.  This is because there are seven services and for the app to fully function, all the services need to be running. All the services have dependencies, environment variables, and secrets and that are built into the Kubernetes environment / manifests, so testing directly on Kubernetes is the fastest way to see your code changes in action.
+We recommend you test and build directly on Kubernetes, from your local environment.  This is because there are seven services and for the app to fully function, all the services need to be running. All the services have dependencies, environment variables, and secrets and that are built into the Kubernetes environment / manifests, so testing directly on Kubernetes is the fastest way to see your code changes in action.  To avoid collisions you should use a SE specific namespace. 
 
-You can use the `skaffold` tool to build and deploy your code to the GKE cluster in your project. 
+You can use the `skaffold` tool to build and deploy your code to the SE CERA Cluster on EKS. 
 
-**NOTE:** You must set docker to login to  Nexus!
+**NOTE:** You must set docker to login to Nexus!
 
 ```shell
 echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
@@ -123,7 +112,7 @@ Nexus password can be created per SE.  Admin creds in team vault.
 
 ### Option 1 - Build and deploy continuously 
 
-The [`skaffold dev`](https://skaffold.dev/docs/references/cli/#skaffold-dev) command watches your local code, and continuously builds and deploys container images to your GKE cluster anytime you save a file. Skaffold uses Docker Desktop to build the Python images, then [Jib](https://github.com/GoogleContainerTools/jib#jib) (installed via Maven) to build the Java images. 
+The [`skaffold dev`](https://skaffold.dev/docs/references/cli/#skaffold-dev) command watches your local code, and continuously builds and deploys container images to our cluster anytime you save a file. Skaffold uses Docker Desktop to build the Python images, then [Jib](https://github.com/GoogleContainerTools/jib#jib) (installed via Maven) to build the Java images. 
 
 ```
 # kubectl config use-context <CLUSTER_CONTEXT_TO_TARGET>
@@ -133,10 +122,10 @@ skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com -n MY_NAMESPACE
 
 ### Option 2 - Build and deploy once 
 
-The [`skaffold run`](https://skaffold.dev/docs/references/cli/#skaffold-run) command build and deploys the services to your GKE cluster one time, then exits. 
+The [`skaffold run`](https://skaffold.dev/docs/references/cli/#skaffold-run) command build and deploys the services to our SE cluster one time, then exits. 
 
 ```
-skaffold run --default-repo=docker.nexus.cera.circleci-labs.com 
+skaffold run --default-repo=docker.nexus.cera.circleci-labs.com -n MY_NAMESPACE
 ```
 
 ### Running services selectively
@@ -151,13 +140,13 @@ Skaffold reads the [skaffold.yaml](../skaffold.yaml) file to understand the proj
 To work with only the `frontend` module, run:
 
 ```
-skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com  -m setup,frontend
+skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com  -m setup,frontend -n MY_NAMESPACE
 ```
 
 To work with both `frontend` and `backend` modules, run:
 
 ```
-skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com  -m setup -m frontend -m backend
+skaffold dev --default-repo=docker.nexus.cera.circleci-labs.com  -m setup -m frontend -m backend -n MY_NAMESPACE
 ```
 
 ## Continuous Integration
