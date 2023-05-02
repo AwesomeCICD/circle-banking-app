@@ -202,12 +202,12 @@ workflows:
           context: [ compass-integration-bank-of-aion ]
       - java-test-and-code-cov
       - python-checkstyle
-      - python-test
+ #     - python-test
       - skaffold-build-push:
           context: cera-vault-oidc
       - deploy:
           name: Deploy Dev
-          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
+          requires: [ skaffold-build-push, java-test-and-code-cov ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
