@@ -215,13 +215,13 @@ workflows:
  #               environment_type: development
  #     - e2e:
  #         requires: [ Deploy Dev ]
-      - deploy:
-          name: Deploy Production
-          requires: [ e2e ]
-          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
-          filters:
-            branches:
-              only: [ main ]
+ #     - deploy:
+ #         name: Deploy Production
+ #         requires: [ e2e ]
+ #         context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
+ #         filters:
+ #           branches:
+ #             only: [ main ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
