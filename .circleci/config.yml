@@ -10,7 +10,7 @@ executors:
       - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
   base:
     docker:
-      - image: cimg/deploy:2022.07
+      - image: cimg/deploy:2022.08
   jdk17:
     docker:
       - image: cimg/openjdk:17.0.3
@@ -72,14 +72,13 @@ jobs:
     steps:
       - checkout
       - run: mkdir test-reports
-      - run: mvn help:effective-pom > /tmp/zpom.xml
       - restore_cache:
           keys:
-            - v1-mvn-full-{{ checksum "/tmp/zpom.xml" }}
-            - v1-mvn-full-
+            - v2-mvn-full-{{ .Branch }}
+            - v2-mvn-full-
       - run: mvn dependency:go-offline
       - save_cache:
-          key: v1-mvn-full-{{ checksum "/tmp/zpom.xml" }}
+          key: v2-mvn-full-{{ .Branch }}
           paths:
             - ~/.m2
       - run: |
@@ -109,27 +108,31 @@ jobs:
       steps:
         - checkout
         - run: |
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-        - enable-oidc
+        - load-credentials    
         - setup_remote_docker:
             docker_layer_caching: true
-        - run: mvn help:effective-pom > /tmp/zpom.xml
         - restore_cache:
             keys:
-              - v1-mvn-full-{{ checksum "/tmp/zpom.xml" }}
-              - v1-mvn-full-
+              - v2-mvn-full-{{ .Branch }}
+              - v2-mvn-full-
+        - restore_cache:
+            keys:
+              - v1-skaffold-{{ .Branch }}
+              - v1-skaffold-
         - run: |
-            #this is temp use of admin rights while we bukld out nexus
-            aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 483285841698.dkr.ecr.us-west-2.amazonaws.com
+            export DOCKER_TAG=build$(git rev-parse HEAD:src)
+            echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
             # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
             ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
             mkdir output
-            skaffold build --build-concurrency=4 --tag=build<<pipeline.number>> --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com --file-output=output/tags.json
+            skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
             ls /tmp/
+        - save_cache:
+            key: v1-skaffold-{{ .Branch }}
+            paths:
+              - ~/.skaffold/cache
         - persist_to_workspace:
             root: output
             paths: [ 'tags.json' ]
@@ -138,28 +141,25 @@ jobs:
   deploy:
     executor: base
     parameters:
-      environment:
+      boa-environment:
         type: string
         default: dev
         description: Environment suffix used by namesapce and SA account name.
     environment:
-      K8_USER: boa-pipeline-<<parameters.environment>>
-      K8_URL: "https://82BD0213010A79DBD7EAF886E3E553E0.gr7.us-west-2.eks.amazonaws.com"
-      K8_CLUSTER: cera-solutions-eng
+      BOA_ENV: <<parameters.boa-environment>>
     steps:
       - checkout
-      - run: echo "Now using namespace ${K8_NAMESPACE}"
-      - use_service_account
+      - load-credentials
+      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
           sudo apt update && sudo apt install kubectl -y
-          kubectl config view
-          kubectl get serviceaccounts -n ${K8_NAMESPACE}
-      # temp whike using ecr
-      - run: | 
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-      - enable-oidc
+          echo ${K8S_CERT} | base64 -d > ca.crt
+          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
+          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+          kubectl config use-context default
+          kubectl get serviceaccounts -n ${K8S_NAMESPACE}
       - attach_workspace:
           at: output
       - run: 
@@ -167,11 +167,11 @@ jobs:
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            skaffold deploy --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com --namespace=${K8_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
-            kubectl wait deployment -n ${K8_NAMESPACE} frontend --for condition=Available=True --timeout=90s
+            kubectl wait deployment -n ${K8S_NAMESPACE} frontend --for condition=Available=True --timeout=90s
       - run: 
           name: Print Frontend URL
           command: kubectl get service frontend -n ${K8_NAMESPACE} | awk '{print $4}'
@@ -198,17 +198,17 @@ jobs:
 workflows:
   main:
     jobs:
-      - java-checkstyle
+      - java-checkstyle:
+          context: [ compass-integration-bank-of-aion ]
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
       - skaffold-build-push:
-          requires: [ python-test, java-test-and-code-cov ]
-          context: reference-arch-aws-oidc
+          context: cera-vault-oidc
       - deploy:
           name: Deploy Dev
-          requires: [ skaffold-build-push ]
-          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
+          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
@@ -230,40 +230,28 @@ workflows:
 
 
 commands:
-  use_service_account:
-  # This command uses the assigned context to hydrate a kubeconfig from the given service account.
-  # These values are automatically injected into the 2 app contexts by the `reference-architecture` project
+  load-credentials:
     steps:
       - run:
+          name: install vault agent (if not present)
           command: |
-            echo ${K8_CERT} | base64 -d > ca.crt
-            kubectl config set-cluster ${K8_CLUSTER} --server=${K8_URL} --certificate-authority=ca.crt
-            export DECODED_TOKEN=$(echo ${K8_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-            kubectl config set-credentials ${K8_USER} --token=${DECODED_TOKEN}
-            kubectl config set-context default --user=${K8_USER}  --cluster=${K8_CLUSTER} --namespace ${K8_NAMESPACE}
-            kubectl config use-context default
-          name: Use K8s token & cert to create kubeconfig.
-
-  enable-oidc:
-    steps:
+            vault -h && exit 0 || echo "Installing vault"
+            #only runs if vault command avbove failed
+            cd /tmp
+            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
+            unzip vault_1.12.2_linux_amd64.zip
+            sudo mv vault /usr/local/bin        
+            vault -h    
       - run:
-          name: authenticate-and-interact
+          name: Load Credentials from Vault
           command: |
-            # use the OpenID Connect token to obtain AWS credentials
-            read -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN \<<< \
-              $(aws sts assume-role-with-web-identity \
-              --role-arn ${AWS_ROLE_ARN} \
-              --role-session-name "CircleCI-Pipeline-BoA" \
-              --web-identity-token $CIRCLE_OIDC_TOKEN \
-              --duration-seconds 3600 \
-              --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
-              --output text)
-            export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
-            # interact with AWS
-            aws sts get-caller-identity
-            echo "export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" >> $BASH_ENV
-            echo "export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> $BASH_ENV
-            echo "export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $BASH_ENV
-            source $BASH_ENV
+            ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
+            echo "Environment (BOA_ENV ): $BOA_ENV"
+            export VAULT_ADDR="https://vault.cera.circleci-labs.com"
+            export VAULT_TOKEN=`vault write -field=token auth/jwt/login role=boa-$ROLE-deploy jwt=$CIRCLE_OIDC_TOKEN`
+            vault read -format=json secret/data/cluster/boa-pipeline-$ROLE > /tmp/cluster-secret.json
+            jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
+            vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
+            jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
 
 

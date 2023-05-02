@@ -37,7 +37,6 @@ import logging
 import os
 import socket
 from decimal import Decimal, DecimalException
-from time import sleep
 import boto3
 
 import requests
@@ -349,10 +348,6 @@ def create_app():
             resp.raise_for_status()  # Raise on HTTP Status code 4XX or 5XX
         except requests.exceptions.HTTPError as http_request_err:
             raise UserWarning(resp.text) from http_request_err
-        else:
-            # Short delay to allow the transaction to propagate to balancereader
-            # and transaction-history
-            sleep(0.25)
 
     def _add_contact(label, acct_num, routing_num, is_external_acct=False):
         """
