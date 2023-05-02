@@ -267,8 +267,4 @@ commands:
             echo "export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> $BASH_ENV
             source $BASH_ENV
 
-# VS Code Extension Version: 1.0.0
 
-# VS Code Extension Version: 1.0.0
-
-# VS Code Extension Version: 1.1.1
