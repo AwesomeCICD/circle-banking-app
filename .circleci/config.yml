@@ -199,7 +199,7 @@ workflows:
   main:
     jobs:
       - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
+          context: [ compass-integration-bank-of-aion, cera-boa-prod ]
       - java-test-and-code-cov
       - python-checkstyle
  #     - python-test
