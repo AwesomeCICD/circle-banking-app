@@ -1,7 +1,9 @@
-version: 2.1
-orbs:
-  compass: atlassian-labs/compass@0.1.2
-  maven: circleci/maven@1.3.0
+name: "GHA v CCI pipeline comapare"
+
+on:
+  pull_request:
+    branches:
+      - gha-v-cci
           
 executors:
   with-chrome:
@@ -21,10 +23,13 @@ executors:
 
 
 jobs:
+
   python-checkstyle:
-    executor: python38
+    
+    runs-on: ubuntu-latest
+    container: python:3.8
     steps:
-      - checkout
+      - uses: actions/checkout@v3
       - run: pip install pylint
       - run:
           name: Lint Python
