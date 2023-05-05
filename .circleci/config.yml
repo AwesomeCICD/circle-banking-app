@@ -89,8 +89,6 @@ jobs:
             PARAM_TEST_PATTERN: '**/*Test*.java'
           name: Parellel and Selected Tests
           command: |
-            #!/bin/bash
-
             echo -e "\033[31m\033[4mOrb Notes on Test Splitting\033[0m
                     \033[34mCaveat 1:\033[0m  CircleCI Test Splitting uses filename by default, but JUnit reports use class names.
                     Therefore this orb uses naive translation of linux file paths to dot separated package names and strips the .java suffix.
@@ -107,7 +105,7 @@ jobs:
                 tr "/" "." > .circleci/tests/surefire_classnames
             #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > /tmp/this_node_tests  
             #split and filter for 'fails rerun only'
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> /tmp/this_node_tests' --verbose --split-by=timings #--timings-type=classname   || echo "CLI was unhappy, keep rolling"
+            (cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> /tmp/this_node_tests' --verbose --split-by=timings #--timings-type=classname  ) || echo "Dont fail on missing"
             grep -xvf /tmp/this_node_tests < .circleci/tests/surefire_classnames > .circleci/tests/surefire_classnames_ignore_list 
             
             ARGS="-B"
