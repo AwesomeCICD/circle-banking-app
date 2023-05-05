@@ -1,7 +1,7 @@
 version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.2
-  maven: circleci/maven@1.3.0
+  maven: circleci/maven@1.4
           
 executors:
   with-chrome:
@@ -46,7 +46,9 @@ jobs:
                 source $HOME/venv-$SERVICE/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
-                python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
+                #python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
+                TEST_FILES=$(circleci tests glob "tests/test_*.py")
+                echo $TEST_FILES | circleci tests run --command="xargs pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
                 deactivate
               # return to previously saved path
               popd
