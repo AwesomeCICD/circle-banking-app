@@ -88,7 +88,7 @@ jobs:
             PARAM_TEST_DIR: 'src/**/src/test/java'
             PARAM_TEST_PATTERN: '**/*Test*.java'
           name: Parellel and Selected Tests
-          command: >-
+          command: |
             #!/bin/bash
 
             echo -e "\033[31m\033[4mOrb Notes on Test Splitting\033[0m
