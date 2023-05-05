@@ -114,7 +114,6 @@ jobs:
           when: always
       - run: 
           name: Code Coverage (jacoco)
-          when: always
           command: |
             for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
             echo "checking $SERVICE..."
@@ -130,6 +129,16 @@ jobs:
             cp target/surefire-reports/*.xml ../../test-reports
             # return to previously saved path
             popd
+            done
+      - run: 
+          name: aggregate all module tests
+          when: always
+          command: |
+            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+            echo "checking $SERVICE..."
+            # save current working dir to memory and cd to src/$SERVICE
+            cp src/$SERVICE/target/surefire-reports/*.xml test-reports
+            # return to previously saved path
             done
       - store_test_results:
           path: test-reports
