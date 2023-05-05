@@ -214,6 +214,7 @@ class BalanceReaderControllerTest {
         // Then
         assertNotNull(actualResult);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, actualResult.getStatusCode());
+        fail("Thou shall not pass.");
     }
 
 }
