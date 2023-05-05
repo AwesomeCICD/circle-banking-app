@@ -101,15 +101,13 @@ jobs:
                     "
             mkdir -p .circleci/tests/
 
-            # generate excluded surefire tests using provided pattern
-
+            # generate excluded surefire tests using provided pattern, convert slashes to periods (classnames)
             circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
                 sed -e 's#^src/[a-z]*/src/test/java/#''#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
-            circleci tests split --split-by=timings --timings-type=classname <
-            .circleci/tests/surefire_classnames > /tmp/this_node_tests || 
-
-            touch .circleci/tests/surefire_classnames_ignore_list 
+            #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > /tmp/this_node_tests  
+            #split and filter for 'fails rerun only'
+            cat .circleci/tests/surefire_classnames | circleci tests run --command "xargs echo" --verbose --split-by=timings > /tmp/this_node_tests 
             grep -xvf /tmp/this_node_tests < .circleci/tests/surefire_classnames > .circleci/tests/surefire_classnames_ignore_list 
 
             ./mvnw test -B -Dsurefire.excludesFile=.circleci/tests/surefire_classnames_ignore_list
