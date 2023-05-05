@@ -104,10 +104,10 @@ jobs:
             # generate excluded surefire tests using provided pattern
 
             circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
-                sed -e "s#src/test/java/\(.*\)\.(java|kt)#\1#" | \
+                sed -e 's#^src/[a-z]*/src/test/java/#''#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
             circleci tests split --split-by=timings --timings-type=classname <
-            .circleci/tests/surefire_classnames > /tmp/this_node_tests 
+            .circleci/tests/surefire_classnames > /tmp/this_node_tests || 
 
             grep -xvf /tmp/this_node_tests < .circleci/tests/surefire_classnames >
             .circleci/tests/surefire_classnames_ignore_list 
