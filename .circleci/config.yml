@@ -103,10 +103,11 @@ jobs:
             circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
                 sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
-            #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > /tmp/this_node_tests  
+            #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > .circleci/tests/this_node_tests  
             #split and filter for 'fails rerun only'
-            (cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> /tmp/this_node_tests' --verbose --split-by=timings #--timings-type=classname  ) || echo "Dont fail on missing"
-            grep -xvf /tmp/this_node_tests < .circleci/tests/surefire_classnames > .circleci/tests/surefire_classnames_ignore_list 
+            cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> .circleci/tests/this_node_tests' --verbose --split-by=timings  
+            cat .circleci/tests/this_node_tests
+            grep -xvf .circleci/tests/this_node_tests < .circleci/tests/surefire_classnames > .circleci/tests/surefire_classnames_ignore_list 
             
             ARGS="-B"
             if [ -s .circleci/tests/surefire_classnames_ignore_list ]; then
