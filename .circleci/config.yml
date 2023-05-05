@@ -85,7 +85,7 @@ jobs:
       - run:
           environment:
             PARAM_IT_PATTERN: '**/*IT*.java'
-            PARAM_TEST_DIR: 'src/test/java'
+            PARAM_TEST_DIR: 'src/**/src/test/java'
             PARAM_TEST_PATTERN: '**/*Test*.java'
           name: Parellel and Selected Tests
           command: >-
