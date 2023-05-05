@@ -112,12 +112,8 @@ jobs:
             grep -xvf /tmp/this_node_tests < .circleci/tests/surefire_classnames >
             .circleci/tests/surefire_classnames_ignore_list 
 
-            ./mvnw test
-            -Dsurefire.excludesFile=.circleci/tests/surefire_classnames_ignore_list
+            ./mvnw test -B -Dsurefire.excludesFile=.circleci/tests/surefire_classnames_ignore_list
             
-
-            set +x
-        
      
 
       - store_artifacts:
