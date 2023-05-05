@@ -106,7 +106,7 @@ jobs:
             #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > .circleci/tests/this_node_tests  
             #split and filter for 'fails rerun only'
             #cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> .circleci/tests/this_node_tests' --verbose --split-by=timings  
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs -I {} echo {} | tr " " "," | ./mvnw -B test -Dtest=' --verbose --split-by=timings  
+            cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs -I {} echo {} | tr " " "," | ./mvnw -DskipAfterFailureCount=0 -B test -Dtest=' --verbose --split-by=timings  
             
       - store_artifacts:
           path: .circleci/tests/
