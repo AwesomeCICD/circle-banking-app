@@ -107,10 +107,15 @@ jobs:
                 tr "/" "." > .circleci/tests/surefire_classnames
             #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > /tmp/this_node_tests  
             #split and filter for 'fails rerun only'
-            cat .circleci/tests/surefire_classnames | circleci tests run --command "xargs echo" --verbose --split-by=timings > /tmp/this_node_tests 
+            cat .circleci/tests/surefire_classnames | circleci tests run --command "xargs echo" --verbose --split-by=timings --timings-type=classname > /tmp/this_node_tests 
             grep -xvf /tmp/this_node_tests < .circleci/tests/surefire_classnames > .circleci/tests/surefire_classnames_ignore_list 
-
-            ./mvnw test -B -Dsurefire.excludesFile=.circleci/tests/surefire_classnames_ignore_list
+            
+            ARGS="-B"
+            if [ -s .circleci/tests/surefire_classnames_ignore_list ]; then
+              echo "Tests to exclude from parellelism, or previous success during re-run"
+              ARGS+=" -Dsurefire.excludesFile=.circleci/tests/surefire_classnames_ignore_list"
+            fi
+            ./mvnw test $ARGS
             
      
 
