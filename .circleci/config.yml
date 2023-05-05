@@ -115,9 +115,6 @@ jobs:
               ARGS+=" -Dsurefire.excludesFile=.circleci/tests/surefire_classnames_ignore_list"
             fi
             ./mvnw test $ARGS
-            
-     
-
       - store_artifacts:
           path: .circleci/tests/
           when: always
