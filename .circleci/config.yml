@@ -107,7 +107,6 @@ jobs:
             #split and filter for 'fails rerun only'
             #cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> .circleci/tests/this_node_tests' --verbose --split-by=timings  
              
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs -I {} echo {} >> .circleci/tests/only_failures' --verbose --split-by=timings  
             cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs -I {} echo {} | tr " " "," | xargs ./mvnw -B test -Dtest=' --verbose --split-by=timings  
             
       - store_artifacts:
@@ -241,6 +240,9 @@ workflows:
       - python-test
       - skaffold-build-push:
           context: cera-vault-oidc
+          filters:
+            branches:
+              only: [ main ]
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
