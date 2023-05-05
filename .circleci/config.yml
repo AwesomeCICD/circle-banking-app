@@ -109,6 +109,7 @@ jobs:
              
             cat .circleci/tests/surefire_classnames | tr "\n" "," | xargs -I {} echo "-Dtest={} test"
             cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs -I xxxx echo xxxx | tr " " "," | xargs -I {} ./mvnw -B -Dtest={} test' --verbose --split-by=timings  
+            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} echo "-B -Dtest={} test"' 
             
       - store_artifacts:
           path: .circleci/tests/
