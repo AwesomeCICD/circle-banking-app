@@ -107,7 +107,7 @@ jobs:
             #split and filter for 'fails rerun only'
             cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> .circleci/tests/this_node_tests' --verbose --split-by=timings  
             cat .circleci/tests/this_node_tests
-            grep -xvf .circleci/tests/this_node_tests < .circleci/tests/surefire_classnames > .circleci/tests/surefire_classnames_ignore_list 
+            grep -xvf .circleci/tests/this_node_tests < .circleci/tests/surefire_classnames > .circleci/tests/surefire_classnames_ignore_list || echo "No Excludes! Run all tests."
             
             ARGS="-B"
             if [ -s .circleci/tests/surefire_classnames_ignore_list ]; then
