@@ -48,7 +48,7 @@ jobs:
                 pip install -r requirements.txt
                 #python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
                 TEST_FILES=$(circleci tests glob "tests/test_*.py")
-                echo $TEST_FILES | circleci tests run --command="xargs pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
+                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
                 deactivate
               # return to previously saved path
               popd
