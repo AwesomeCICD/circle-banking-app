@@ -103,7 +103,7 @@ jobs:
 
             # generate excluded surefire tests using provided pattern, convert slashes to periods (classnames)
             circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
-                sed -e 's#^src/[a-z]*/src/test/java/#''#' | \
+                sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
             #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > /tmp/this_node_tests  
             #split and filter for 'fails rerun only'
