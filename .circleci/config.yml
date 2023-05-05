@@ -131,8 +131,10 @@ jobs:
             done
       - store_test_results:
           path: test-reports
+          when: always
       - store_artifacts:
           path: test-reports
+          when: always
 
   skaffold-build-push:
       executor: jdk17
