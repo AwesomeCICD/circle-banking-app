@@ -113,7 +113,8 @@ jobs:
             # save current working dir to memory and cd to src/$SERVICE
             if [ -s "src/$SERVICE/target/jacoco.exec" ];then 
               cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
-              cp src/$SERVICE/target/jacoco.exec test-reports/jacoco/$SERVICE || echo "No jacoco sts for this node"
+              mkdir -p test-reports/jacoco/$SERVICE/
+              cp src/$SERVICE/target/jacoco.exec test-reports/jacoco/$SERVICE/ || echo "No jacoco sts for this node"
             fi
             # return to previously saved path
             done
