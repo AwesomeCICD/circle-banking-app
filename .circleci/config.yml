@@ -82,9 +82,6 @@ jobs:
           key: v2-mvn-full-{{ .Branch }}
           paths:
             - ~/.m2
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: test-reports
       - run:
           environment:
             PARAM_IT_PATTERN: '**/*IT*.java'
@@ -107,7 +104,6 @@ jobs:
                 sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
             cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
-            
       - run: 
           name: aggregate all module tests
           when: always
@@ -115,7 +111,10 @@ jobs:
             for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
             echo "checking $SERVICE..."
             # save current working dir to memory and cd to src/$SERVICE
-            cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
+            if [ -s "src/$SERVICE/target/jacoco.exec" ];then 
+              cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
+              cp src/$SERVICE/target/jacoco.exec test-reports/jacoco/$SERVICE || echo "No jacoco sts for this node"
+            fi
             # return to previously saved path
             done
       - store_test_results:
@@ -123,8 +122,9 @@ jobs:
           when: always
       - persist_to_workspace:
           root: test-reports
-        
-
+          path: jacoco
+      - attach_workspace:
+          at: test-reports
       - run: 
           name: Code Coverage (jacoco)
           command: |
@@ -132,6 +132,7 @@ jobs:
             echo "checking $SERVICE..."
             # save current working dir to memory and cd to src/$SERVICE
             pushd src/$SERVICE
+            cp ../../test-reports/jacoco/$SERVICE/jacoco.exec src/$SERVICE/target/jacoco.exec
             ../../mvnw jacoco:report
             echo "Coverage for $SERVICE:"
             awk -F, \
@@ -139,7 +140,7 @@ jobs:
             { print covered, "/", instructions, " instructions covered"; \
             print int(100*covered/instructions), "% covered" }' \
             target/site/jacoco/jacoco.csv
-            cp target/surefire-reports/*.xml ../../test-reports
+            cp target/site/jacoco/jacoco.csv ../../test-reports
             # return to previously saved path
             popd
             done
