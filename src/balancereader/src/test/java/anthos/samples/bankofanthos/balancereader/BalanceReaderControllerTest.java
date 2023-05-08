@@ -74,9 +74,7 @@ class BalanceReaderControllerTest {
     private static final String BEARER_TOKEN = "Bearer abc";
     private static final String TOKEN = "abc";
 
-   
-    @Autowired
-    private Environment env;
+
 
     @BeforeEach
     void setUp() {
@@ -229,9 +227,9 @@ class BalanceReaderControllerTest {
      * This is a magic test that will pass locally, and fail on first CI run, always.
      */
     void firstRunAlwaysFails() {
-        String firstId = env.getProperty("CIRCLE_WORKFLOW_ID", "A");
-        String secondId = env.getProperty("CIRCLE_WORKFLOW_WORKSPACE_ID", "B") ;
-        assertNotEquals(firstId,secondId,   String.format("This is a demo failure!"));
+        String firstId = System.getProperty("CIRCLE_WORKFLOW_ID", "A");
+        String secondId = System.getProperty("CIRCLE_WORKFLOW_WORKSPACE_ID", "B") ;
+        assertNotEquals(firstId, secondId, "This is a demo failure!");
     }
 
 }
