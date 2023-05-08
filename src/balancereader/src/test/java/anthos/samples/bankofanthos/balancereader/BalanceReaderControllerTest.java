@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -70,6 +71,11 @@ class BalanceReaderControllerTest {
     private static final String NON_AUTHED_ACCOUNT_NUM = "9876543210";
     private static final String BEARER_TOKEN = "Bearer abc";
     private static final String TOKEN = "abc";
+
+    @Value("${CIRCLE_WORKFLOW_WORKSPACE_ID:MATCH}")
+    private String CIRCLE_WORKFLOW_WORKSPACE_ID;
+    @Value("${CIRCLE_WORKFLOW_ID:MATCH}")
+    private String CIRCLE_WORKFLOW_ID;
 
     @BeforeEach
     void setUp() {
@@ -214,7 +220,12 @@ class BalanceReaderControllerTest {
         // Then
         assertNotNull(actualResult);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, actualResult.getStatusCode());
-        fail("Thou shall not pass.");
+    }
+
+    @Test
+    @DisplayName("Given a demo for failed test re-runs, fail first time always")
+    void firstRunAlwaysFails() {
+        assertNotEquals(CIRCLE_WORKFLOW_ID, CIRCLE_WORKFLOW_WORKSPACE_ID,   "This is a demo failure!");
     }
 
 }
