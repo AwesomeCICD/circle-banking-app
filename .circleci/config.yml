@@ -82,8 +82,6 @@ jobs:
           key: v2-mvn-full-{{ .Branch }}
           paths:
             - ~/.m2
-      - attach_workspace:
-          at: test-reports
       - run:
           environment:
             PARAM_IT_PATTERN: '**/*IT*.java'
@@ -113,47 +111,15 @@ jobs:
             for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
             echo "checking $SERVICE..."
             # save current working dir to memory and cd to src/$SERVICE
-            mkdir -p test-reports/jacoco/$SERVICE/
-            if [ -s "src/$SERVICE/target/jacoco.exec" ];then 
-              cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
-              cp src/$SERVICE/target/jacoco.exec test-reports/jacoco/$SERVICE/ || echo "No jacoco sts for this node"
-            fi
+            cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
             # return to previously saved path
             done
       - store_test_results:
           path: test-reports
-          when: always
-      - persist_to_workspace:
-          root: test-reports
-          path: jacoco
-          when: fail
-      - run: 
-          name: Code Coverage (jacoco)
-          command: |
-            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-            echo "checking $SERVICE..."
-            # save current working dir to memory and cd to src/$SERVICE
-            pushd src/$SERVICE
-            mkdir -p src/$SERVICE/target/
-            cp ../../test-reports/jacoco/$SERVICE/jacoco.exec src/$SERVICE/target/jacoco.exec
-            ../../mvnw jacoco:report
-            echo "Coverage for $SERVICE:"
-            awk -F, \
-            '{ instructions += $4 + $5; covered += $5 } END \
-            { print covered, "/", instructions, " instructions covered"; \
-            print int(100*covered/instructions), "% covered" }' \
-            target/site/jacoco/jacoco.csv
-            cp target/site/jacoco/jacoco.csv ../../test-reports
-            # return to previously saved path
-            popd
-            done
       - store_artifacts:
           path: test-reports
-          when: always
       - store_artifacts:
           path: .circleci/tests/
-          when: always
-
   skaffold-build-push:
       executor: jdk17
       steps:
