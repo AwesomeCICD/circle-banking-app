@@ -33,7 +33,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,10 +74,9 @@ class BalanceReaderControllerTest {
     private static final String BEARER_TOKEN = "Bearer abc";
     private static final String TOKEN = "abc";
 
-    @Value("${CIRCLE_WORKFLOW_WORKSPACE_ID:MATCH}")
-    private String CIRCLE_WORKFLOW_WORKSPACE_ID;
-    @Value("${CIRCLE_WORKFLOW_ID:MATCH}")
-    private String CIRCLE_WORKFLOW_ID;
+   
+    @Autowired
+    private Environment env;
 
     @BeforeEach
     void setUp() {
@@ -224,8 +225,13 @@ class BalanceReaderControllerTest {
 
     @Test
     @DisplayName("Given a demo for failed test re-runs, fail first time always")
+    /*
+     * This is a magic test that will pass locally, and fail on first CI run, always.
+     */
     void firstRunAlwaysFails() {
-        assertNotEquals(CIRCLE_WORKFLOW_ID, CIRCLE_WORKFLOW_WORKSPACE_ID,   "This is a demo failure!");
+        String firstId = env.getProperty("CIRCLE_WORKFLOW_ID", "A");
+        String secondId = env.getProperty("CIRCLE_WORKFLOW_WORKSPACE_ID", "B") ;
+        assertNotEquals(firstId,secondId,   String.format("This is a demo failure!"));
     }
 
 }
