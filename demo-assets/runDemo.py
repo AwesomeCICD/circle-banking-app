@@ -7,7 +7,7 @@ from subprocess import call,run
 import user_info, config_changer
 
 
-main_branch = 'SE-105'
+main_branch = 'feature/SE-105'
 demo_assets = 'demo-assets'
 auth    = None
 settings = None
@@ -128,7 +128,7 @@ def push_changes(branch_name):
 
 def commit_bad_tests():
     test_file_name='src/balancereader/src/test/java/anthos/samples/bankofanthos/balancereader/BalanceReaderControllerTest.java'
-    shutil.copy('./demo-assets/resources/alanceReaderControllerTest.java',test_file_name)
+    shutil.copy('./demo-assets/resources/BalanceReaderControllerTest.java',test_file_name)
     run(['git','add', test_file_name],capture_output=True)
     run(['git','commit', '-m',"Dev work with failing tests.."],capture_output=True)
 
