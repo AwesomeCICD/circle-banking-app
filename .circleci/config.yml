@@ -126,7 +126,7 @@ jobs:
       - persist_to_workspace:
           root: test-reports
           path: jacoco
-          when: always
+          when: fail
       - run: 
           name: Code Coverage (jacoco)
           command: |
