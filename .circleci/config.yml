@@ -82,6 +82,9 @@ jobs:
           key: v2-mvn-full-{{ .Branch }}
           paths:
             - ~/.m2
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: test-reports
       - run:
           environment:
             PARAM_IT_PATTERN: '**/*IT*.java'
@@ -103,17 +106,25 @@ jobs:
             circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
                 sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
-            #old way circleci run split --split-by=timings --timings-type=classname < .circleci/tests/surefire_classnames > .circleci/tests/this_node_tests  
-            #split and filter for 'fails rerun only'
-            #cat .circleci/tests/surefire_classnames | circleci tests run --command 'xargs echo | tr " " "\n" >> .circleci/tests/this_node_tests' --verbose --split-by=timings  
-             
-            cat .circleci/tests/surefire_classnames | tr "\n" "," | xargs -I {} echo "-Dtest={} test"
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} echo "-B -Dtest={} test"' 
             cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
             
-      - store_artifacts:
-          path: .circleci/tests/
+      - run: 
+          name: aggregate all module tests
           when: always
+          command: |
+            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+            echo "checking $SERVICE..."
+            # save current working dir to memory and cd to src/$SERVICE
+            cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
+            # return to previously saved path
+            done
+      - store_test_results:
+          path: test-reports
+          when: always
+      - persist_to_workspace:
+          root: test-reports
+        
+
       - run: 
           name: Code Coverage (jacoco)
           command: |
@@ -132,21 +143,11 @@ jobs:
             # return to previously saved path
             popd
             done
-      - run: 
-          name: aggregate all module tests
-          when: always
-          command: |
-            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-            echo "checking $SERVICE..."
-            # save current working dir to memory and cd to src/$SERVICE
-            cp src/$SERVICE/target/surefire-reports/*.xml test-reports
-            # return to previously saved path
-            done
-      - store_test_results:
+      - store_artifacts:
           path: test-reports
           when: always
       - store_artifacts:
-          path: test-reports
+          path: .circleci/tests/
           when: always
 
   skaffold-build-push:
