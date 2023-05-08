@@ -82,6 +82,8 @@ jobs:
           key: v2-mvn-full-{{ .Branch }}
           paths:
             - ~/.m2
+      - attach_workspace:
+          at: test-reports
       - run:
           environment:
             PARAM_IT_PATTERN: '**/*IT*.java'
@@ -124,8 +126,6 @@ jobs:
       - persist_to_workspace:
           root: test-reports
           path: jacoco
-      - attach_workspace:
-          at: test-reports
       - run: 
           name: Code Coverage (jacoco)
           command: |
@@ -133,6 +133,7 @@ jobs:
             echo "checking $SERVICE..."
             # save current working dir to memory and cd to src/$SERVICE
             pushd src/$SERVICE
+            mkdir -p src/$SERVICE/target/
             cp ../../test-reports/jacoco/$SERVICE/jacoco.exec src/$SERVICE/target/jacoco.exec
             ../../mvnw jacoco:report
             echo "Coverage for $SERVICE:"
