@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import shutil
 import sys
 import logging
 import requests
@@ -6,7 +7,7 @@ from subprocess import call,run
 import user_info, config_changer
 
 
-main_branch = 'main'
+main_branch = 'SE-105'
 demo_assets = 'demo-assets'
 auth    = None
 settings = None
@@ -126,17 +127,8 @@ def push_changes(branch_name):
 
 
 def commit_bad_tests():
-    test_file_name='src/userservice/tests/test_userservice.py'
-    with open(test_file_name,'a') as test_file:
-        test_file.write('''
-    """
-    THis test should not exist outside failing demo branches. 
-    """
-    def test_this_new_test_is_missing_local_dependency(self):
-        #create mock data.load file
-        self.fail("This is a demo failure.")
-        '''
-        )
+    test_file_name='src/balancereader/src/test/java/anthos/samples/bankofanthos/balancereader/BalanceReaderControllerTest.java'
+    shutil.copy('./demo-assets/resources/alanceReaderControllerTest.java',test_file_name)
     run(['git','add', test_file_name],capture_output=True)
     run(['git','commit', '-m',"Dev work with failing tests.."],capture_output=True)
 

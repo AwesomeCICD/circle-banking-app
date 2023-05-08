@@ -221,4 +221,22 @@ class BalanceReaderControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, actualResult.getStatusCode());
     }
 
+    @Test
+    @DisplayName("Given a demo for failed test re-runs, fail first time always")
+    /*
+     * This is a magic test that will pass locally, and fail on first CI run, always.
+     */
+    void firstRunAlwaysFails() {
+        // default (and local values do not match)
+        String firstId = System.getProperty("CIRCLE_WORKFLOW_ID", "A");
+        String secondId = System.getProperty("CIRCLE_WORKFLOW_WORKSPACE_ID", "B") ;
+        // if running on CI
+        if(System.getenv().containsKey("CIRCLE_WORKFLOW_ID")){
+            // upcate live values (will only match first runs!)
+            firstId = System.getenv("CIRCLE_WORKFLOW_ID");
+            secondId = System.getenv("CIRCLE_WORKFLOW_WORKSPACE_ID") ;
+        }
+        assertNotEquals(firstId, secondId, "This is a demo failure!");
+    }
+
 }
