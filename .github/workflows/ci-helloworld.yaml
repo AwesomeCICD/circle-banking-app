@@ -16,7 +16,7 @@ name: "Continuous Integration - Pull Request"
 on: push
 jobs:
   code-tests:
-    runs-on: [self-hosted, runners-v2]
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
       with:
