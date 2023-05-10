@@ -15,7 +15,7 @@
 name: "Continuous Integration - Pull Request"
 on: push
 jobs:
-  code-tests:
+  Java Checkstyle:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -28,32 +28,40 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
         cache: 'maven'
-    # - name: License Check
-    #   run: |
-    #     set -x
-    #     if [[ -d ".git" ]]; then
-    #       rm -rf .git
-    #     fi
-    #     git init
-    #     git add --all
-    #     git -c user.name="CI Bot" -c user.email="<>" commit -m "initial state"
-    #     addlicense ./
-    #     if [[ -n $(git status -s) ]]; then
-    #       exit 1
-    #     fi
-    # - name: Java Checkstyle
-    #   timeout-minutes: 20
-    #   run: |
-    #     pwd
-    #     ls
-    #     ls -a
-    #     mvn checkstyle:check
-    - name: Build with Maven
+    - name: Java Checkstyle
       run: mvn checkstyle:check
+  
+  Java Unit Tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
     - name: Java Unit Tests
       timeout-minutes: 20
       run: |
         mvn test
+
+  Java Code Coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
     - name: Java Code Coverage
       timeout-minutes: 20
       run: |
@@ -71,6 +79,17 @@ jobs:
           # return to previously saved path
           popd
         done
+    
+    
+    # - name: Python Checkstyle
+    #   timeout-minutes: 20
+    #   run: |
+    #     pylint --rcfile=./.pylintrc ./src/*/*.py
+    # - name: Java Unit Tests
+    #   timeout-minutes: 20
+    #   run: |
+    #     mvn test
+
     # - name: Python Unit Tests
     #   timeout-minutes: 20
     #   run: |
