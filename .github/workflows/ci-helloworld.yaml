@@ -39,6 +39,8 @@ jobs:
       timeout-minutes: 20
       run: |
         pwd
+        ls
+        ls -a
     # - name: Python Checkstyle
     #   timeout-minutes: 20
     #   run: |
