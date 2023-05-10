@@ -41,6 +41,7 @@ jobs:
         pwd
         ls
         ls -a
+        mvn checkstyle:check
     # - name: Python Checkstyle
     #   timeout-minutes: 20
     #   run: |
