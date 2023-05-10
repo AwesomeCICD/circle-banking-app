@@ -15,7 +15,7 @@
 name: "Continuous Integration - Pull Request"
 on: push
 jobs:
-  Java Checkstyle:
+  Java-Checkstyle:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -31,7 +31,7 @@ jobs:
     - name: Java Checkstyle
       run: mvn checkstyle:check
   
-  Java Unit Tests:
+  Java-Unit-Tests:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -49,7 +49,7 @@ jobs:
       run: |
         mvn test
 
-  Java Code Coverage:
+  Java-Code-Coverage:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
