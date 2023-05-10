@@ -66,6 +66,20 @@ jobs:
           popd
         done
     
+  Python-Checksyle:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10' 
+        steps:
+    - name: Java Unit Tests
+      timeout-minutes: 20
+      run: |
+        pylint --rcfile=./.pylintrc ./src/*/*.py
+
+    
     
     # - name: Python Checkstyle
     #   timeout-minutes: 20
