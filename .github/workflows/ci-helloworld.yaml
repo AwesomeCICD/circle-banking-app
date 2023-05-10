@@ -50,15 +50,10 @@ jobs:
     #     mvn checkstyle:check
     - name: Build with Maven
       run: mvn checkstyle:check
-    - name: Python Checkstyle
+    - name: Java Unit Tests
       timeout-minutes: 20
       run: |
-        pylint --rcfile=./.pylintrc ./src/*/*.py
-    # - name: Java Unit Tests
-    #   timeout-minutes: 20
-    #   run: |
-    #     source /etc/profile.d/java.sh
-    #     mvn test
+        mvn test
     # - name: Java Code Coverage
     #   timeout-minutes: 20
     #   run: |
