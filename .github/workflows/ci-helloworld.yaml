@@ -57,7 +57,6 @@ jobs:
     - name: Java Code Coverage
       timeout-minutes: 20
       run: |
-        source /etc/profile.d/java.sh
         for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
           echo "checking $SERVICE..."
           # save current working dir to memory and cd to src/$SERVICE
