@@ -41,13 +41,13 @@ jobs:
     #     if [[ -n $(git status -s) ]]; then
     #       exit 1
     #     fi
-    - name: Java Checkstyle
-      timeout-minutes: 20
-      run: |
-        pwd
-        ls
-        ls -a
-        mvn checkstyle:check
+    # - name: Java Checkstyle
+    #   timeout-minutes: 20
+    #   run: |
+    #     pwd
+    #     ls
+    #     ls -a
+    #     mvn checkstyle:check
     - name: Build with Maven
       run: mvn checkstyle:check
     # - name: Python Checkstyle
