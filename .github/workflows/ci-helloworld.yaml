@@ -148,20 +148,20 @@ jobs:
             jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
 
 
-        - name: Docker Layer Caching     
-          uses: satackey/action-docker-layer-caching@v0.0.11
-          continue-on-error: true
-          run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+        #- name: Docker Layer Caching     
+        #  uses: satackey/action-docker-layer-caching@v0.0.11
+         # continue-on-error: true
+        #  run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
 
         
-        - restore-keys: |
-            - v2-mvn-full-{{ .Branch }}
-            - v2-mvn-full-
+        #- restore-keys: |
+         #   - v2-mvn-full-{{ .Branch }}
+         #   - v2-mvn-full-
 
-        - restore-keys: |
-            - v1-skaffold-${{ hashFiles('**/skaffold.yaml') }}
-            - v1-skaffold-
-            - v1-
+       # - restore-keys: |
+         #   - v1-skaffold-${{ hashFiles('**/skaffold.yaml') }}
+         #   - v1-skaffold-
+         #   - v1-
 
         - name: Export Docker Tag to Nexus  
           run: |
@@ -182,11 +182,11 @@ jobs:
            restore-keys: v1-skaffold-
         
     
-        - name: persist_to_workspace
-          uses: {% data reusables.actions.action-upload-artifact %}
-          with:
-            name: homework
-            path: ./tags.json
+        #- name: persist_to_workspace
+        #  uses: {% data reusables.actions.action-upload-artifact" %}
+        #  with:
+        #    name: homework
+         #   path: ./tags.json
  
     # - name: Python Checkstyle
     #   timeout-minutes: 20
