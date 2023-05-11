@@ -1,45 +1,83 @@
-name: "GHA v CCI pipeline compare"
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-on:
-  pull_request:
-    branches:
-      - gha-v-cci
-          
-executors:
-  with-chrome:
-    docker:
-      - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
-  base:
-    docker:
-      - image: cimg/deploy:2022.08
-  jdk17:
-    docker:
-      - image: cimg/openjdk:17.0.3
-    
-    resource_class: xlarge
-  python38:
-    docker:
-      - image: cimg/python:3.8
-
-
+name: "Continuous Integration - Pull Request"
+on: push
 jobs:
-
-  python-checkstyle:
-    
+  Java-Checkstyle:
     runs-on: ubuntu-latest
-    container: python:3.8
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Python Linter
-        uses: actions/setup-python@v4
-        with:
-            python-version: '3.10' 
-      - run: pip install pylint
-      - run: pylint --rcfile=./.pylintrc ./src/*/*.py
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
+    - name: Java Checkstyle
+      run: mvn checkstyle:check
+  
+  Java-Unit-Tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
+    - name: Java Unit Tests
+      timeout-minutes: 20
+      run: |
+        mvn test
+    - name: Java Code Coverage
+      timeout-minutes: 20
+      run: |
+        for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+          echo "checking $SERVICE..."
+          # save current working dir to memory and cd to src/$SERVICE
+          pushd src/$SERVICE
+            mvn jacoco:report
+            echo "Coverage for $SERVICE:"
+            awk -F, \
+            '{ instructions += $4 + $5; covered += $5 } END \
+            { print covered, "/", instructions, " instructions covered"; \
+            print int(100*covered/instructions), "% covered" }' \
+            target/site/jacoco/jacoco.csv
+          # return to previously saved path
+          popd
+        done
+
+  Python-Checkstyle:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10' 
+    - run: pip install pylint
+    - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
     runs-on: ubuntu-latest
-    container: python:3.8
     steps:
       - uses: actions/checkout@v3
       - run: mkdir test-reports
@@ -69,149 +107,145 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
            path: test-reports
-  
-
-  skaffold-build-push:
-      runs-on: ubuntu-latest
-      container: jdk:17.0.3
-      steps:
-        - uses: actions/checkout@v3
-        - uses: actions/setup-java@v3
-          with:
-            distribution: 'temurin'
-            java-version: '17'
-            cache: 'maven'
-        - name: Build with Maven
-          run: mvn -B package --file pom.xml
-        - name: Install Skaffold
-          run: |
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-            sudo install skaffold /usr/local/bin/
-
-        - name: Install Vault Agent (if not present)
-          run: |
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h    
-
-        - name: Load Credentials from Vault
-          run: |
-            ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
-            echo "Environment (BOA_ENV ): $BOA_ENV"
-            export VAULT_ADDR="https://vault.cera.circleci-labs.com"
-            export VAULT_TOKEN=`vault write -field=token auth/jwt/login role=boa-$ROLE-deploy jwt=$CIRCLE_OIDC_TOKEN`
-            vault read -format=json secret/data/cluster/boa-pipeline-$ROLE > /tmp/cluster-secret.json
-            jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
-            vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
-            jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
-
-
-        - name: Docker Layer Caching     
-          uses: satackey/action-docker-layer-caching@v0.0.11
-          continue-on-error: true
-          run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
-
-        
-        - restore-keys: |
-            - v2-mvn-full-{{ .Branch }}
-            - v2-mvn-full-
-
-        - restore-keys: |
-            - v1-skaffold-${{ hashFiles('**/skaffold.yaml') }}
-            - v1-skaffold-
-            - v1-
-
-        - name: Export Docker Tag to Nexus  
-          run: |
-            export DOCKER_TAG=build$(git rev-parse HEAD:src)
-            echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-            mkdir output
-            skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
-            ls /tmp/
-
-        - name: Cache Skaffold
-          uses: actions/cache@v3
-          with:
-           path: |
-             ~/.skaffold/cache
-           key: v1-skaffold-${{ hashFiles('**/skaffold.yaml') }}
-           restore-keys: v1-skaffold-
-        
     
-        - name: persist_to_workspace
-          uses: {% data reusables.actions.action-upload-artifact %}
-          with:
-            name: homework
-            path: ./tags.json
+  # Python-Checksyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.10' 
+  #       steps:
+  #   - name: Java Unit Tests
+  #     timeout-minutes: 20
+  #     run: |
+  #       pylint --rcfile=./.pylintrc ./src/*/*.py
 
-  
-  
-
-workflows:
-  main:
-    jobs:
-      - java-checkstyle
-      - java-test-and-code-cov
-      - python-checkstyle
-      - python-test
-      - skaffold-build-push:
-          context: cera-vault-oidc
-      - deploy:
-          name: Deploy Dev
-          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
-      - e2e:
-          requires: [ Deploy Dev ]
-      - deploy:
-          name: Deploy Production
-          requires: [ e2e ]
-          boa-environment: prod
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
-          filters:
-            branches:
-              only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-Namer-Prod
+    
+    
+    # - name: Python Checkstyle
+    #   timeout-minutes: 20
+    #   run: |
+    #     pylint --rcfile=./.pylintrc ./src/*/*.py
 
 
-commands:
-  load-credentials:
-    steps:
-      - run:
-          name: install vault agent (if not present)
-          command: |
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h    
-      - run:
-          name: Load Credentials from Vault
-          command: |
-            ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
-            echo "Environment (BOA_ENV ): $BOA_ENV"
-            export VAULT_ADDR="https://vault.cera.circleci-labs.com"
-            export VAULT_TOKEN=`vault write -field=token auth/jwt/login role=boa-$ROLE-deploy jwt=$CIRCLE_OIDC_TOKEN`
-            vault read -format=json secret/data/cluster/boa-pipeline-$ROLE > /tmp/cluster-secret.json
-            jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
-            vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
-            jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
+    # - name: Python Unit Tests
+    #   timeout-minutes: 20
+    #   run: |
+    #     set -x
+    #     for SERVICE in "contacts" "userservice"; do
+    #       echo "testing $SERVICE..."
+    #       # save current working dir to memory and cd to src/$SERVICE
+    #       pushd src/$SERVICE
+    #         python3 -m venv $HOME/venv-$SERVICE
+    #         source $HOME/venv-$SERVICE/bin/activate
+    #         pip install --upgrade pip
+    #         pip install -r requirements.txt
+    #         python -m pytest -v -p no:warnings
+    #         deactivate
+    #       # return to previously saved path
+    #       popd
+    #     done
+    # - name: Python Code Coverage
+    #   timeout-minutes: 20
+    #   run: |
+    #     for SERVICE in "contacts" "userservice"; do
+    #       echo "testing $SERVICE..."
+    #       # save current working dir to memory and cd to src/$SERVICE
+    #       pushd src/$SERVICE
+    #         python3 -m venv $HOME/venv-$SERVICE
+    #         source $HOME/venv-$SERVICE/bin/activate
+    #         pip install --upgrade pip
+    #         pip install -r requirements.txt
+    #         python -m pytest --cov=./ tests/
+    #         deactivate
+    #       # return to previously saved path
+    #       popd
+    #     done
+  # deployment-tests:
+  #   runs-on: [self-hosted, runners-v2]
+  #   needs: code-tests
+  #   strategy:
+  #     matrix:
+  #       profile: ["local-code"]
+  #     fail-fast: true
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - name: Build + Deploy PR images to GKE
+  #     timeout-minutes: 20
+  #     run: |
+  #       source /etc/profile.d/java.sh
+  #       NAMESPACE="pr${PR_NUMBER}"
+  #       echo "::set-env name=NAMESPACE::$NAMESPACE"
 
-# VS Code Extension Version: 1.5.1 - test, demo FFT
-
-
+  #       gcloud container clusters get-credentials $PR_CLUSTER --zone $ZONE --project $PROJECT_ID
+  #       cat <<EOF | kubectl apply -f -
+  #       apiVersion: v1
+  #       kind: Namespace
+  #       metadata:
+  #         name: $NAMESPACE
+  #       EOF
+  #       echo Deploying application
+  #       skaffold config set --global local-cluster false
+  #       skaffold run --default-repo=gcr.io/$PROJECT_ID/refs/$PR_NUMBER --tag=$GITHUB_SHA --namespace=$NAMESPACE
+  #     env:
+  #       PR_NUMBER: ${{ github.event.pull_request.number }}
+  #       PROJECT_ID: "bank-of-anthos-ci"
+  #       PR_CLUSTER: "bank-of-anthos-prs"
+  #       ZONE: "us-central1-c"
+  #       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  #   - name: Wait For Pods
+  #     timeout-minutes: 20
+  #     run: |
+  #       set -x
+  #       kubectl config set-context --current --namespace=$NAMESPACE
+  #       kubectl wait --for=condition=available --timeout=300s deployment/frontend
+  #       kubectl wait --for=condition=available --timeout=300s deployment/contacts
+  #       kubectl wait --for=condition=available --timeout=300s deployment/userservice
+  #       kubectl wait --for=condition=available --timeout=300s deployment/ledgerwriter
+  #       kubectl wait --for=condition=available --timeout=300s deployment/transactionhistory
+  #       kubectl wait --for=condition=available --timeout=300s deployment/balancereader
+  #       kubectl wait --for=condition=available --timeout=300s deployment/loadgenerator
+  #       kubectl wait --for=condition=ready --timeout=300s pod/accounts-db-0
+  #       kubectl wait --for=condition=ready --timeout=300s pod/ledger-db-0
+  #   - name: Query EXTERNAL_IP for staging
+  #     timeout-minutes: 5
+  #     run: |
+  #       set -x
+  #       NAMESPACE="pr${PR_NUMBER}"
+  #       get_externalIP() {
+  #         kubectl get service frontend --namespace $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+  #       }
+  #       until [[ -n "$(get_externalIP)" ]]; do
+  #         echo "Querying for external IP for frontend on namespace: $NAMESPACE{}"
+  #       sleep 3
+  #       done
+  #       EXTERNAL_IP=$(get_externalIP)
+  #       echo "::set-env name=EXTERNAL_IP::$EXTERNAL_IP"
+  #     env:
+  #       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  #       PR_NUMBER: ${{ github.event.pull_request.number }}
+  #   - name: Comment EXTERNAL_IP
+  #     timeout-minutes: 5
+  #     env:
+  #         COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     run: |
+  #         curl \
+  #           -X POST \
+  #           $COMMENTS_URL \
+  #           -H "Content-Type: application/json" \
+  #           -H "Authorization: token $GITHUB_TOKEN" \
+  #           --data '{ "body": "🚀 PR staged at '"http://${EXTERNAL_IP}"'"}'
+  #         sleep 60
+  #   - name: Run UI tests (Cypress)
+  #     run: |
+  #       docker run -t -v $PWD/.github/workflows/ui-tests:/e2e -w /e2e -e CYPRESS_baseUrl=http://$EXTERNAL_IP -u node cypress/included:5.0.0
+  #   - uses: actions/upload-artifact@v3
+  #     if: failure()
+  #     with:
+  #         name: cypress-screenshots
+  #         path: ${{ github.workspace }}/.github/workflows/ui-tests/cypress/screenshots
