@@ -66,18 +66,15 @@ jobs:
           popd
         done
 
-  Python-Checksyle:
+  Python-Checkstyle:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
         python-version: '3.10' 
-        steps:
-    - name: Java Unit Tests
-      timeout-minutes: 20
-      run: |
-        pylint --rcfile=./.pylintrc ./src/*/*.py
+    - run: pip install pylint
+    - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
   skaffold-build-push:
     runs-on: ubuntu-latest
