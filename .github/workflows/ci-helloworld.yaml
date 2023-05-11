@@ -62,140 +62,30 @@ jobs:
             { print covered, "/", instructions, " instructions covered"; \
             print int(100*covered/instructions), "% covered" }' \
             target/site/jacoco/jacoco.csv
-       
+          # return to previously saved path
+          popd
+        done
     
-  Python-Checkstyle:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10' 
-    - run: pip install pylint
-    - run: pylint --rcfile=./.pylintrc ./src/*/*.py
+  # Python-Checksyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.10' 
+  #       steps:
+  #   - name: Java Unit Tests
+  #     timeout-minutes: 20
+  #     run: |
+  #       pylint --rcfile=./.pylintrc ./src/*/*.py
 
-  python-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: mkdir test-reports
-      - name: Test Python Services
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - run: |
-            for SERVICE in "contacts" "userservice"; do
-              echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
-              pushd src/$SERVICE
-                python3 -m venv $HOME/venv-$SERVICE
-                source $HOME/venv-$SERVICE/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
-                deactivate
-              # return to previously saved path
-              popd
-            done
-      - name: Store Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-            files: |
-              test-reports
-      - name: Store Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-           path: test-reports
     
-
-
-  skaffold-build-push:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: actions/setup-java@v3
-          with:
-            distribution: 'temurin'
-            java-version: '17'
-            cache: 'maven'
-        - name: Build with Maven
-          run: mvn -B package --file pom.xml
-        - name: Install Skaffold
-          run: |
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-            sudo install skaffold /usr/local/bin/
-
-        - name: Install Vault Agent (if not present)
-          run: |
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h    
-
-        - name: Load Credentials from Vault
-          run: |
-            ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
-            echo "Environment (BOA_ENV ): $BOA_ENV"
-            export VAULT_ADDR="https://vault.cera.circleci-labs.com"
-            export VAULT_TOKEN=`vault write -field=token auth/jwt/login role=boa-$ROLE-deploy jwt=$CIRCLE_OIDC_TOKEN`
-            vault read -format=json secret/data/cluster/boa-pipeline-$ROLE > /tmp/cluster-secret.json
-            jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
-            vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
-            jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
-
-
-        #- name: Docker Layer Caching     
-        #  uses: satackey/action-docker-layer-caching@v0.0.11
-         # continue-on-error: true
-        #  run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
-
-        
-        #- restore-keys: |
-         #   - v2-mvn-full-{{ .Branch }}
-         #   - v2-mvn-full-
-
-       # - restore-keys: |
-         #   - v1-skaffold-${{ hashFiles('**/skaffold.yaml') }}
-         #   - v1-skaffold-
-         #   - v1-
-
-        - name: Export Docker Tag to Nexus  
-          run: |
-            export DOCKER_TAG=build$(git rev-parse HEAD:src)
-            echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-            mkdir output
-            skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
-            ls /tmp/
-
-        - name: Cache Skaffold
-          uses: actions/cache@v3
-          with:
-           path: |
-             ~/.skaffold/cache
-           key: v1-skaffold-${{ hashFiles('**/skaffold.yaml') }}
-           restore-keys: v1-skaffold-
-        
     
-        #- name: persist_to_workspace
-        #  uses: {% data reusables.actions.action-upload-artifact" %}
-        #  with:
-        #    name: homework
-         #   path: ./tags.json
- 
     # - name: Python Checkstyle
     #   timeout-minutes: 20
     #   run: |
     #     pylint --rcfile=./.pylintrc ./src/*/*.py
-    # - name: Java Unit Tests
-    #   timeout-minutes: 20
-    #   run: |
-    #     mvn test
+
 
     # - name: Python Unit Tests
     #   timeout-minutes: 20
