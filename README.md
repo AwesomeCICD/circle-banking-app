@@ -58,7 +58,7 @@ We can use namespaces to represent the distinct environments.
 **Yes SE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
 
 ```
-skaffold run --tag=build-local --default-repo=483285841698.dkr.ecr.us-west-2.amazonaws.com
+skaffold run --tag=build-local --default-repo=docker.nexus.cera.circleci-labs.com
 ```
 
 5. **Wait for the Pods to be ready.**
