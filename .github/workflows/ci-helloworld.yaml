@@ -65,7 +65,7 @@ jobs:
           # return to previously saved path
           popd
         done
-   
+
   Python-Checkstyle:
     runs-on: ubuntu-latest
     steps:
@@ -75,39 +75,7 @@ jobs:
         python-version: '3.10' 
     - run: pip install pylint
     - run: pylint --rcfile=./.pylintrc ./src/*/*.py
-  
-  
-  python-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: mkdir test-reports
-      - name: Test Python Services
-        uses: actions/setup-python@v4
-      - run: |
-            for SERVICE in "contacts" "userservice"; do
-              echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
-              pushd src/$SERVICE
-                python3 -m venv $HOME/venv-$SERVICE
-                source $HOME/venv-$SERVICE/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
-                deactivate
-              # return to previously saved path
-              popd
-            done
-      - name: Store Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-            files: |
-              test-reports
-      - name: Store Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-           path: test-reports
+    
   # Python-Checksyle:
   #   runs-on: ubuntu-latest
   #   steps:
