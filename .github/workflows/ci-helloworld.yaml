@@ -65,16 +65,34 @@ jobs:
           # return to previously saved path
           popd
         done
-   
-  Python-Checkstyle:
+
+  skaffold-build-push:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10' 
-    - run: pip install pylint
-    - run: pylint --rcfile=./.pylintrc ./src/*/*.py
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+      - name: Install Skaffold
+        run: |
+          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+          sudo install skaffold /usr/local/bin/
+
+      - name: Install Vault Agent (if not present)
+        run: |
+          vault -h && exit 0 || echo "Installing vault"
+          #only runs if vault command avbove failed
+          cd /tmp
+          wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
+          unzip vault_1.12.2_linux_amd64.zip
+          sudo mv vault /usr/local/bin        
+          vault -h    
+   
+ 
     
   # Python-Checksyle:
   #   runs-on: ubuntu-latest
