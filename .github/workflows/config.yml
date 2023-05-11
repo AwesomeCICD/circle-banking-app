@@ -115,6 +115,11 @@ jobs:
       - name: Enable Vault JWT
         uses: hashicorp/vault-action@v2 
       - run: vault auth enable jwt
+        with:
+            url: https://vault.cera.circleci-labs.com
+            token: ${{ secrets.VAULT_TOKEN }}
+            secrets: |
+                    
       - run: vault write auth/jwt/config \
              bound_issuer="https://token.actions.githubusercontent.com" \
              oidc_discovery_url="https://token.actions.githubusercontent.com"
