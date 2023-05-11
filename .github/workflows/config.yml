@@ -113,8 +113,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Enable Vault JWT
-        uses: actions/setup-python@v4  
-      - run: vault auth enable jwt
+        uses: hashicorp/vault-action@v2 
       - run: vault auth enable jwt
       - run: vault write auth/jwt/config \
              bound_issuer="https://token.actions.githubusercontent.com" \
