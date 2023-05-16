@@ -21,9 +21,12 @@ Additionally it will walk through a series of "experiences"
 - policy violation - production context on dev branchs, pushed to main and warning in UI
   - HIT ENTER
 - Fix policy issue, push to origin, healthy pipeline spawned in UI
-- Create alternate [name]-fail branch with test failure pushed, failing pipeline spawned in UI.
+- Create alternate [name]-fail branch witha flaky-test failure pushed, failing pipeline spawned in UI.
+  - Flaky Test `alwaysFailsFirstRun` will pass locally, fail first CI, pass CI re-runs (SSH or failed retry)  
+  **WARNING** If re-run it will Suceed, meaning deploy will run, possibly colliding with the healthy branch.  
+  (choose one tail to tell, cancel healthy branch if telling this one)
   
-![Example result in UI](ui-result.png)
+![Example result in UI](resources/ui-result.png)
 
 ## More Info
 
