@@ -142,6 +142,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
+      
       - name: Get Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.4.0
@@ -151,4 +152,9 @@ jobs:
           method: jwt
           path: gh-actions
           secrets: |
-            secret/data/gh-demo demo_secret
+            secret/data/gh-demo demo_secret | HELLO_WORLD
+        run: |
+          echo "we should now have access to vault"
+          echo $HELLO_WORLD
+        run: |
+          echo '${{ steps.secrets.outputs.NPM_TOKEN }}'
