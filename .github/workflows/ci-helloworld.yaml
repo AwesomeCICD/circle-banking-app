@@ -147,7 +147,7 @@ jobs:
         uses: hashicorp/vault-action@v2.4.0
         with:
           url: https://dev.vault.cera.circleci-labs.com
-          role: gh-demo
+          role: demo-role
           method: jwt
           path: gh-actions
           secrets: |
