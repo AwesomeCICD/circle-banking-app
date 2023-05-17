@@ -106,159 +106,31 @@ jobs:
       - name: Store Artifacts
         uses: actions/upload-artifact@v3
         with:
-           path: test-reports
-
-  Vault-test:
+           path: test-reports    
+    
+  retrieve-secret:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - uses: actions/checkout@v3
-      - name: Enable Vault JWT
-        uses: hashicorp/vault-action@v2
+      - name: Retrieve secret from Vault
+        uses: hashicorp/vault-action@v2.4.0
         with:
-            url: https://vault.cera.circleci-labs.com
-            token: ${{ secrets.VAULT_TOKEN }}
-                    
-      - run: vault write auth/jwt/config \
-             bound_issuer="https://token.actions.githubusercontent.com" \
-             oidc_discovery_url="https://token.actions.githubusercontent.com"
-  # Python-Checksyle:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - uses: actions/setup-python@v4
-  #     with:
-  #       python-version: '3.10' 
-  #       steps:
-  #   - name: Java Unit Tests
-  #     timeout-minutes: 20
-  #     run: |
-  #       pylint --rcfile=./.pylintrc ./src/*/*.py
+           method: jwt
+           url: https://vault.cera.circleci-labs.com
+           role: boa-prod-deploy
+           secrets: | 
+              secret/data/cluster/boa-pipeline-dev cluster
+      
+      - run: |
+          echo "Hello world"
+        # with:
+        #   method: jwt
+        #   url: https://vault.cera.circleci-labs.com
+        #   role: boa-$ROLE-deploy
+        #   secrets: secret/data/cluster/boa-pipeline-$ROLE
 
-    
-    
-    # - name: Python Checkstyle
-    #   timeout-minutes: 20
-    #   run: |
-    #     pylint --rcfile=./.pylintrc ./src/*/*.py
-
-
-    # - name: Python Unit Tests
-    #   timeout-minutes: 20
-    #   run: |
-    #     set -x
-    #     for SERVICE in "contacts" "userservice"; do
-    #       echo "testing $SERVICE..."
-    #       # save current working dir to memory and cd to src/$SERVICE
-    #       pushd src/$SERVICE
-    #         python3 -m venv $HOME/venv-$SERVICE
-    #         source $HOME/venv-$SERVICE/bin/activate
-    #         pip install --upgrade pip
-    #         pip install -r requirements.txt
-    #         python -m pytest -v -p no:warnings
-    #         deactivate
-    #       # return to previously saved path
-    #       popd
-    #     done
-    # - name: Python Code Coverage
-    #   timeout-minutes: 20
-    #   run: |
-    #     for SERVICE in "contacts" "userservice"; do
-    #       echo "testing $SERVICE..."
-    #       # save current working dir to memory and cd to src/$SERVICE
-    #       pushd src/$SERVICE
-    #         python3 -m venv $HOME/venv-$SERVICE
-    #         source $HOME/venv-$SERVICE/bin/activate
-    #         pip install --upgrade pip
-    #         pip install -r requirements.txt
-    #         python -m pytest --cov=./ tests/
-    #         deactivate
-    #       # return to previously saved path
-    #       popd
-    #     done
-  # deployment-tests:
-  #   runs-on: [self-hosted, runners-v2]
-  #   needs: code-tests
-  #   strategy:
-  #     matrix:
-  #       profile: ["local-code"]
-  #     fail-fast: true
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       ref: ${{github.event.pull_request.head.ref}}
-  #       repository: ${{github.event.pull_request.head.repo.full_name}}
-  #   - name: Build + Deploy PR images to GKE
-  #     timeout-minutes: 20
-  #     run: |
-  #       source /etc/profile.d/java.sh
-  #       NAMESPACE="pr${PR_NUMBER}"
-  #       echo "::set-env name=NAMESPACE::$NAMESPACE"
-
-  #       gcloud container clusters get-credentials $PR_CLUSTER --zone $ZONE --project $PROJECT_ID
-  #       cat <<EOF | kubectl apply -f -
-  #       apiVersion: v1
-  #       kind: Namespace
-  #       metadata:
-  #         name: $NAMESPACE
-  #       EOF
-  #       echo Deploying application
-  #       skaffold config set --global local-cluster false
-  #       skaffold run --default-repo=gcr.io/$PROJECT_ID/refs/$PR_NUMBER --tag=$GITHUB_SHA --namespace=$NAMESPACE
-  #     env:
-  #       PR_NUMBER: ${{ github.event.pull_request.number }}
-  #       PROJECT_ID: "bank-of-anthos-ci"
-  #       PR_CLUSTER: "bank-of-anthos-prs"
-  #       ZONE: "us-central1-c"
-  #       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  #   - name: Wait For Pods
-  #     timeout-minutes: 20
-  #     run: |
-  #       set -x
-  #       kubectl config set-context --current --namespace=$NAMESPACE
-  #       kubectl wait --for=condition=available --timeout=300s deployment/frontend
-  #       kubectl wait --for=condition=available --timeout=300s deployment/contacts
-  #       kubectl wait --for=condition=available --timeout=300s deployment/userservice
-  #       kubectl wait --for=condition=available --timeout=300s deployment/ledgerwriter
-  #       kubectl wait --for=condition=available --timeout=300s deployment/transactionhistory
-  #       kubectl wait --for=condition=available --timeout=300s deployment/balancereader
-  #       kubectl wait --for=condition=available --timeout=300s deployment/loadgenerator
-  #       kubectl wait --for=condition=ready --timeout=300s pod/accounts-db-0
-  #       kubectl wait --for=condition=ready --timeout=300s pod/ledger-db-0
-  #   - name: Query EXTERNAL_IP for staging
-  #     timeout-minutes: 5
-  #     run: |
-  #       set -x
-  #       NAMESPACE="pr${PR_NUMBER}"
-  #       get_externalIP() {
-  #         kubectl get service frontend --namespace $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-  #       }
-  #       until [[ -n "$(get_externalIP)" ]]; do
-  #         echo "Querying for external IP for frontend on namespace: $NAMESPACE{}"
-  #       sleep 3
-  #       done
-  #       EXTERNAL_IP=$(get_externalIP)
-  #       echo "::set-env name=EXTERNAL_IP::$EXTERNAL_IP"
-  #     env:
-  #       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  #       PR_NUMBER: ${{ github.event.pull_request.number }}
-  #   - name: Comment EXTERNAL_IP
-  #     timeout-minutes: 5
-  #     env:
-  #         COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     run: |
-  #         curl \
-  #           -X POST \
-  #           $COMMENTS_URL \
-  #           -H "Content-Type: application/json" \
-  #           -H "Authorization: token $GITHUB_TOKEN" \
-  #           --data '{ "body": "🚀 PR staged at '"http://${EXTERNAL_IP}"'"}'
-  #         sleep 60
-  #   - name: Run UI tests (Cypress)
-  #     run: |
-  #       docker run -t -v $PWD/.github/workflows/ui-tests:/e2e -w /e2e -e CYPRESS_baseUrl=http://$EXTERNAL_IP -u node cypress/included:5.0.0
-  #   - uses: actions/upload-artifact@v3
-  #     if: failure()
-  #     with:
-  #         name: cypress-screenshots
-  #         path: ${{ github.workspace }}/.github/workflows/ui-tests/cypress/screenshots
+      - name: Use secret from Vault
+        run: |
+          # This step has access to the secret retrieved above; see hashicorp/vault-action for more details.
