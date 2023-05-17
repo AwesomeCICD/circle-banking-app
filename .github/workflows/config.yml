@@ -136,44 +136,62 @@ jobs:
   #         # This step has access to the secret retrieved above; see hashicorp/vault-action for more details.
 
 
- load-vault-credentials:
+#  load-vault-credentials:
+#     permissions:
+#       id-token: write
+#       contents: read
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Get Secrets
+#         id: secrets
+#         uses: hashicorp/vault-action@v2.4.0
+#         with:
+#           url: https://vault.cera.circleci-labs.com
+#           role: demo-role
+#           method: jwt
+#           path: gh-actions
+#           secrets: |
+#             secret/data/cluster/boa-pipeline-dev namespace-gha | HELLO_WORLD
+
+
+ retrieve-secret:
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
-    runs-on: ubuntu-latest
     steps:
-      - name: Get Secrets
-        id: secrets
+      - name: Retrieve secret from Vault
         uses: hashicorp/vault-action@v2.4.0
         with:
-          url: https://vault.cera.circleci-labs.com
-          role: demo-role
-          method: jwt
-          path: gh-actions
-          secrets: |
-            secret/data/cluster/boa-pipeline-dev namespace-gha | HELLO_WORLD
+            method: jwt
+            url: https://vault.cera.circleci-labs.com
+            role: demo-role
+            secrets: secret/data/cluster/boa-pipeline-dev namespace-gha | HELLO_WORLD
 
- skaffold-build-push:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: hiberbee/github-action-skaffold@1.20.0
-        - uses: satackey/action-docker-layer-caching@v0.0.11
-          continue-on-error: true
-        - run: |
+      - name: Use secret from Vault
+        run: |
+            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+            sudo install skaffold /usr/local/bin/
+            vault -h && exit 0 || echo "Installing vault"
+            #only runs if vault command avbove failed
+            cd /tmp
+            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
+            unzip vault_1.12.2_linux_amd64.zip
+            sudo mv vault /usr/local/bin        
+            vault -h   
             export DOCKER_TAG=build$(git rev-parse HEAD:src)
             echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
             ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
             mkdir output
             skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
             ls /tmp/
-        - name: Save Cache
-          uses: actions/cache@v3
-          with:
-           path: |
-              ~/.skaffold/cache
-           key: ${{ runner.os }}-v1-skaffold-${{ .Branch }}
+
+      - name: Save Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+             ~/.skaffold/cache
+          key: ${{ runner.os }}-v1-skaffold-${{ .Branch }}
 
         # - name: Upload math result for job 1
         #   uses: {% data reusables.actions.action-upload-artifact %}
