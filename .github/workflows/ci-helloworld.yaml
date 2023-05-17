@@ -117,6 +117,7 @@ jobs:
       - name: Get Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.4.0
+        uses: actions/checkout@v3
         with:
           url: https://vault.cera.circleci-labs.com
           role: demo-role
@@ -129,8 +130,9 @@ jobs:
       - run: |
             export DOCKER_TAG=build-foxy+db-gha
             echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-            pwd
-            cd ..
-            ls -a
-            pwd
+            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+            mkdir output
+            skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
+            ls /tmp/
+          
              
