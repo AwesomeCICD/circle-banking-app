@@ -137,15 +137,15 @@ jobs:
           secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
           secret/data/nexus/boa-deployer username | NEXUS_USERNAME 
     
-  #   - name: Scaffold Install
-  #   - run : |
-  #         curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-  #         sudo install skaffold /usr/local/bin/
+    - name: Scaffold Install
+    - run : |
+          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+          sudo install skaffold /usr/local/bin/
     
-  #   - name: Nexus & Scaffold build
-  #     with:
-  #       ref: ${{github.event.pull_request.head.ref}}
-  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+    - name: Nexus & Scaffold build
+      with:
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
   
   #   - run: |
   #         export DOCKER_TAG=build-foxy+db-gha
