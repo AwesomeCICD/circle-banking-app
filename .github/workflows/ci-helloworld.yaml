@@ -76,31 +76,52 @@ jobs:
     - run: pip install pylint
     - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
-  skaffold-build-push:
+  python-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - run: mkdir test-reports
+      - name: Test Python Services
+        uses: actions/setup-python@v4
+      - run: |
+            for SERVICE in "contacts" "userservice"; do
+              echo "testing $SERVICE..."
+              # save current working dir to memory and cd to src/$SERVICE
+              pushd src/$SERVICE
+                python3 -m venv $HOME/venv-$SERVICE
+                source $HOME/venv-$SERVICE/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
+                deactivate
+              # return to previously saved path
+              popd
+            done
+      - name: Store Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
-      - name: Install Skaffold
-        run: |
-          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-          sudo install skaffold /usr/local/bin/
+            files: |
+              test-reports
+      - name: Store Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+           path: test-reports
+    
+  # Python-Checksyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.10' 
+  #       steps:
+  #   - name: Java Unit Tests
+  #     timeout-minutes: 20
+  #     run: |
+  #       pylint --rcfile=./.pylintrc ./src/*/*.py
 
-      - name: Install Vault Agent (if not present)
-        run: |
-          vault -h && exit 0 || echo "Installing vault"
-          #only runs if vault command avbove failed
-          cd /tmp
-          wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-          unzip vault_1.12.2_linux_amd64.zip
-          sudo mv vault /usr/local/bin        
-          vault -h        
+    
     
       # - name: Load Credentials from Vault
       #   run: |
