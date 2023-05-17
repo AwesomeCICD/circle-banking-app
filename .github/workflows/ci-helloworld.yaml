@@ -127,19 +127,25 @@ jobs:
             secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
             secret/data/nexus/boa-deployer username | NEXUS_USERNAME 
       
-      - name: Nexus & Scaffold
+      - name: Scaffold Install
+      - run : |
+            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+            sudo install skaffold /usr/local/bin/
+      
+      - name: Nexus & Scaffold build
         uses: actions/checkout@v3
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
+    
       - run: |
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-            sudo install skaffold /usr/local/bin/
+            export JAVA_HOME=$(/usr/libexec/java_home -v 17)
             export DOCKER_TAG=build-foxy+db-gha
             echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
             ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
             mkdir output
             skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
             ls /tmp/
+      
           
              
