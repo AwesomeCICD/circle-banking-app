@@ -118,8 +118,15 @@ jobs:
         run: |
           ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
           echo "Environment (BOA_ENV ): $BOA_ENV"
+      
       - name: Retrieve secret from Vault
         uses: hashicorp/vault-action@v2.4.0
+        with:
+           method: jwt
+           url: https://vault.cera.circleci-labs.com
+           role: boa-$ROLE-deploy
+           secrets: secret/data/cluster/boa-pipeline-$ROLE
+      
       - run: |
           echo "Hello world"
         # with:
