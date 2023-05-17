@@ -120,7 +120,7 @@ jobs:
            method: jwt
            path: jwt-gha
            url: https://vault.cera.circleci-labs.com
-           role: auth/jwt/role/boa-gha-production
+           role: auth/jwt-gha/role/boa-gha-production
            secrets: | 
               secret/data/cluster/boa-pipeline-dev cluster
       
