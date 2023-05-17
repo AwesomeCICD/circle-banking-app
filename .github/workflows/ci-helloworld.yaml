@@ -124,8 +124,8 @@ jobs:
         with:
            method: jwt
            url: https://vault.cera.circleci-labs.com
-           role: "boa-dev-deploy"
-           secrets: "secret/data/cluster/boa-pipeline-dev"
+           role: boa-dev-deploy
+           secrets: secret/data/cluster/boa-pipeline-dev
       
       - run: |
           echo "Hello world"
