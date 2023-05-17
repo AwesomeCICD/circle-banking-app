@@ -119,7 +119,7 @@ jobs:
         with:
            method: jwt
            url: https://vault.cera.circleci-labs.com
-           role: boa-prod-deploy
+           role: boa-gha-production
            secrets: | 
               secret/data/cluster/boa-pipeline-dev cluster
       
