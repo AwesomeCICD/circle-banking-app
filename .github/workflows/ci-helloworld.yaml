@@ -114,11 +114,6 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: set vault role
-        run: |
-          ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
-          echo "Environment (BOA_ENV ): $BOA_ENV"
-      
       - name: Retrieve secret from Vault
         uses: hashicorp/vault-action@v2.4.0
         with:
