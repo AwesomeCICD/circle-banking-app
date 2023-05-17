@@ -124,6 +124,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
         cache: 'maven'  
+    
     - name: Get Secrets
       id: secrets
       uses: hashicorp/vault-action@v2.4.0
