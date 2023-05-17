@@ -135,30 +135,48 @@ jobs:
   #       run: |
   #         # This step has access to the secret retrieved above; see hashicorp/vault-action for more details.
 
-  skaffold-build-push:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: hiberbee/github-action-skaffold@1.20.0
-        - uses: satackey/action-docker-layer-caching@v0.0.11
-          continue-on-error: true
-        - run: |
-            export DOCKER_TAG=build$(git rev-parse HEAD:src)
-            echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-            mkdir output
-            skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
-            ls /tmp/
-        - name: Save Cache
-          uses: actions/cache@v3
-          with:
-           path: |
-              ~/.skaffold/cache
-           key: ${{ runner.os }}-v1-skaffold-${{ .Branch }}
+  # skaffold-build-push:
+  #     runs-on: ubuntu-latest
+  #     steps:
+  #       - uses: actions/checkout@v3
+  #       - uses: hiberbee/github-action-skaffold@1.20.0
+  #       - uses: satackey/action-docker-layer-caching@v0.0.11
+  #         continue-on-error: true
+  #       - run: |
+  #           export DOCKER_TAG=build$(git rev-parse HEAD:src)
+  #           echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
+  #           # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
+  #           ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+  #           mkdir output
+  #           skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
+  #           ls /tmp/
+  #       - name: Save Cache
+  #         uses: actions/cache@v3
+  #         with:
+  #          path: |
+  #             ~/.skaffold/cache
+  #          key: ${{ runner.os }}-v1-skaffold-${{ .Branch }}
 
-        - name: Upload math result for job 1
-          uses: {% data reusables.actions.action-upload-artifact %}
-          with:
-            name: Json tags
-            path: tags.json
+  #       - name: Upload math result for job 1
+  #         uses: {% data reusables.actions.action-upload-artifact %}
+  #         with:
+  #           name: Json tags
+            # path: tags.json
+
+
+  demo:
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.0
+        with:
+          url: https://dev.vault.cera.circleci-labs.com
+          role: gh-demo
+          method: jwt
+          path: gh-actions
+          secrets: |
+            secret/data/gh-demo demo_secret
