@@ -108,13 +108,24 @@ jobs:
         with:
            path: test-reports    
     
-      # - name: Load Credentials from Vault
-      #   run: |
-      #     ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
-      #     echo "Environment (BOA_ENV ): $BOA_ENV"
-      #     export VAULT_ADDR="https://vault.cera.circleci-labs.com"
-      #     export VAULT_TOKEN=`vault write -field=token auth/jwt/login role=boa-$ROLE-deploy jwt=$CIRCLE_OIDC_TOKEN`
-      #     vault read -format=json secret/data/cluster/boa-pipeline-$ROLE > /tmp/cluster-secret.json
-      #     jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
-      #     vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
-      #     jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
+  retrieve-secret:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: set vault role
+        run: |
+          ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
+          echo "Environment (BOA_ENV ): $BOA_ENV"
+      - name: Retrieve secret from Vault
+        uses: hashicorp/vault-action@v2.4.0
+          with:
+            method: jwt
+            url: https://vault.cera.circleci-labs.com
+            role: boa-$ROLE-deploy
+            secrets: secret/data/cluster/boa-pipeline-$ROLE
+
+      - name: Use secret from Vault
+        run: |
+          # This step has access to the secret retrieved above; see hashicorp/vault-action for more details.
