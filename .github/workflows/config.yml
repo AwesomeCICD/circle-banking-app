@@ -174,9 +174,9 @@ jobs:
         id: secrets
         uses: hashicorp/vault-action@v2.4.0
         with:
-          url: https://dev.vault.cera.circleci-labs.com
-          role: gh-demo
+          url: https://vault.cera.circleci-labs.com
+          role: demo-role
           method: jwt
           path: gh-actions
           secrets: |
-            secret/data/gh-demo demo_secret
+            secret/data/cluster/boa-pipeline-dev namespace-gha | HELLO_WORLD
