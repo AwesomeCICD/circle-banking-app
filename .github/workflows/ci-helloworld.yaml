@@ -113,11 +113,11 @@ jobs:
       id-token: write
       contents: read
     runs-on: ubuntu-latest
+    - uses: actions/checkout@v3
     steps:
       - name: Get Secrets
         id: secrets
-      - uses: hashicorp/vault-action@v2.4.0
-      - uses: actions/checkout@v3
+        uses: hashicorp/vault-action@v2.4.0
         with:
           url: https://vault.cera.circleci-labs.com
           role: demo-role
