@@ -130,4 +130,7 @@ jobs:
             export DOCKER_TAG=build-foxy+db-gha
             echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
             pwd
-            ls -a 
+            cd ..
+            ls -a
+            pwd
+             
