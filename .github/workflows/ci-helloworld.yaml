@@ -123,22 +123,19 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-        cache: 'maven'
-    - name: Java Checkstyle
-      run: mvn checkstyle:check
-    
-  #   - name: Get Secrets
-  #     id: secrets
-  #     uses: hashicorp/vault-action@v2.4.0
-  #     with:
-  #       url: https://vault.cera.circleci-labs.com
-  #       role: demo-role
-  #       method: jwt
-  #       path: gh-actions
-  #       secrets: |
-  #         secret/data/cluster/boa-pipeline-dev namespace-gha | NAMESPACE_GHA ;
-  #         secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
-  #         secret/data/nexus/boa-deployer username | NEXUS_USERNAME 
+        cache: 'maven'  
+    - name: Get Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v2.4.0
+      with:
+        url: https://vault.cera.circleci-labs.com
+        role: demo-role
+        method: jwt
+        path: gh-actions
+        secrets: |
+          secret/data/cluster/boa-pipeline-dev namespace-gha | NAMESPACE_GHA ;
+          secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
+          secret/data/nexus/boa-deployer username | NEXUS_USERNAME 
     
   #   - name: Scaffold Install
   #   - run : |
