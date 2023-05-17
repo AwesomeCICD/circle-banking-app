@@ -108,32 +108,7 @@ jobs:
   #       with:
   #          path: test-reports    
     
-  # retrieve-secret:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - name: Retrieve secret from Vault
-  #       uses: hashicorp/vault-action@v2.4.0
-  #       with:
-  #          method: jwt
-  #          url: https://vault.cera.circleci-labs.com
-  #          role: boa-prod-deploy
-  #          secrets: | 
-  #             secret/data/cluster/boa-pipeline-dev cluster
-      
-  #     - run: |
-  #         echo "Hello world"
-  #       # with:
-  #       #   method: jwt
-  #       #   url: https://vault.cera.circleci-labs.com
-  #       #   role: boa-$ROLE-deploy
-  #       #   secrets: secret/data/cluster/boa-pipeline-$ROLE
-
-  #     - name: Use secret from Vault
-  #       run: |
-  #         # This step has access to the secret retrieved above; see hashicorp/vault-action for more details.
+  
 
 
 #  load-vault-credentials:
@@ -154,33 +129,30 @@ jobs:
 #             secret/data/cluster/boa-pipeline-dev namespace-gha | HELLO_WORLD
 
 
- retrieve-secret:
-    runs-on: ubuntu-latest
+ retrieve-secrets:
     permissions:
       id-token: write
       contents: read
+    runs-on: ubuntu-latest
     steps:
-      - name: Retrieve secret from Vault
+      - name: Get Secrets
+        id: secrets
         uses: hashicorp/vault-action@v2.4.0
         with:
-            method: jwt
-            url: https://vault.cera.circleci-labs.com
-            role: demo-role
-            secrets: secret/data/cluster/boa-pipeline-dev namespace-gha | HELLO_WORLD
-
-      - name: Use secret from Vault
-        run: |
+          url: https://vault.cera.circleci-labs.com
+          role: demo-role
+          method: jwt
+          path: gh-actions
+          secrets: |
+            secret/data/cluster/boa-pipeline-dev namespace-gha | NAMESPACE_GHA ;
+            secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
+            secret/data/nexus/boa-deployer username | NEXUS_USERNAME 
+      - run: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h   
-            export DOCKER_TAG=build$(git rev-parse HEAD:src)
+            export DOCKER_TAG=build-foxy+db-gha
             echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
+            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
             ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
             mkdir output
             skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
