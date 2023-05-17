@@ -12,101 +12,101 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# name: "Continuous Integration - Pull Request"
-# on: push
-# jobs:
-#   Java-Checkstyle:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         ref: ${{github.event.pull_request.head.ref}}
-#         repository: ${{github.event.pull_request.head.repo.full_name}}
-#     - uses: actions/checkout@v3
-#     - uses: actions/setup-java@v3
-#       with:
-#         distribution: 'temurin'
-#         java-version: '17'
-#         cache: 'maven'
-#     - name: Java Checkstyle
-#       run: mvn checkstyle:check
+name: "Continuous Integration - Pull Request"
+on: push
+jobs:
+  # Java-Checkstyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven'
+  #   - name: Java Checkstyle
+  #     run: mvn checkstyle:check
   
-#   Java-Unit-Tests:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         ref: ${{github.event.pull_request.head.ref}}
-#         repository: ${{github.event.pull_request.head.repo.full_name}}
-#     - uses: actions/checkout@v3
-#     - uses: actions/setup-java@v3
-#       with:
-#         distribution: 'temurin'
-#         java-version: '17'
-#         cache: 'maven'
-#     - name: Java Unit Tests
-#       timeout-minutes: 20
-#       run: |
-#         mvn test
-#     - name: Java Code Coverage
-#       timeout-minutes: 20
-#       run: |
-#         for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-#           echo "checking $SERVICE..."
-#           # save current working dir to memory and cd to src/$SERVICE
-#           pushd src/$SERVICE
-#             mvn jacoco:report
-#             echo "Coverage for $SERVICE:"
-#             awk -F, \
-#             '{ instructions += $4 + $5; covered += $5 } END \
-#             { print covered, "/", instructions, " instructions covered"; \
-#             print int(100*covered/instructions), "% covered" }' \
-#             target/site/jacoco/jacoco.csv
-#           # return to previously saved path
-#           popd
-#         done
+  # Java-Unit-Tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven'
+  #   - name: Java Unit Tests
+  #     timeout-minutes: 20
+  #     run: |
+  #       mvn test
+  #   - name: Java Code Coverage
+  #     timeout-minutes: 20
+  #     run: |
+  #       for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+  #         echo "checking $SERVICE..."
+  #         # save current working dir to memory and cd to src/$SERVICE
+  #         pushd src/$SERVICE
+  #           mvn jacoco:report
+  #           echo "Coverage for $SERVICE:"
+  #           awk -F, \
+  #           '{ instructions += $4 + $5; covered += $5 } END \
+  #           { print covered, "/", instructions, " instructions covered"; \
+  #           print int(100*covered/instructions), "% covered" }' \
+  #           target/site/jacoco/jacoco.csv
+  #         # return to previously saved path
+  #         popd
+  #       done
 
-#   Python-Checkstyle:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v3
-#     - uses: actions/setup-python@v4
-#       with:
-#         python-version: '3.10' 
-#     - run: pip install pylint
-#     - run: pylint --rcfile=./.pylintrc ./src/*/*.py
+  # Python-Checkstyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.10' 
+  #   - run: pip install pylint
+  #   - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
-#   python-test:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v3
-#       - run: mkdir test-reports
-#       - name: Test Python Services
-#         uses: actions/setup-python@v4
-#       - run: |
-#             for SERVICE in "contacts" "userservice"; do
-#               echo "testing $SERVICE..."
-#               # save current working dir to memory and cd to src/$SERVICE
-#               pushd src/$SERVICE
-#                 python3 -m venv $HOME/venv-$SERVICE
-#                 source $HOME/venv-$SERVICE/bin/activate
-#                 pip install --upgrade pip
-#                 pip install -r requirements.txt
-#                 python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
-#                 deactivate
-#               # return to previously saved path
-#               popd
-#             done
-#       - name: Store Test Results
-#         uses: EnricoMi/publish-unit-test-result-action@v2
-#         if: always()
-#         with:
-#             files: |
-#               test-reports
-#       - name: Store Artifacts
-#         uses: actions/upload-artifact@v3
-#         with:
-#            path: test-reports    
+  # python-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - run: mkdir test-reports
+  #     - name: Test Python Services
+  #       uses: actions/setup-python@v4
+  #     - run: |
+  #           for SERVICE in "contacts" "userservice"; do
+  #             echo "testing $SERVICE..."
+  #             # save current working dir to memory and cd to src/$SERVICE
+  #             pushd src/$SERVICE
+  #               python3 -m venv $HOME/venv-$SERVICE
+  #               source $HOME/venv-$SERVICE/bin/activate
+  #               pip install --upgrade pip
+  #               pip install -r requirements.txt
+  #               python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
+  #               deactivate
+  #             # return to previously saved path
+  #             popd
+  #           done
+  #     - name: Store Test Results
+  #       uses: EnricoMi/publish-unit-test-result-action@v2
+  #       if: always()
+  #       with:
+  #           files: |
+  #             test-reports
+  #     - name: Store Artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #          path: test-reports    
     
   retrieve-secret:
     runs-on: ubuntu-latest
