@@ -106,22 +106,7 @@ jobs:
       - name: Store Artifacts
         uses: actions/upload-artifact@v3
         with:
-           path: test-reports
-    
-  # Python-Checksyle:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - uses: actions/setup-python@v4
-  #     with:
-  #       python-version: '3.10' 
-  #       steps:
-  #   - name: Java Unit Tests
-  #     timeout-minutes: 20
-  #     run: |
-  #       pylint --rcfile=./.pylintrc ./src/*/*.py
-
-    
+           path: test-reports    
     
       # - name: Load Credentials from Vault
       #   run: |
