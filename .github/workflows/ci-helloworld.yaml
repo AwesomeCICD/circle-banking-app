@@ -117,7 +117,7 @@ jobs:
       - name: Retrieve secret from Vault
         uses: hashicorp/vault-action@v2.4.0
         with:
-           method: jwt
+           method: jwt-gha
            url: https://vault.cera.circleci-labs.com
            role: boa-gha-production
            secrets: | 
