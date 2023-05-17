@@ -129,8 +129,5 @@ jobs:
       - run: |
             export DOCKER_TAG=build-foxy+db-gha
             echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-            mkdir output
-            skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
-            ls /tmp/
+            pwd
+            ls -a 
