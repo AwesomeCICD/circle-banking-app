@@ -156,5 +156,4 @@ jobs:
         run: |
           echo "we should now have access to vault"
           echo $HELLO_WORLD
-        run: |
           echo '${{ steps.secrets.outputs.NPM_TOKEN }}'
