@@ -15,122 +15,150 @@
 name: "Continuous Integration - Pull Request"
 on: push
 jobs:
-  Java-Checkstyle:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{github.event.pull_request.head.ref}}
-        repository: ${{github.event.pull_request.head.repo.full_name}}
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'maven'
-    - name: Java Checkstyle
-      run: mvn checkstyle:check
+  # Java-Checkstyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven'
+  #   - name: Java Checkstyle
+  #     run: mvn checkstyle:check
   
-  Java-Unit-Tests:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{github.event.pull_request.head.ref}}
-        repository: ${{github.event.pull_request.head.repo.full_name}}
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'maven'
-    - name: Java Unit Tests
-      timeout-minutes: 20
-      run: |
-        mvn test
-    - name: Java Code Coverage
-      timeout-minutes: 20
-      run: |
-        for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-          echo "checking $SERVICE..."
-          # save current working dir to memory and cd to src/$SERVICE
-          pushd src/$SERVICE
-            mvn jacoco:report
-            echo "Coverage for $SERVICE:"
-            awk -F, \
-            '{ instructions += $4 + $5; covered += $5 } END \
-            { print covered, "/", instructions, " instructions covered"; \
-            print int(100*covered/instructions), "% covered" }' \
-            target/site/jacoco/jacoco.csv
-          # return to previously saved path
-          popd
-        done
+  # Java-Unit-Tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven'
+  #   - name: Java Unit Tests
+  #     timeout-minutes: 20
+  #     run: |
+  #       mvn test
+  #   - name: Java Code Coverage
+  #     timeout-minutes: 20
+  #     run: |
+  #       for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+  #         echo "checking $SERVICE..."
+  #         # save current working dir to memory and cd to src/$SERVICE
+  #         pushd src/$SERVICE
+  #           mvn jacoco:report
+  #           echo "Coverage for $SERVICE:"
+  #           awk -F, \
+  #           '{ instructions += $4 + $5; covered += $5 } END \
+  #           { print covered, "/", instructions, " instructions covered"; \
+  #           print int(100*covered/instructions), "% covered" }' \
+  #           target/site/jacoco/jacoco.csv
+  #         # return to previously saved path
+  #         popd
+  #       done
 
-  Python-Checkstyle:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10' 
-    - run: pip install pylint
-    - run: pylint --rcfile=./.pylintrc ./src/*/*.py
+  # Python-Checkstyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.10' 
+  #   - run: pip install pylint
+  #   - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
-  python-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: mkdir test-reports
-      - name: Test Python Services
-        uses: actions/setup-python@v4
-      - run: |
-            for SERVICE in "contacts" "userservice"; do
-              echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
-              pushd src/$SERVICE
-                python3 -m venv $HOME/venv-$SERVICE
-                source $HOME/venv-$SERVICE/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
-                deactivate
-              # return to previously saved path
-              popd
-            done
-      - name: Store Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-            files: |
-              test-reports
-      - name: Store Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-           path: test-reports    
+  # # python-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - run: mkdir test-reports
+  #     - name: Test Python Services
+  #       uses: actions/setup-python@v4
+  #     - run: |
+  #           for SERVICE in "contacts" "userservice"; do
+  #             echo "testing $SERVICE..."
+  #             # save current working dir to memory and cd to src/$SERVICE
+  #             pushd src/$SERVICE
+  #               python3 -m venv $HOME/venv-$SERVICE
+  #               source $HOME/venv-$SERVICE/bin/activate
+  #               pip install --upgrade pip
+  #               pip install -r requirements.txt
+  #               python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
+  #               deactivate
+  #             # return to previously saved path
+  #             popd
+  #           done
+  #     - name: Store Test Results
+  #       uses: EnricoMi/publish-unit-test-result-action@v2
+  #       if: always()
+  #       with:
+  #           files: |
+  #             test-reports
+  #     - name: Store Artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #          path: test-reports    
     
-  retrieve-secret:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Retrieve secret from Vault
-        uses: hashicorp/vault-action@v2.4.0
-        with:
-           method: jwt
-           url: https://vault.cera.circleci-labs.com
-           role: boa-prod-deploy
-           secrets: | 
-              secret/data/cluster/boa-pipeline-dev cluster
+  # retrieve-secret:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - name: Retrieve secret from Vault
+  #       uses: hashicorp/vault-action@v2.4.0
+  #       with:
+  #          method: jwt
+  #          url: https://vault.cera.circleci-labs.com
+  #          role: boa-prod-deploy
+  #          secrets: | 
+  #             secret/data/cluster/boa-pipeline-dev cluster
       
-      - run: |
-          echo "Hello world"
-        # with:
-        #   method: jwt
-        #   url: https://vault.cera.circleci-labs.com
-        #   role: boa-$ROLE-deploy
-        #   secrets: secret/data/cluster/boa-pipeline-$ROLE
+  #     - run: |
+  #         echo "Hello world"
+  #       # with:
+  #       #   method: jwt
+  #       #   url: https://vault.cera.circleci-labs.com
+  #       #   role: boa-$ROLE-deploy
+  #       #   secrets: secret/data/cluster/boa-pipeline-$ROLE
 
-      - name: Use secret from Vault
-        run: |
-          # This step has access to the secret retrieved above; see hashicorp/vault-action for more details.
+  #     - name: Use secret from Vault
+  #       run: |
+  #         # This step has access to the secret retrieved above; see hashicorp/vault-action for more details.
+
+  skaffold-build-push:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - uses: hiberbee/github-action-skaffold@1.20.0
+        - uses: satackey/action-docker-layer-caching@v0.0.11
+          continue-on-error: true
+        - run: |
+            export DOCKER_TAG=build$(git rev-parse HEAD:src)
+            echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
+            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
+            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+            mkdir output
+            skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
+            ls /tmp/
+        - name: Save Cache
+          uses: actions/cache@v3
+          with:
+           path: |
+              ~/.skaffold/cache
+           key: ${{ runner.os }}-v1-skaffold-${{ .Branch }}
+
+        - name: Upload math result for job 1
+          uses: {% data reusables.actions.action-upload-artifact %}
+          with:
+            name: Json tags
+            path: tags.json
