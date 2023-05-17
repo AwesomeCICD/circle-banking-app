@@ -163,7 +163,7 @@ jobs:
         with:
           path: |
              ~/.skaffold/cache
-          key: ${{ runner.os }}-v1-skaffold-${{ .Branch }}
+          key: ${{ runner.os }}-v1-skaffold-${{ branch.gha-v-cci }}
 
         # - name: Upload math result for job 1
         #   uses: {% data reusables.actions.action-upload-artifact %}
