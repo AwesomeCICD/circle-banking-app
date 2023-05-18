@@ -188,33 +188,20 @@ jobs:
         secrets: |
           secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
           secret/data/nexus/boa-deployer username | NEXUS_USERNAME
-    
-    - run: |
-          touch /tmp/cluster-secret.json
-          echo "${{ toJson(steps.secrets.outputs) }}" >> /tmp/cluster-secret.json
-          touch /tmp/nexus-secret.json
-          echo "${{ toJson(steps.secrets-nexus.outputs) }}" >> /tmp/nexus-secret.json
 
     - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     
     - run: |
-          cat /tmp/cluster-secret.json
-          cat /tmp/nexus-secret.json
-          echo "hello"
-          cat $BASH_ENV
-          echo "world"
-          jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $HELLO_WORLD
-          jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $HELLO_WORLD
-          # curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-          # sudo install kubectl /usr/local/bin/
-          # echo ${K8S_CERT} | base64 -d > ca.crt
-          # kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-          # export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-          # kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          # kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-          # kubectl config use-context default
-          # ls -a $HOME/.kube
-          # cat $HOME/.kube/config
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+          sudo install kubectl /usr/local/bin/
+          echo ${K8S_CERT} | base64 -d > ca.crt
+          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
+          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+          kubectl config use-context default
+          ls -a $HOME/.kube
+          cat $HOME/.kube/config
     #       # kubectl cluster-info
     #       # # kubectl get serviceaccounts -n ${K8S_NAMESPACE}
   #   - name: Nexus & Scaffold build
