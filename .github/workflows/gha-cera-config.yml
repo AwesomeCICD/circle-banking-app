@@ -171,6 +171,8 @@ jobs:
         java-version: '17'
         cache: 'maven'  
      - uses: tale/kubectl-action@v1
+       with:
+        kubectl-version: v1.22.0
      - name: Get Secrets & install skaffold
        id: secrets
        uses: hashicorp/vault-action@v2.4.0
