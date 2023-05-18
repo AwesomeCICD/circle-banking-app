@@ -191,13 +191,6 @@ jobs:
 
     - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::1234567890:role/example-role
-          role-session-name: samplerolesession
-          aws-region: ${{ env.AWS_REGION }}
-    
     - name: Git clone the repository
         uses: actions/checkout@v3
     - name: configure aws credentials
