@@ -173,7 +173,7 @@ jobs:
           secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
           secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
           secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
-          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
+          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT ;
           secret/data/cluster/boa-pipeline-dev url | K8S_URL
     
     - run: |
