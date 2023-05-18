@@ -177,10 +177,8 @@ jobs:
           secret/data/cluster/boa-pipeline-dev url | K8S_URL
     
     - run: |
-          mkdir /tmp/
-          cd /tmp/
-          touch cluster-secret.json
-          echo "${{ toJson(steps.secrets.outputs) }}" >> secrets.json
+          touch /tmp/cluster-secret.json
+          echo "${{ toJson(steps.secrets.outputs) }}" >> /tmp/secrets.json
 
     # - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     # - run: |
