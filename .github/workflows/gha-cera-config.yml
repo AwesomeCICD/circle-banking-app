@@ -194,10 +194,10 @@ jobs:
             ls -a $HOME/.kube
             cat $HOME/.kube/config
             export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-            # kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-            # kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-            # kubectl config use-context default
-            # kubectl get serviceaccounts -n ${K8S_NAMESPACE}
+            kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+            kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+            kubectl config use-context default
+            kubectl get serviceaccounts -n ${K8S_NAMESPACE}
     # - name: Persist workspace
     #     uses: actions/upload-artifact@v2
     #     with:
