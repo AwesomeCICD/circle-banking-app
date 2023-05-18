@@ -179,11 +179,10 @@ jobs:
         method: jwt
         path: gh-actions
         secrets: |
-          secret/data/cluster/boa-pipeline-dev namespace-gha | NAMESPACE_GHA ;
-          secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
-          secret/data/nexus/boa-deployer username | NEXUS_USERNAME
-    #   run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
-    #   run: |
+          secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
+          secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE
+     - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
+    #  - run: |
     #       curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
     #       sudo apt update && sudo apt install kubectl -y
     #       echo ${K8S_CERT} | base64 -d > ca.crt
@@ -198,15 +197,15 @@ jobs:
     #     with:
     #      name: output
     #      path: /home/circleci/project/output
-    #   - name: Deploy BoA
-    #     run: |
-    #      curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-    #      sudo install skaffold /usr/local/bin/
-    #      skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
-    #   - name: Wait for deployment
-    #     run: kubectl wait deployment -n ${K8S_NAMESPACE} frontend --for condition=Available=True --timeout=90s 
-    #   - name: Print Frontend URL
-    #     run: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
+      # - name: Deploy BoA
+      #   run: |
+      #    curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+      #    sudo install skaffold /usr/local/bin/
+      #    skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+      # - name: Wait for deployment
+      #   run: kubectl wait deployment -n ${K8S_NAMESPACE} frontend --for condition=Available=True --timeout=90s 
+      # - name: Print Frontend URL
+      #   run: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
   
 #  e2e:
 #     runs-on: ubuntu-latest
