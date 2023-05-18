@@ -153,27 +153,27 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-      ref: ${{github.event.pull_request.head.ref}}
-      repository: ${{github.event.pull_request.head.repo.full_name}}
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
     - uses: actions/setup-java@v3
       with:
-      distribution: 'temurin'
-      java-version: '17'
-      cache: 'maven'  
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'  
     - name: Get Secrets & install skaffold
       id: secrets
       uses: hashicorp/vault-action@v2.4.0
       with:
-      url: https://vault.cera.circleci-labs.com
-      role: demo-role
-      method: jwt
-      path: gh-actions
-      secrets: |
-        secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
-        secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
-        secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
-        secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
-        secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
+        url: https://vault.cera.circleci-labs.com
+        role: demo-role
+        method: jwt
+        path: gh-actions
+        secrets: |
+          secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
+          secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
+          secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
+          secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
+          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
     - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     - run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
