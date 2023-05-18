@@ -186,8 +186,7 @@ jobs:
           secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
      - run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo apt update && sudo apt install kubectl -y
+          sudo apt-get update && sudo apt install kubectl -y
           echo ${K8S_CERT} | base64 -d > ca.crt
           kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
           export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
