@@ -192,6 +192,7 @@ jobs:
             mkdir -p $HOME/.kube    
             kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
             ls -a $HOME/.kube
+            cat $HOME/.kube/config
             export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
             # kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
             # kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
