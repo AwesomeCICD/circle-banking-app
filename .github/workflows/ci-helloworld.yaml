@@ -176,6 +176,7 @@ jobs:
           secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
     - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     - run: |
+          vault read -format=json secret/data/cluster/boa-pipeline-dev > /tmp/cluster-secret.json
           jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
           vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
           jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
