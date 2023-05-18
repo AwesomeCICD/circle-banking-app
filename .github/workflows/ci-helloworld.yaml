@@ -200,10 +200,11 @@ jobs:
     - run: |
           cat /tmp/cluster-secret.json
           cat /tmp/nexus-secret.json
+          echo "hello"
           cat $BASH_ENV
-          
-          # jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
-          # jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
+          echo "world"
+          # jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> "$BASH_ENV"
+          # jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> "$BASH_ENV"
           # curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
           # sudo install kubectl /usr/local/bin/
           # echo ${K8S_CERT} | base64 -d > ca.crt
