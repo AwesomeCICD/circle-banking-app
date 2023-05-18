@@ -176,6 +176,9 @@ jobs:
           secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
     - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     - run: |
+          jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
+          vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
+          jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
           sudo install kubectl /usr/local/bin/
           echo ${K8S_CERT} | base64 -d > ca.crt
