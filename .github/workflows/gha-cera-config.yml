@@ -189,15 +189,14 @@ jobs:
             curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
             sudo install kubectl /usr/local/bin/
             echo ${K8S_CERT} | base64 -d > ca.crt
-            mkdir -p $HOME/.kube
-            sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-            sudo chown $(id -u):$(id -g) $HOME/.kube/config     
+            mkdir -p $HOME/.kube    
             kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+            ls -a $HOME/.kube
             export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-            kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-            kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-            kubectl config use-context default
-            kubectl get serviceaccounts -n ${K8S_NAMESPACE}
+            # kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+            # kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+            # kubectl config use-context default
+            # kubectl get serviceaccounts -n ${K8S_NAMESPACE}
     # - name: Persist workspace
     #     uses: actions/upload-artifact@v2
     #     with:
