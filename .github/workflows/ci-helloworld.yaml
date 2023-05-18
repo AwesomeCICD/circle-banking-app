@@ -192,7 +192,7 @@ jobs:
     - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     
     - name: Git clone the repository
-        uses: actions/checkout@v3
+      uses: actions/checkout@v3
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
