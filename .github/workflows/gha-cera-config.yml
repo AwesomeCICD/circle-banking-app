@@ -186,11 +186,7 @@ jobs:
           secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
      - run: |
-            sudo apt-get update && sudo apt-get install -y apt-transport-https curl
-            echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-            sudo apt-get update
-            sudo apt-get install -y kubelet kubeadm kubectl
-            sudo apt-mark hold kubelet kubeadm kubectl   
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           # sudo apt-get update && sudo apt install kubectl -y
           # echo ${K8S_CERT} | base64 -d > ca.crt
           # kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
