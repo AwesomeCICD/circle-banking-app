@@ -183,8 +183,7 @@ jobs:
           secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
           secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
           secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
-          secret/data/cluster/boa-pipeline-dev decoded_token | DECODED_TOKEN ;
-          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT ;
+          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT 
      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
      - run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
