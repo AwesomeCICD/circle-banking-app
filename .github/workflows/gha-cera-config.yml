@@ -180,18 +180,22 @@ jobs:
         path: gh-actions
         secrets: |
           secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
-          secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE
+          secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
+          secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
+          secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
+          secret/data/cluster/boa-pipeline-dev decoded_token | DECODED_TOKEN ;
+          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT ;
      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
-    #  - run: |
-    #       curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    #       sudo apt update && sudo apt install kubectl -y
-    #       echo ${K8S_CERT} | base64 -d > ca.crt
-    #       kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-    #       export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-    #       kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-    #       kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-    #       kubectl config use-context default
-    #       kubectl get serviceaccounts -n ${K8S_NAMESPACE}
+     - run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo apt update && sudo apt install kubectl -y
+          echo ${K8S_CERT} | base64 -d > ca.crt
+          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
+          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+          kubectl config use-context default
+          kubectl get serviceaccounts -n ${K8S_NAMESPACE}
     # - name: Persist workspace
     #     uses: actions/upload-artifact@v2
     #     with:
