@@ -265,104 +265,104 @@ jobs:
   #         --reporter-options "mochaFile=results/my-test-output-[hash].xml"
   
   # deploy-prod:
-    needs: e2e
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{github.event.pull_request.head.ref}}
-        repository: ${{github.event.pull_request.head.repo.full_name}}
-    - uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'maven' 
-    - uses: actions/download-artifact@master
-      with:
-        name: my-artifact
-        path: output
+    # needs: e2e
+    # permissions:
+    #   id-token: write
+    #   contents: read
+    # runs-on: ubuntu-latest
+    # steps:
+    # - uses: actions/checkout@v3
+    #   with:
+    #     ref: ${{github.event.pull_request.head.ref}}
+    #     repository: ${{github.event.pull_request.head.repo.full_name}}
+    # - uses: actions/setup-java@v3
+    #   with:
+    #     distribution: 'temurin'
+    #     java-version: '17'
+    #     cache: 'maven' 
+    # - uses: actions/download-artifact@master
+    #   with:
+    #     name: my-artifact
+    #     path: output
 
-    - run: | 
-        cat output/tags.json
-        realpath output/tags.json 
+    # - run: | 
+    #     cat output/tags.json
+    #     realpath output/tags.json 
     
-    - run: | 
-        realpath output/tags.json 
+    # - run: | 
+    #     realpath output/tags.json 
     
-    - run: | 
-        ls -a 
+    # - run: | 
+    #     ls -a 
 
     
-    - name: Get Secrets Cluster
-      id: secrets
-      uses: hashicorp/vault-action@v2.4.0
-      with:
-        url: https://vault.cera.circleci-labs.com
-        role: demo-role
-        method: jwt
-        path: gh-actions
-        secrets: |
-          secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
-          secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
-          secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
-          secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
-          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT ;
-          secret/data/cluster/boa-pipeline-dev url | K8S_URL
+    # - name: Get Secrets Cluster
+    #   id: secrets
+    #   uses: hashicorp/vault-action@v2.4.0
+    #   with:
+    #     url: https://vault.cera.circleci-labs.com
+    #     role: demo-role
+    #     method: jwt
+    #     path: gh-actions
+    #     secrets: |
+    #       secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
+    #       secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
+    #       secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
+    #       secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
+    #       secret/data/cluster/boa-pipeline-dev cert | K8S_CERT ;
+    #       secret/data/cluster/boa-pipeline-dev url | K8S_URL
 
-    - name: Get Secrets Nexus
-      id: secrets-nexus
-      uses: hashicorp/vault-action@v2.4.0
-      with:
-        url: https://vault.cera.circleci-labs.com
-        role: demo-role
-        method: jwt
-        path: gh-actions
-        secrets: |
-          secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
-          secret/data/nexus/boa-deployer username | NEXUS_USERNAME
+    # - name: Get Secrets Nexus
+    #   id: secrets-nexus
+    #   uses: hashicorp/vault-action@v2.4.0
+    #   with:
+    #     url: https://vault.cera.circleci-labs.com
+    #     role: demo-role
+    #     method: jwt
+    #     path: gh-actions
+    #     secrets: |
+    #       secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
+    #       secret/data/nexus/boa-deployer username | NEXUS_USERNAME
 
-    - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
+    # - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     
-    - name: Git clone the repository
-      uses: actions/checkout@v3
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        role-to-assume: arn:aws:iam::483285841698:role/gha-oidc
-        role-session-name: samplerolesession
-        aws-region: us-east-2
+    # - name: Git clone the repository
+    #   uses: actions/checkout@v3
+    # - name: configure aws credentials
+    #   uses: aws-actions/configure-aws-credentials@v2
+    #   with:
+    #     role-to-assume: arn:aws:iam::483285841698:role/gha-oidc
+    #     role-session-name: samplerolesession
+    #     aws-region: us-east-2
 
-    - run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-          sudo install kubectl /usr/local/bin/
-          echo ${K8S_CERT} | base64 -d > ca.crt
-          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-gha
-          kubectl config use-context default
-          ls -a $HOME/.kube
-          cat $HOME/.kube/config
-          kubectl get serviceaccounts -n boa-gha
+    # - run: |
+    #       curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    #       sudo install kubectl /usr/local/bin/
+    #       echo ${K8S_CERT} | base64 -d > ca.crt
+    #       kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+    #       export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
+    #       kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+    #       kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-gha
+    #       kubectl config use-context default
+    #       ls -a $HOME/.kube
+    #       cat $HOME/.kube/config
+    #       kubectl get serviceaccounts -n boa-gha
 
-    - name: get ouput from build
-      uses: actions/download-artifact@master
-      with:
-        name: my-artifact
-        path: output
-    - run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-        sudo install skaffold /usr/local/bin/
-        pwd
-        ls -a 
-        cat output/tags.json
-        skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-gha --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
+    # - name: get ouput from build
+    #   uses: actions/download-artifact@master
+    #   with:
+    #     name: my-artifact
+    #     path: output
+    # - run: |
+    #     curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+    #     sudo install skaffold /usr/local/bin/
+    #     pwd
+    #     ls -a 
+    #     cat output/tags.json
+    #     skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-gha --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
   
-    - run: |
-        kubectl wait deployment -n boa-gha frontend --for condition=Available=True --timeout=90s
+    # - run: |
+    #     kubectl wait deployment -n boa-gha frontend --for condition=Available=True --timeout=90s
  
-    - run: |
-        kubectl get service frontend -n boa-gha | awk '{print $4}'
+    # - run: |
+    #     kubectl get service frontend -n boa-gha | awk '{print $4}'
