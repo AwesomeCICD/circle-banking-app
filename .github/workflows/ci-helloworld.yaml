@@ -199,7 +199,7 @@ jobs:
         role-to-assume: arn:aws:iam::483285841698:role/gha-oidc
         role-session-name: samplerolesession
         aws-region: us-east-2
-        
+
     - run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
           sudo install kubectl /usr/local/bin/
@@ -211,7 +211,7 @@ jobs:
           kubectl config use-context default
           ls -a $HOME/.kube
           cat $HOME/.kube/config
-          kubectl cluster-info
+          kubectl get serviceaccounts -n boa-dev
           # # kubectl get serviceaccounts -n ${K8S_NAMESPACE}
   #   - name: Nexus & Scaffold build
   #     with:
