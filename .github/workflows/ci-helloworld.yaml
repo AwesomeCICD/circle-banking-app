@@ -227,7 +227,7 @@ jobs:
           kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
           export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
           kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-dev-gha
+          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-gha
           kubectl config use-context default
           ls -a $HOME/.kube
           cat $HOME/.kube/config
@@ -244,10 +244,10 @@ jobs:
         pwd
         ls -a 
         cat output/tags.json
-        #skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-dev-gha --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
+        skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-gha --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
   
     - run: |
-        kubectl wait deployment -n boa-dev-gha  frontend --for condition=Available=True --timeout=90s
+        kubectl wait deployment -n boa-gha frontend --for condition=Available=True --timeout=90s
  
     - run: |
         kubectl get service frontend -n boa-dev-gha | awk '{print $4}'
