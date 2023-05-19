@@ -15,97 +15,97 @@
 name: "Continuous Integration - Pull Request"
 on: push
 jobs:
-  # Java-Checkstyle:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       ref: ${{github.event.pull_request.head.ref}}
-  #       repository: ${{github.event.pull_request.head.repo.full_name}}
-  #   - uses: actions/checkout@v3
-  #   - uses: actions/setup-java@v3
-  #     with:
-  #       distribution: 'temurin'
-  #       java-version: '17'
-  #       cache: 'maven'
-  #   - name: Java Checkstyle
-  #     run: mvn checkstyle:check
+  Java-Checkstyle:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
+    - name: Java Checkstyle
+      run: mvn checkstyle:check
   
-  # Java-Unit-Tests:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       ref: ${{github.event.pull_request.head.ref}}
-  #       repository: ${{github.event.pull_request.head.repo.full_name}}
-  #   - uses: actions/checkout@v3
-  #   - uses: actions/setup-java@v3
-  #     with:
-  #       distribution: 'temurin'
-  #       java-version: '17'
-  #       cache: 'maven'
-  #   - name: Java Unit Tests
-  #     timeout-minutes: 20
-  #     run: |
-  #       mvn test
-  #   - name: Java Code Coverage
-  #     timeout-minutes: 20
-  #     run: |
-  #       for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-  #         echo "checking $SERVICE..."
-  #         # save current working dir to memory and cd to src/$SERVICE
-  #         pushd src/$SERVICE
-  #           mvn jacoco:report
-  #           echo "Coverage for $SERVICE:"
-  #           awk -F, \
-  #           '{ instructions += $4 + $5; covered += $5 } END \
-  #           { print covered, "/", instructions, " instructions covered"; \
-  #           print int(100*covered/instructions), "% covered" }' \
-  #           target/site/jacoco/jacoco.csv
-  #         # return to previously saved path
-  #         popd
-  #       done
-  # Python-Checkstyle:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - uses: actions/setup-python@v4
-  #     with:
-  #       python-version: '3.10' 
-  #   - run: pip install pylint
-  #   - run: pylint --rcfile=./.pylintrc ./src/*/*.py
+  Java-Unit-Tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{github.event.pull_request.head.ref}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
+    - name: Java Unit Tests
+      timeout-minutes: 20
+      run: |
+        mvn test
+    - name: Java Code Coverage
+      timeout-minutes: 20
+      run: |
+        for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+          echo "checking $SERVICE..."
+          # save current working dir to memory and cd to src/$SERVICE
+          pushd src/$SERVICE
+            mvn jacoco:report
+            echo "Coverage for $SERVICE:"
+            awk -F, \
+            '{ instructions += $4 + $5; covered += $5 } END \
+            { print covered, "/", instructions, " instructions covered"; \
+            print int(100*covered/instructions), "% covered" }' \
+            target/site/jacoco/jacoco.csv
+          # return to previously saved path
+          popd
+        done
+  Python-Checkstyle:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10' 
+    - run: pip install pylint
+    - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
-  # python-test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - run: mkdir test-reports
-  #     - name: Test Python Services
-  #       uses: actions/setup-python@v4
-  #     - run: |
-  #           for SERVICE in "contacts" "userservice"; do
-  #             echo "testing $SERVICE..."
-  #             # save current working dir to memory and cd to src/$SERVICE
-  #             pushd src/$SERVICE
-  #               python3 -m venv $HOME/venv-$SERVICE
-  #               source $HOME/venv-$SERVICE/bin/activate
-  #               pip install --upgrade pip
-  #               pip install -r requirements.txt
-  #               python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
-  #               deactivate
-  #             # return to previously saved path
-  #             popd
-  #           done
-  #     - name: Store Test Results
-  #       uses: EnricoMi/publish-unit-test-result-action@v2
-  #       if: always()
-  #       with:
-  #           files: |
-  #             test-reports
-  #     - name: Store Artifacts
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #          path: test-reports      
+  python-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: mkdir test-reports
+      - name: Test Python Services
+        uses: actions/setup-python@v4
+      - run: |
+            for SERVICE in "contacts" "userservice"; do
+              echo "testing $SERVICE..."
+              # save current working dir to memory and cd to src/$SERVICE
+              pushd src/$SERVICE
+                python3 -m venv $HOME/venv-$SERVICE
+                source $HOME/venv-$SERVICE/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
+                deactivate
+              # return to previously saved path
+              popd
+            done
+      - name: Store Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+            files: |
+              test-reports
+      - name: Store Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+           path: test-reports      
 
   retrieve-secrets:
     permissions:
@@ -149,8 +149,8 @@ jobs:
         name: my-artifact
         path: output
     
-  deploy:
-    needs: retrieve-secrets
+  deploy-dev:
+    needs: [retrieve-secrets, Java-Checkstyle, Java-Unit-Tests,  Python-Checkstyle, python-test]
     permissions:
       id-token: write
       contents: read
@@ -227,7 +227,7 @@ jobs:
           kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
           export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
           kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-gha
+          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-gha-dev
           kubectl config use-context default
           ls -a $HOME/.kube
           cat $HOME/.kube/config
@@ -244,10 +244,30 @@ jobs:
         pwd
         ls -a 
         cat output/tags.json
-        skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-gha --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
+        skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-gha-dev --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
   
     - run: |
-        kubectl wait deployment -n boa-gha frontend --for condition=Available=True --timeout=90s
+        kubectl wait deployment -n boa-gha-dev frontend --for condition=Available=True --timeout=90s
  
     - run: |
-        kubectl get service frontend -n boa-dev-gha | awk '{print $4}'
+        kubectl get service frontend -n boa-gha-dev | awk '{print $4}'
+
+
+  cypress-run:
+    needs: deploy-dev
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Cypress run
+        uses: cypress-io/github-action@v5
+        with:
+          browser: chrome
+      - run: | 
+          cd ui-tests
+          npx cypress run \
+          --config baseUrl=https://dev.cera.circleci-labs.com \
+          --browser firefox \
+          --reporter junit \
+          --reporter-options "mochaFile=results/my-test-output-[hash].xml"
