@@ -213,13 +213,13 @@ jobs:
           cat $HOME/.kube/config
           kubectl get serviceaccounts -n boa-dev
   
-  - run: |
-      curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-      sudo install skaffold /usr/local/bin/
-      skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-dev-gha --build-artifacts=output/tags.json
+    - run: |
+        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+        sudo install skaffold /usr/local/bin/
+        skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-dev-gha --build-artifacts=output/tags.json
   
-  - run: |
-      kubectl wait deployment -n boa-dev-gha  frontend --for condition=Available=True --timeout=90s
+    - run: |
+        kubectl wait deployment -n boa-dev-gha  frontend --for condition=Available=True --timeout=90s
  
-  - run: |
-      kubectl get service frontend -n boa-dev-gha | awk '{print $4}'
+    - run: |
+        kubectl get service frontend -n boa-dev-gha | awk '{print $4}'
