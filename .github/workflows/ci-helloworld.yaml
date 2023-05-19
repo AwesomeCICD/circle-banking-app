@@ -199,10 +199,7 @@ jobs:
         role-to-assume: arn:aws:iam::483285841698:role/gha-oidc
         role-session-name: samplerolesession
         aws-region: us-east-2
-    - name:  list s3
-      run: |
-        aws s3 ls
-
+        
     - run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
           sudo install kubectl /usr/local/bin/
