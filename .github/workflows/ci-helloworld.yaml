@@ -145,7 +145,7 @@ jobs:
           skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
           ls /tmp/
     
-    - uses: actions/upload-artifact
+    - uses: actions/upload-artifact@master
       with:
         name: my-artifact
         path: output
