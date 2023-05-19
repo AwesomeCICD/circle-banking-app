@@ -236,7 +236,10 @@ jobs:
     - run: |
         curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
         sudo install skaffold /usr/local/bin/
-        skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-dev-gha --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
+        pwd
+        ls -a 
+        cat output/tags.json
+        #skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-dev-gha --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
   
     - run: |
         kubectl wait deployment -n boa-dev-gha  frontend --for condition=Available=True --timeout=90s
