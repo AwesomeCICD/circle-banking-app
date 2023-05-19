@@ -271,7 +271,7 @@ jobs:
           --reporter-options "mochaFile=results/my-test-output-[hash].xml"
   
   deploy-prod:
-    needs: cypress-run
+    needs: e2e
     permissions:
       id-token: write
       contents: read
