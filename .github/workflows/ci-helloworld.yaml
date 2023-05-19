@@ -207,21 +207,19 @@ jobs:
           kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
           export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
           kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-dev-gha
           kubectl config use-context default
           ls -a $HOME/.kube
           cat $HOME/.kube/config
           kubectl get serviceaccounts -n boa-dev
-          # # kubectl get serviceaccounts -n ${K8S_NAMESPACE}
-  #   - name: Nexus & Scaffold build
-  #     with:
-  #       ref: ${{github.event.pull_request.head.ref}}
-  #       repository: ${{github.event.pull_request.head.repo.full_name}}
   
-  #   - run: |
-  #         export DOCKER_TAG=build-foxy+db-gha
-  #         echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-  #         ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-  #         mkdir output
-  #         skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
-  #         ls /tmp/
+  - run: |
+      curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+      sudo install skaffold /usr/local/bin/
+      skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-dev-gha --build-artifacts=output/tags.json
+  
+  - run: |
+      kubectl wait deployment -n boa-dev-gha  frontend --for condition=Available=True --timeout=90s
+ 
+  - run: |
+      kubectl get service frontend -n boa-dev-gha | awk '{print $4}'
