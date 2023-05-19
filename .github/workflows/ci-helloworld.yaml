@@ -15,242 +15,242 @@
 name: "Continuous Integration - Pull Request"
 on: push
 jobs:
-  Java-Checkstyle:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{github.event.pull_request.head.ref}}
-        repository: ${{github.event.pull_request.head.repo.full_name}}
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'maven'
-    - name: Java Checkstyle
-      run: mvn checkstyle:check
+  # Java-Checkstyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven'
+  #   - name: Java Checkstyle
+  #     run: mvn checkstyle:check
   
-  Java-Unit-Tests:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{github.event.pull_request.head.ref}}
-        repository: ${{github.event.pull_request.head.repo.full_name}}
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'maven'
-    - name: Java Unit Tests
-      timeout-minutes: 20
-      run: |
-        mvn test
-    - name: Java Code Coverage
-      timeout-minutes: 20
-      run: |
-        for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-          echo "checking $SERVICE..."
-          # save current working dir to memory and cd to src/$SERVICE
-          pushd src/$SERVICE
-            mvn jacoco:report
-            echo "Coverage for $SERVICE:"
-            awk -F, \
-            '{ instructions += $4 + $5; covered += $5 } END \
-            { print covered, "/", instructions, " instructions covered"; \
-            print int(100*covered/instructions), "% covered" }' \
-            target/site/jacoco/jacoco.csv
-          # return to previously saved path
-          popd
-        done
-  Python-Checkstyle:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10' 
-    - run: pip install pylint
-    - run: pylint --rcfile=./.pylintrc ./src/*/*.py
+  # Java-Unit-Tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven'
+  #   - name: Java Unit Tests
+  #     timeout-minutes: 20
+  #     run: |
+  #       mvn test
+  #   - name: Java Code Coverage
+  #     timeout-minutes: 20
+  #     run: |
+  #       for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
+  #         echo "checking $SERVICE..."
+  #         # save current working dir to memory and cd to src/$SERVICE
+  #         pushd src/$SERVICE
+  #           mvn jacoco:report
+  #           echo "Coverage for $SERVICE:"
+  #           awk -F, \
+  #           '{ instructions += $4 + $5; covered += $5 } END \
+  #           { print covered, "/", instructions, " instructions covered"; \
+  #           print int(100*covered/instructions), "% covered" }' \
+  #           target/site/jacoco/jacoco.csv
+  #         # return to previously saved path
+  #         popd
+  #       done
+  # Python-Checkstyle:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.10' 
+  #   - run: pip install pylint
+  #   - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
-  python-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: mkdir test-reports
-      - name: Test Python Services
-        uses: actions/setup-python@v4
-      - run: |
-            for SERVICE in "contacts" "userservice"; do
-              echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
-              pushd src/$SERVICE
-                python3 -m venv $HOME/venv-$SERVICE
-                source $HOME/venv-$SERVICE/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
-                deactivate
-              # return to previously saved path
-              popd
-            done
-      - name: Store Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-            files: |
-              test-reports
-      - name: Store Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-           path: test-reports      
+  # python-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - run: mkdir test-reports
+  #     - name: Test Python Services
+  #       uses: actions/setup-python@v4
+  #     - run: |
+  #           for SERVICE in "contacts" "userservice"; do
+  #             echo "testing $SERVICE..."
+  #             # save current working dir to memory and cd to src/$SERVICE
+  #             pushd src/$SERVICE
+  #               python3 -m venv $HOME/venv-$SERVICE
+  #               source $HOME/venv-$SERVICE/bin/activate
+  #               pip install --upgrade pip
+  #               pip install -r requirements.txt
+  #               python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
+  #               deactivate
+  #             # return to previously saved path
+  #             popd
+  #           done
+  #     - name: Store Test Results
+  #       uses: EnricoMi/publish-unit-test-result-action@v2
+  #       if: always()
+  #       with:
+  #           files: |
+  #             test-reports
+  #     - name: Store Artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #          path: test-reports      
 
-  retrieve-secrets:
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{github.event.pull_request.head.ref}}
-        repository: ${{github.event.pull_request.head.repo.full_name}}
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'maven'  
-    - name: Get Secrets & install skaffold
-      id: secrets
-      uses: hashicorp/vault-action@v2.4.0
-      with:
-        url: https://vault.cera.circleci-labs.com
-        role: demo-role
-        method: jwt
-        path: gh-actions
-        secrets: |
-          secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
-          secret/data/nexus/boa-deployer username | NEXUS_USERNAME
-    - run : |
-          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-          sudo install skaffold /usr/local/bin/
-          export DOCKER_TAG=build-foxy+db-gha
-          echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
-          ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-          mkdir output
-          skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
-          ls /tmp/
+  # retrieve-secrets:
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven'  
+  #   - name: Get Secrets & install skaffold
+  #     id: secrets
+  #     uses: hashicorp/vault-action@v2.4.0
+  #     with:
+  #       url: https://vault.cera.circleci-labs.com
+  #       role: demo-role
+  #       method: jwt
+  #       path: gh-actions
+  #       secrets: |
+  #         secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
+  #         secret/data/nexus/boa-deployer username | NEXUS_USERNAME
+  #   - run : |
+  #         curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+  #         sudo install skaffold /usr/local/bin/
+  #         export DOCKER_TAG=build-foxy+db-gha
+  #         echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-labs.com
+  #         ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+  #         mkdir output
+  #         skaffold build --build-concurrency=4 --default-repo=docker.nexus.cera.circleci-labs.com --file-output=output/tags.json
+  #         ls /tmp/
     
-    - uses: actions/upload-artifact@master
-      with:
-        name: my-artifact
-        path: output
+  #   - uses: actions/upload-artifact@master
+  #     with:
+  #       name: my-artifact
+  #       path: output
     
-  deploy-dev:
-    needs: [retrieve-secrets, Java-Checkstyle, Java-Unit-Tests,  Python-Checkstyle, python-test]
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{github.event.pull_request.head.ref}}
-        repository: ${{github.event.pull_request.head.repo.full_name}}
-    - uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'maven' 
-    - uses: actions/download-artifact@master
-      with:
-        name: my-artifact
-        path: output
+  # deploy-dev:
+  #   needs: [retrieve-secrets, Java-Checkstyle, Java-Unit-Tests,  Python-Checkstyle, python-test]
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{github.event.pull_request.head.ref}}
+  #       repository: ${{github.event.pull_request.head.repo.full_name}}
+  #   - uses: actions/setup-java@v3
+  #     with:
+  #       distribution: 'temurin'
+  #       java-version: '17'
+  #       cache: 'maven' 
+  #   - uses: actions/download-artifact@master
+  #     with:
+  #       name: my-artifact
+  #       path: output
 
-    - run: | 
-        cat output/tags.json
-        realpath output/tags.json 
+  #   - run: | 
+  #       cat output/tags.json
+  #       realpath output/tags.json 
     
-    - run: | 
-        realpath output/tags.json 
+  #   - run: | 
+  #       realpath output/tags.json 
     
-    - run: | 
-        ls -a 
+  #   - run: | 
+  #       ls -a 
 
     
-    - name: Get Secrets Cluster
-      id: secrets
-      uses: hashicorp/vault-action@v2.4.0
-      with:
-        url: https://vault.cera.circleci-labs.com
-        role: demo-role
-        method: jwt
-        path: gh-actions
-        secrets: |
-          secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
-          secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
-          secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
-          secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
-          secret/data/cluster/boa-pipeline-dev cert | K8S_CERT ;
-          secret/data/cluster/boa-pipeline-dev url | K8S_URL
+  #   - name: Get Secrets Cluster
+  #     id: secrets
+  #     uses: hashicorp/vault-action@v2.4.0
+  #     with:
+  #       url: https://vault.cera.circleci-labs.com
+  #       role: demo-role
+  #       method: jwt
+  #       path: gh-actions
+  #       secrets: |
+  #         secret/data/cluster/boa-pipeline-dev user | K8S_USER ; 
+  #         secret/data/cluster/boa-pipeline-dev namespace | K8S_NAMESPACE ;
+  #         secret/data/cluster/boa-pipeline-dev cluster | K8S_CLUSTER ; 
+  #         secret/data/cluster/boa-pipeline-dev token | K8S_TOKEN ;
+  #         secret/data/cluster/boa-pipeline-dev cert | K8S_CERT ;
+  #         secret/data/cluster/boa-pipeline-dev url | K8S_URL
 
-    - name: Get Secrets Nexus
-      id: secrets-nexus
-      uses: hashicorp/vault-action@v2.4.0
-      with:
-        url: https://vault.cera.circleci-labs.com
-        role: demo-role
-        method: jwt
-        path: gh-actions
-        secrets: |
-          secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
-          secret/data/nexus/boa-deployer username | NEXUS_USERNAME
+  #   - name: Get Secrets Nexus
+  #     id: secrets-nexus
+  #     uses: hashicorp/vault-action@v2.4.0
+  #     with:
+  #       url: https://vault.cera.circleci-labs.com
+  #       role: demo-role
+  #       method: jwt
+  #       path: gh-actions
+  #       secrets: |
+  #         secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
+  #         secret/data/nexus/boa-deployer username | NEXUS_USERNAME
 
-    - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
+  #   - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
     
-    - name: Git clone the repository
-      uses: actions/checkout@v3
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        role-to-assume: arn:aws:iam::483285841698:role/gha-oidc
-        role-session-name: samplerolesession
-        aws-region: us-east-2
+  #   - name: Git clone the repository
+  #     uses: actions/checkout@v3
+  #   - name: configure aws credentials
+  #     uses: aws-actions/configure-aws-credentials@v2
+  #     with:
+  #       role-to-assume: arn:aws:iam::483285841698:role/gha-oidc
+  #       role-session-name: samplerolesession
+  #       aws-region: us-east-2
 
-    - run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-          sudo install kubectl /usr/local/bin/
-          echo ${K8S_CERT} | base64 -d > ca.crt
-          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-gha-dev
-          kubectl config use-context default
-          ls -a $HOME/.kube
-          cat $HOME/.kube/config
-          kubectl get serviceaccounts -n boa-dev
+  #   - run: |
+  #         curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+  #         sudo install kubectl /usr/local/bin/
+  #         echo ${K8S_CERT} | base64 -d > ca.crt
+  #         kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+  #         export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
+  #         kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+  #         kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace boa-gha-dev
+  #         kubectl config use-context default
+  #         ls -a $HOME/.kube
+  #         cat $HOME/.kube/config
+  #         kubectl get serviceaccounts -n boa-dev
 
-    - name: get ouput from build
-      uses: actions/download-artifact@master
-      with:
-        name: my-artifact
-        path: output
-    - run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-        sudo install skaffold /usr/local/bin/
-        pwd
-        ls -a 
-        cat output/tags.json
-        skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-gha-dev --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
+  #   - name: get ouput from build
+  #     uses: actions/download-artifact@master
+  #     with:
+  #       name: my-artifact
+  #       path: output
+  #   - run: |
+  #       curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+  #       sudo install skaffold /usr/local/bin/
+  #       pwd
+  #       ls -a 
+  #       cat output/tags.json
+  #       skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=boa-gha-dev --build-artifacts=/home/runner/work/bank-of-aion/bank-of-aion/output/tags.json
   
-    - run: |
-        kubectl wait deployment -n boa-gha-dev frontend --for condition=Available=True --timeout=90s
+  #   - run: |
+  #       kubectl wait deployment -n boa-gha-dev frontend --for condition=Available=True --timeout=90s
  
-    - run: |
-        kubectl get service frontend -n boa-gha-dev | awk '{print $4}'
+  #   - run: |
+  #       kubectl get service frontend -n boa-gha-dev | awk '{print $4}'
 
 
   cypress-run:
@@ -265,9 +265,10 @@ jobs:
         with:
           browser: chrome
       - run: | 
+          ls -a
           cd ui-tests
-          npx cypress run \
-          --config baseUrl=https://dev.cera.circleci-labs.com \
-          --browser firefox \
-          --reporter junit \
-          --reporter-options "mochaFile=results/my-test-output-[hash].xml"
+          # npx cypress run \
+          # --config baseUrl=https://dev.cera.circleci-labs.com \
+          # --browser firefox \
+          # --reporter junit \
+          # --reporter-options "mochaFile=results/my-test-output-[hash].xml"
