@@ -197,7 +197,8 @@ jobs:
 workflows:
   main:
     jobs:
-      - java-checkstyle
+      - java-checkstyle:
+          context: [ compass-integration-bank-of-aion ]
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
@@ -206,7 +207,7 @@ workflows:
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
