@@ -265,6 +265,6 @@ jobs:
           cd ui-tests
           npx cypress run \
           --config baseUrl=https://dev.cera.circleci-labs.com \
-          --browser firefox \
+          --browser chrome \
           --reporter junit \
           --reporter-options "mochaFile=results/my-test-output-[hash].xml"
