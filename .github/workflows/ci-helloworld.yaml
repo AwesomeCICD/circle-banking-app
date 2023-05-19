@@ -132,7 +132,6 @@ jobs:
         method: jwt
         path: gh-actions
         secrets: |
-          secret/data/cluster/boa-pipeline-dev namespace-gha | NAMESPACE_GHA ;
           secret/data/nexus/boa-deployer password | NEXUS_PASSWORD ; 
           secret/data/nexus/boa-deployer username | NEXUS_USERNAME
     - run : |
