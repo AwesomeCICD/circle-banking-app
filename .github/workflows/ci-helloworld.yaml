@@ -232,7 +232,12 @@ jobs:
           ls -a $HOME/.kube
           cat $HOME/.kube/config
           kubectl get serviceaccounts -n boa-dev
-  
+
+    - name: get ouput from build
+      uses: actions/download-artifact@master
+      with:
+        name: my-artifact
+        path: output
     - run: |
         curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
         sudo install skaffold /usr/local/bin/
