@@ -170,7 +170,9 @@ jobs:
         name: my-artifact
         path: output
 
-    - run: cat output/tags.json
+    - run: | 
+        cat output/tags.json
+        realpath output/tags.json 
 
     
     - name: Get Secrets Cluster
