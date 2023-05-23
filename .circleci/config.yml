@@ -106,7 +106,8 @@ jobs:
           path: test-reports
 
   skaffold-build-push:
-      executor: jdk17
+      docker:
+      - image: cimg/openjdk:17.0.3
       steps:
         - checkout
         - run: |
