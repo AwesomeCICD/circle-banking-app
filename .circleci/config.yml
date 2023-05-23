@@ -69,9 +69,9 @@ jobs:
 
 
   java-test-and-code-cov:
-      docker:
-      - image: cimg/openjdk:17.0.3
-      resource_class: awesomecicd/opensource-runner
+    docker:
+    - image: cimg/openjdk:17.0.3
+    resource_class: awesomecicd/opensource-runner
     steps:
       - checkout
       - run: mkdir test-reports
