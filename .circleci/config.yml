@@ -69,7 +69,9 @@ jobs:
 
 
   java-test-and-code-cov:
-    executor: jdk17
+      docker:
+      - image: cimg/openjdk:17.0.3
+      resource_class: awesomecicd/opensource-runner
     steps:
       - checkout
       - run: mkdir test-reports
@@ -108,7 +110,7 @@ jobs:
   skaffold-build-push:
       docker:
       - image: cimg/openjdk:17.0.3
-      resource_class: awesomecicd/opensource-runner
+      resource_class: medium
       steps:
         - checkout
         - run: |
