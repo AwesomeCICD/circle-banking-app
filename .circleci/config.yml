@@ -208,28 +208,28 @@ workflows:
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
-      - deploy:
-          name: Deploy Dev
-          requires: [ skaffold-build-push ]
-          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
-      - e2e:
-          requires: [ Deploy Dev ]
-      - deploy:
-          name: Deploy Production
-          requires: [ e2e ]
-          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
-          filters:
-            branches:
-              only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-Namer-Prod
+#      - deploy:
+#          name: Deploy Dev
+#          requires: [ skaffold-build-push ]
+#          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
+#          post-steps:
+#            - compass/notify_deployment:
+#                token_name: COMPASS_CCI_TOKEN
+#                environment_type: development
+#      - e2e:
+#          requires: [ Deploy Dev ]
+#      - deploy:
+#          name: Deploy Production
+#          requires: [ e2e ]
+#          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
+#          filters:
+#            branches:
+#              only: [ main ]
+#          post-steps:
+#            - compass/notify_deployment:
+#                token_name: COMPASS_CCI_TOKEN
+#                environment_type: production
+#                environment: CERA-Cluster-Namer-Prod
 
 
 commands:
