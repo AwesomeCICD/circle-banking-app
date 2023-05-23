@@ -108,7 +108,7 @@ jobs:
   skaffold-build-push:
       docker:
       - image: cimg/openjdk:17.0.3
-      resource_class: medium
+      resource_class: large
       steps:
         - checkout
         - run: |
