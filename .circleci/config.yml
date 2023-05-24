@@ -34,7 +34,7 @@ jobs:
   python-test:
     docker:
     - image: cimg/python:3.8
-    resource_class: awesomewcicd/opensource-runner
+    resource_class: medium
     parallelism: 3
     steps:
       - checkout
@@ -63,7 +63,7 @@ jobs:
   java-checkstyle:
     docker:
     - image: cimg/openjdk:17.0.3
-    resource_class: large
+    resource_class: medium
     steps:
       - checkout
       - maven/with_cache:  
@@ -75,7 +75,7 @@ jobs:
   java-test-and-code-cov:
     docker:
     - image: cimg/openjdk:17.0.3
-    resource_class: large
+    resource_class: medium
     steps:
       - checkout
       - run: mkdir test-reports
@@ -114,7 +114,7 @@ jobs:
   skaffold-build-push:
       docker:
       - image: cimg/openjdk:17.0.3
-      resource_class: large
+      resource_class: medium
       steps:
         - checkout
         - run: |
@@ -209,34 +209,10 @@ workflows:
     jobs:
       - java-checkstyle
       - java-test-and-code-cov
-#      - python-checkstyle
       - python-test
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
-#      - deploy:
-#          name: Deploy Dev
-#          requires: [ skaffold-build-push ]
-#          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
-#          post-steps:
-#            - compass/notify_deployment:
-#                token_name: COMPASS_CCI_TOKEN
-#                environment_type: development
-#      - e2e:
-#          requires: [ Deploy Dev ]
-#      - deploy:
-#          name: Deploy Production
-#          requires: [ e2e ]
-#          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
-#          filters:
-#            branches:
-#              only: [ main ]
-#          post-steps:
-#            - compass/notify_deployment:
-#                token_name: COMPASS_CCI_TOKEN
-#                environment_type: production
-#                environment: CERA-Cluster-Namer-Prod
-
 
 commands:
   use_service_account:
