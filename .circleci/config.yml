@@ -214,9 +214,9 @@ workflows:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
       - cypress/run:
-          cypress-command: npx cypress run --config baseUrl=https://dev.cera.circleci-labs.com \
           requires: skaffold-build-push
-
+          cypress-command: npx cypress run --config baseUrl=https://dev.cera.circleci-labs.com \
+          
 commands:
   use_service_account:
   # This command uses the assigned context to hydrate a kubeconfig from the given service account.
