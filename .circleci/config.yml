@@ -59,7 +59,9 @@ jobs:
           path: test-reports
 
   java-checkstyle:
-    executor: jdk17
+    docker:
+    - image: cimg/openjdk:17.0.3
+    resource_class: awesomecicd/opensource-runner
     steps:
       - checkout
       - maven/with_cache:  
@@ -71,7 +73,7 @@ jobs:
   java-test-and-code-cov:
     docker:
     - image: cimg/openjdk:17.0.3
-    resource_class: awesomecicd/opensource-runner
+    resource_class: large
     steps:
       - checkout
       - run: mkdir test-reports
