@@ -213,6 +213,9 @@ workflows:
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
+      - cypress/run:
+          cypress-command: npx cypress run --config baseUrl=https://dev.cera.circleci-labs.com \
+          requires: skaffold-build-push
 
 commands:
   use_service_account:
