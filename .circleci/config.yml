@@ -34,7 +34,7 @@ jobs:
   python-test:
     docker:
     - image: cimg/python:3.8
-    resource_class: awesomecicd/opensource-runner
+    resource_class: medium
     parallelism: 3
     steps:
       - checkout
