@@ -196,7 +196,6 @@ workflows:
       - skaffold-build-push:
           requires: [ python-test, java-test-and-code-cov ]
           context: reference-arch-aws-oidc
-      - hello-world/echo-job
           
           
 commands:
