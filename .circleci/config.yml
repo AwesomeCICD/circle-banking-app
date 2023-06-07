@@ -5,6 +5,7 @@ orbs:
           
 executors:
   with-chrome:
+    docker:
       - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
   base:
     docker:
@@ -192,7 +193,7 @@ jobs:
           path: ui-tests/cypress/videos
       - store_artifacts:
           path: ui-tests/cypress/screenshots    
-
+   
 workflows:
   main:
     jobs:
@@ -253,6 +254,4 @@ commands:
             vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
             jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
 
-# VS Code Extension Version: 1.5.1 - test, demo FFT
-
-
+# VS Code Extension Version: 1.5.1
