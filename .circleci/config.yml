@@ -48,7 +48,7 @@ jobs:
                 pip install -r requirements.txt
                 python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings
                 deactivate
-              # return to previously saved path
+             
               popd
             done
       - store_test_results:
