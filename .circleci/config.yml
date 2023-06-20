@@ -207,7 +207,7 @@ workflows:
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
@@ -218,7 +218,7 @@ workflows:
           name: Deploy Production
           requires: [ e2e ]
           boa-environment: prod
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           filters:
             branches:
               only: [ main ]
