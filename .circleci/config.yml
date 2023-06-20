@@ -205,7 +205,7 @@ workflows:
       - python-test
       - hold:
           type: approval
-          requires: [ python-test ]
+          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
       - skaffold-build-push:
           context: cera-vault-oidc
       - deploy:
