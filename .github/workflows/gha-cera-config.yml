@@ -16,12 +16,9 @@ name: "Continuous Integration - Pull Request"
 on: push
 jobs:
   java-checkstyle:
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: Ubuntu_Large_4x16_githubhosted
     steps:
-    - uses: trstringer/manual-approval@v1
-      with:
-        secret: ${{ github.TOKEN }}
-        approvers: aaronfox1
     - uses: actions/checkout@v3
       with:
         ref: ${{github.event.pull_request.head.ref}}
@@ -36,7 +33,6 @@ jobs:
   
   java-test-and-code-cov:
     runs-on:
-      group: default
       labels: Ubuntu_Large_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
@@ -79,7 +75,6 @@ jobs:
   
   python-checkstyle:
     runs-on:
-      group: default
       labels: Ubuntu_Large_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
@@ -91,7 +86,6 @@ jobs:
 
   python-test:
     runs-on:
-      group: default
       labels: Ubuntu_Large_4x16_githubhosted
     steps:
       - uses: actions/checkout@v3
@@ -128,7 +122,6 @@ jobs:
       id-token: write
       contents: read
     runs-on: 
-        group: default
         labels: Ubuntu_xLarge_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
@@ -180,7 +173,6 @@ jobs:
       id-token: write
       contents: read
     runs-on:
-        group: default
         labels: Ubuntu_Large_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
@@ -272,7 +264,7 @@ jobs:
   e2e:
     needs: deploy-dev
     runs-on:
-      group: default
+      
       labels: Ubuntu_Large_4x16_githubhosted
     container: cypress/browsers:node14.16.0-chrome90-ff88
     steps:
@@ -293,7 +285,7 @@ jobs:
       id-token: write
       contents: read
     runs-on:
-        group: default
+        
         labels: Ubuntu_Large_4x16_githubhosted
     if: github.ref == 'refs/heads/main'
     steps:
