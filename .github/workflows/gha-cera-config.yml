@@ -18,6 +18,10 @@ jobs:
   java-checkstyle:
     runs-on: ubuntu-latest
     steps:
+    - uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: aaronfox1
     - uses: actions/checkout@v3
       with:
         ref: ${{github.event.pull_request.head.ref}}
@@ -31,7 +35,9 @@ jobs:
       run: mvn checkstyle:check
   
   java-test-and-code-cov:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: default
+      labels: Ubuntu_Large_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
       with:
@@ -72,7 +78,9 @@ jobs:
         path: jest-junit.xml
   
   python-checkstyle:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: default
+      labels: Ubuntu_Large_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
@@ -82,7 +90,9 @@ jobs:
     - run: pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: default
+      labels: Ubuntu_Large_4x16_githubhosted
     steps:
       - uses: actions/checkout@v3
       - run: mkdir test-reports
@@ -117,7 +127,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: 
+        group: default
+        labels: Ubuntu_xLarge_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
       with:
@@ -167,7 +179,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ubuntu-latest
+    runs-on:
+        group: default
+        labels: Ubuntu_Large_4x16_githubhosted
     steps:
     - uses: actions/checkout@v3
       with:
@@ -257,7 +271,9 @@ jobs:
 
   e2e:
     needs: deploy-dev
-    runs-on: ubuntu-22.04
+    runs-on:
+      group: default
+      labels: Ubuntu_Large_4x16_githubhosted
     container: cypress/browsers:node14.16.0-chrome90-ff88
     steps:
       - name: Checkout
@@ -276,7 +292,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ubuntu-latest
+    runs-on:
+        group: default
+        labels: Ubuntu_Large_4x16_githubhosted
     if: github.ref == 'refs/heads/main'
     steps:
     - uses: actions/checkout@v3
