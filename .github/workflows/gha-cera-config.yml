@@ -17,7 +17,7 @@ on: push
 jobs:
   java-checkstyle:
     runs-on:
-      group: default
+      labels: Ubuntu_Large_4x16_githubhosted_00
     steps:
     - uses: actions/checkout@v3
       with:
@@ -33,7 +33,7 @@ jobs:
   
   java-test-and-code-cov:
     runs-on:
-      group: default
+      labels: Ubuntu_Large_4x16_githubhosted_01
     steps:
     - uses: actions/checkout@v3
       with:
@@ -75,7 +75,7 @@ jobs:
   
   python-checkstyle:
     runs-on:
-      group: default
+      labels: Ubuntu_Large_4x16_githubhosted_02
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
@@ -86,7 +86,7 @@ jobs:
 
   python-test:
     runs-on:
-      group: default
+      labels: Ubuntu_Large_4x16_githubhosted_03
     steps:
       - uses: actions/checkout@v3
       - run: mkdir test-reports
@@ -173,7 +173,7 @@ jobs:
       id-token: write
       contents: read
     runs-on:
-      group: default
+        labels: Ubuntu_Large_4x16_githubhosted_04
     steps:
     - uses: actions/checkout@v3
       with:
@@ -264,7 +264,7 @@ jobs:
   e2e:
     needs: deploy-dev
     runs-on:
-      group: default
+      labels: Ubuntu_Large_4x16_githubhosted_00
     container: cypress/browsers:node14.16.0-chrome90-ff88
     steps:
       - name: Checkout
@@ -284,7 +284,7 @@ jobs:
       id-token: write
       contents: read
     runs-on:
-      group: default
+        labels: Ubuntu_Large_4x16_githubhosted_01
     if: github.ref == 'refs/heads/main'
     steps:
     - uses: actions/checkout@v3
