@@ -122,7 +122,7 @@ jobs:
       id-token: write
       contents: read
     runs-on: 
-        labels: Ubuntu_XLarge_8x32_githubhosted
+        labels: Ubuntu_XLarge_8x32_githubhosted_00
     steps:
     - uses: actions/checkout@v3
       with:
