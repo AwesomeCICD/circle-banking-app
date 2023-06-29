@@ -226,7 +226,7 @@ class BalanceReaderControllerTest {
     /*
      * This is a magic test that will pass locally, and fail on first CI run, always.
      */
-    void firstRunAlwaysFails() {
+    void Flaky_test_example() {
         // default (and local values do not match)
         String firstId = System.getProperty("CIRCLE_WORKFLOW_ID", "A");
         String secondId = System.getProperty("CIRCLE_WORKFLOW_WORKSPACE_ID", "B") ;
