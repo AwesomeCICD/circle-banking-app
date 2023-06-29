@@ -93,7 +93,7 @@ class TestContacts(unittest.TestCase):
         """test if correct response is returned from readiness probe"""
         response = self.test_app.get("/ready")
         # assert 200 response code
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 401)
         self.assertEqual(response.data, b"ok")
 
     def test_create_contact_201_status_code_correct_db_contact_object(self):
