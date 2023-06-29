@@ -224,7 +224,7 @@ class BalanceReaderControllerTest {
     @Test
     @DisplayName("Given a demo for failed test re-runs, fail first time always")
     /*
-     * This is a magic test that will pass locally, and fail on first CI run, always.
+     * This is a  test that will pass locally, and fail on first CI run, always.
      */
     void Flaky_test_example() {
         // default (and local values do not match)
