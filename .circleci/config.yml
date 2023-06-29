@@ -168,30 +168,30 @@ jobs:
       - checkout
       - load-credentials
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
-      - run: |
-          sudo apt update && sudo apt install kubectl -y
-          echo ${K8S_CERT} | base64 -d > ca.crt
-          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-          kubectl config use-context default
-          kubectl get serviceaccounts -n ${K8S_NAMESPACE}
-      - attach_workspace:
-          at: output
-      - run: 
-          name: Deploy BoA
-          command: |
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-            sudo install skaffold /usr/local/bin/
-            skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
-      - run:
-          name: Wait for deployment
-          command: |
-            kubectl wait deployment -n ${K8S_NAMESPACE} frontend --for condition=Available=True --timeout=90s
-      - run: 
-          name: Print Frontend URL
-          command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
+      # - run: |
+      #     sudo apt update && sudo apt install kubectl -y
+      #     echo ${K8S_CERT} | base64 -d > ca.crt
+      #     kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
+      #     export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
+      #     kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
+      #     kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
+      #     kubectl config use-context default
+      #     kubectl get serviceaccounts -n ${K8S_NAMESPACE}
+      # - attach_workspace:
+      #     at: output
+      # - run: 
+      #     name: Deploy BoA
+      #     command: |
+      #       curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+      #       sudo install skaffold /usr/local/bin/
+      #       skaffold deploy --default-repo=docker.nexus.cera.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+      # - run:
+      #     name: Wait for deployment
+      #     command: |
+      #       kubectl wait deployment -n ${K8S_NAMESPACE} frontend --for condition=Available=True --timeout=90s
+      # - run: 
+      #     name: Print Frontend URL
+      #     command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
   e2e:
     executor: with-chrome
     steps:
@@ -230,21 +230,21 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
-      - e2e:
-          requires: [ Deploy Dev ]
-      - deploy:
-          name: Deploy Production
-          requires: [ e2e ]
-          boa-environment: prod
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
-          filters:
-            branches:
-              only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-Namer-Prod
+      # - e2e:
+      #     requires: [ Deploy Dev ]
+      # - deploy:
+      #     name: Deploy Production
+      #     requires: [ e2e ]
+      #     boa-environment: prod
+      #     context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+      #     filters:
+      #       branches:
+      #         only: [ main ]
+      #     post-steps:
+      #       - compass/notify_deployment:
+      #           token_name: COMPASS_CCI_TOKEN
+      #           environment_type: production
+      #           environment: CERA-Cluster-Namer-Prod
 
 
 commands:
