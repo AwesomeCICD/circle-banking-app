@@ -58,6 +58,35 @@ jobs:
           path: test-reports
       - store_artifacts:
           path: test-reports
+  
+
+  python-test-no-enhancement:
+    executor: python38
+    steps:
+      - checkout
+      - run: mkdir test-reports
+      - run:
+          name: Test Python Services
+          command: |
+            for SERVICE in "contacts" "userservice"; do
+              echo "testing $SERVICE..."
+              # save current working dir to memory and cd to src/$SERVICE
+              pushd src/$SERVICE
+                python3 -m venv $HOME/venv-$SERVICE
+                source $HOME/venv-$SERVICE/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                #CLI wraps test runner to allow "rerun failed tests only"
+                TEST_FILES=$(circleci tests glob "tests/test_*.py")
+                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
+                deactivate
+              # return to previously saved path
+              popd
+            done
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
 
   java-checkstyle:
     executor: jdk17
@@ -219,6 +248,7 @@ workflows:
       # - java-test-and-code-cov
       # - python-checkstyle
       - python-test
+      - python-test-no-enhancement
       # - skaffold-build-push:
       #     context: cera-vault-oidc
       # - deploy:
