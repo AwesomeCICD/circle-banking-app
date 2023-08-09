@@ -1,8 +1,6 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.3.0
-  cypress: cypress-io/cypress@2.2.0
           
 executors:
   with-chrome:
@@ -14,7 +12,6 @@ executors:
   jdk17:
     docker:
       - image: cimg/openjdk:17.0.3
-    
     resource_class: xlarge
   python38:
     docker:
@@ -24,7 +21,7 @@ executors:
 jobs:
   python-checkstyle:
     executor: python38
-    steps:
+    steps: 
       - checkout
       - run: pip install pylint
       - run:
@@ -209,10 +206,6 @@ workflows:
           name: Deploy Dev
           requires: [ skaffold-build-push ]
           context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
       - e2e:
           requires: [ Deploy Dev ]
       - deploy:
@@ -222,13 +215,7 @@ workflows:
           filters:
             branches:
               only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-Namer-Prod
-
-
+ 
 commands:
   use_service_account:
   # This command uses the assigned context to hydrate a kubeconfig from the given service account.
