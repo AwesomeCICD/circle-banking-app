@@ -182,10 +182,9 @@ jobs:
       - run: 
           name: Deploy BoA
           command: |
-            export APP_VERSION=<<pipeline.number>>
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            skaffold deploy --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy -l version="0.1.<<pipeline.number>>" --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
