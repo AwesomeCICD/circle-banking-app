@@ -161,7 +161,7 @@ jobs:
         default: dev
         description: Environment suffix used by namesapce and SA account name.
     environment:
-      BOA_ENV: <<parameters.boa-environment>>
+      APP_ENV: <<parameters.boa-environment>>
     steps:
       - checkout
       - load-credentials
@@ -261,13 +261,18 @@ commands:
       - run:
           name: Load Credentials from Vault
           command: |
-            ROLE=${BOA_ENV:-"dev"} #fallback to dev when empty
-            echo "Environment (BOA_ENV ): $BOA_ENV"
-            export VAULT_ADDR="https://vault.cera.circleci-labs.com"
-            export VAULT_TOKEN=`vault write -field=token auth/jwt/login role=boa-$ROLE-deploy jwt=$CIRCLE_OIDC_TOKEN`
-            vault read -format=json secret/data/cluster/boa-pipeline-$ROLE > /tmp/cluster-secret.json
-            jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
-            vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
-            jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
-
+            ROLE=${APP_ENV:-"dev"} #fallback to dev when empty
+            echo "Environment (APP_ENV ): $APP_ENV"
+            export VAULT_ADDR="https://vault.namer.circleci-labs.com"
+            export VAULT_ROLE=boa-${APP_ENV}
+            echo $VAULT_ROLE
+            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
+            circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
+            cat .circleci/vault/agent.hcl
+            vault agent -config=.circleci/vault/agent.hcl
+      - run:
+          command: |
+            source .circleci/vault/setenv
+            #export for other steps
+          name: Set Environment Variables from Vault
 # VS Code Extension Version: 1.5.1
