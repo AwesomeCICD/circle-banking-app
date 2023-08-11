@@ -188,7 +188,7 @@ jobs:
       - run:
           name: Wait for deployment
           command: |
-            kubectl wait deployment -n ${K8S_NAMESPACE} frontend --for condition=Available=True --timeout=90s
+            kubectl wait rollout -n ${K8S_NAMESPACE} frontend-rollout --for condition=Available=True --timeout=90s
       - run: 
           name: Print Frontend URL
           command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
