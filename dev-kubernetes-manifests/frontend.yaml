@@ -3,7 +3,8 @@ kind: Rollout
 metadata:
   name: frontend-rollout
   namespace: boa-dev
-  version: {{ .DOCKER_TAG }}
+  labels:
+    version: {{ .APP_VERSION }}
 spec:
   strategy:
     canary:
