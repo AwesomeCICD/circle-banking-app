@@ -120,6 +120,8 @@ jobs:
           path: .circleci/tests/
   skaffold-build-push:
       executor: jdk17
+      environment:
+        APP_ENV: dev
       steps:
         - checkout
         - run: |
@@ -199,7 +201,7 @@ jobs:
           command: |
             cd ui-tests
             npx cypress run \
-            --config baseUrl=https://dev.cera.circleci-labs.com \
+            --config baseUrl=https://dev.namer.circleci-labs.com \
             --browser firefox \
             --reporter junit \
             --reporter-options "mochaFile=results/my-test-output-[hash].xml"
@@ -261,7 +263,6 @@ commands:
       - run:
           name: Load Credentials from Vault
           command: |
-            ROLE=${APP_ENV:-"dev"} #fallback to dev when empty
             echo "Environment (APP_ENV ): $APP_ENV"
             export VAULT_ADDR="https://vault.namer.circleci-labs.com"
             export VAULT_ROLE=boa-${APP_ENV}
