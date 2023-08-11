@@ -4,6 +4,13 @@ metadata:
   name: frontend-rollout
   namespace: boa-dev
 spec:
+  selector:
+    matchLabels:
+      app: frontend-rollout
+  workloadRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
   strategy:
     canary:
       canaryService: frontend-canary  # required
@@ -18,6 +25,13 @@ spec:
       - setWeight: 25
       - pause:
           duration: 1m
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: boa-dev
+spec:
   selector:
     matchLabels:
       app: frontend
@@ -145,7 +159,6 @@ spec:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
-
 # [END gke_dev_kubernetes_manifests_frontend_deployment_frontend]
 ---
 # [START gke_dev_kubernetes_manifests_frontend_service_frontend]
