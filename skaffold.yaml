@@ -99,10 +99,8 @@ build:
     context: src/frontend
 deploy:
   kubectl:
-    flags:
-      apply: [ "k" ]
     manifests:
-    - dev-kubernetes-manifests/frontend.yaml
+    - dev-kubernetes-manifests/frontend-annotated.yaml
 # [END gke_bank_of_anthos_s:ffold_config_frontend]
 ---
 # [START gke_bank_of_anthos_skaffold_config_loadgenerator]
