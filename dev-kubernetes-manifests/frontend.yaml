@@ -2,7 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
   name: frontend-rollout
-  namespace: boa-dev
+  annotations:
+    circleci.com/scale-version-enabled: "true"
+    circleci.com/restart-version-enabled: "true"
+    circleci.com/restore-version-enabled: "true"
 spec:
   selector:
     matchLabels:
@@ -25,20 +28,9 @@ spec:
       - setWeight: 25
       - pause:
           duration: 1m
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: frontend
-  namespace: boa-dev
-spec:
-  selector:
-    matchLabels:
-      app: frontend
-  template:
-    metadata:
-      labels:
-        app: frontend
+      - setWeight: 25
+      - pause:
+          duration: 1m
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
