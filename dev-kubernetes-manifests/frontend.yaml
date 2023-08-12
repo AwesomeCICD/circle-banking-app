@@ -3,9 +3,10 @@ kind: Rollout
 metadata:
   name: frontend-rollout
   annotations:
-    circleci.com/scale-version-enabled: "true"
-    circleci.com/restart-version-enabled: "true"
-    circleci.com/restore-version-enabled: "true"
+    circleci.com/scale-version-enabled: true
+    circleci.com/restart-version-enabled: true
+    circleci.com/restore-version-enabled: true
+    circleci.com/project-id: 788dd296-2fca-4718-82f8-07db1637a58e
 spec:
   selector:
     matchLabels:
