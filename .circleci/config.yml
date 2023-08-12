@@ -194,7 +194,7 @@ jobs:
           name: Print Frontend URL
           command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
   e2e:
-    executor: with-chromekub
+    executor: with-chrome
     steps:
       - checkout
       - run: 
