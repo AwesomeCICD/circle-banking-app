@@ -2,6 +2,6 @@ commonAnnotations:
   circleci.com/pipeline-id: ${CIRCLE_PIPELINE_ID}
   circleci.com/workflow-id: ${CIRCLE_WORKFLOW_ID}
   circleci.com/project-id: 788dd296-2fca-4718-82f8-07db1637a58e
-  circleci.com/job-number: ${CIRCLE_BUILD_NUM}
+  circleci.com/job-number: "${CIRCLE_BUILD_NUM}"
 resources:
 - frontend.yaml
