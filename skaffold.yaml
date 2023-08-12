@@ -99,6 +99,8 @@ build:
     context: src/frontend
 deploy:
   kubectl:
+    flags:
+      apply: [ "-k" ]
     manifests:
     - dev-kubernetes-manifests/frontend.yaml
 # [END gke_bank_of_anthos_s:ffold_config_frontend]

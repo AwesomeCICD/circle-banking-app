@@ -184,6 +184,7 @@ jobs:
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
+            export CIRCLE_PIPELINE_ID=<<pipeline.id>>
             skaffold deploy -l version="0.1.<<pipeline.number>>" --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
             #skaffold render -l version="0.1.<<pipeline.number>>" -l app=frontend -m frontend  --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json > rendered.yaml
       - run:
