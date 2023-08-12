@@ -184,7 +184,7 @@ jobs:
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            skaffold deploy -l version="0.1.<<pipeline.number>>" -l app=frontend --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy -l version="0.1.<<pipeline.number>>" --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
             #skaffold render -l version="0.1.<<pipeline.number>>" -l app=frontend -m frontend  --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json > rendered.yaml
       - run:
           name: Wait for deployment
@@ -194,7 +194,7 @@ jobs:
           name: Print Frontend URL
           command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
   e2e:
-    executor: with-chrome
+    executor: with-chromekub
     steps:
       - checkout
       - run: 
