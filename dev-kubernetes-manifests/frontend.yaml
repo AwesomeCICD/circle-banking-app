@@ -10,10 +10,6 @@ spec:
   selector:
     matchLabels:
       app: frontend #martches deployment notrollout name
-  workloadRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: frontend
   strategy:
     canary:
       canaryService: frontend-canary  # required
@@ -31,6 +27,10 @@ spec:
       - setWeight: 25
       - pause:
           duration: 1m
+  template:
+    metadata:
+      labels:
+        app: frontend
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
