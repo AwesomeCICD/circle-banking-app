@@ -3,5 +3,7 @@ commonAnnotations:
   circleci.com/workflow-id: ${CIRCLE_WORKFLOW_ID}
   circleci.com/project-id: 788dd296-2fca-4718-82f8-07db1637a58e
   circleci.com/job-number: "${CIRCLE_BUILD_NUM}"
+commonLabels:
+  app: frontend
 resources:
 - frontend.yaml
