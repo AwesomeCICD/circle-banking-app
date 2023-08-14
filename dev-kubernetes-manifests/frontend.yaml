@@ -6,8 +6,11 @@ metadata:
     circleci.com/scale-version-enabled: "true"
     circleci.com/restart-version-enabled: "true"
     circleci.com/restore-version-enabled: "true"
-    circleci.com/project-id: 788dd296-2fca-4718-82f8-07db1637a58e
 spec:
+  replicas: 4
+  progressDeadlineSeconds: 90
+  rollbackWindow:
+    revisions: 3
   selector:
     matchLabels:
       app: frontend #martches deployment notrollout name
@@ -32,6 +35,7 @@ spec:
     metadata:
       labels:
         app: frontend
+        sidecar.istio.io/inject: true
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
