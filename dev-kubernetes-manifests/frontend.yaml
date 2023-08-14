@@ -19,6 +19,8 @@ spec:
       canaryService: frontend-canary  # required
       stableService: frontend  # required
       trafficRouting:
+        managedRoutes:
+          - name: frontend-header-route-1
         istio:
           virtualService:
             name: namer-dev-virtual-service.istio-ingress  # required
