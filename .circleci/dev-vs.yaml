@@ -1,0 +1,24 @@
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: namer-dev-virtual-service
+  namespace: istio-ingress
+spec:
+  gateways:
+  - namer-istio-gateway-2
+  hosts:
+  - dev.namer.circleci-labs.com
+  http:
+  - route:
+    - destination:
+        host: frontend.boa-dev.svc.cluster.local
+        port:
+          number: 80
+      weight: 100
+    - destination:
+        host: frontend-canary.boa-dev.svc.cluster.local
+        port:
+          number: 80
+      weight: 0

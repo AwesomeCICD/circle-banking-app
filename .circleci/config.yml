@@ -184,11 +184,16 @@ jobs:
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            skaffold deploy --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            export CIRCLE_PIPELINE_ID=<<pipeline.id>>
+            #only kuztomizing frontend for D&R demo
+            cat .circleci/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
+            kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
+            skaffold deploy -l version="0.1.<<pipeline.number>>" --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            #skaffold render -l version="0.1.<<pipeline.number>>" -l app=frontend -m frontend  --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json > rendered.yaml
       - run:
           name: Wait for deployment
           command: |
-            kubectl wait deployment -n ${K8S_NAMESPACE} frontend --for condition=Available=True --timeout=90s
+            kubectl wait rollout -n ${K8S_NAMESPACE} frontend-rollout --for condition=Available=True --timeout=90s
       - run: 
           name: Print Frontend URL
           command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'

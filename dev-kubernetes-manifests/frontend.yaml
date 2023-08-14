@@ -1,31 +1,37 @@
-# Copyright 2021 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# [START gke_dev_kubernetes_manifests_frontend_deployment_frontend]
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
-  name: frontend
+  name: frontend-rollout
+  annotations:
+    circleci.com/scale-version-enabled: "true"
+    circleci.com/restart-version-enabled: "true"
+    circleci.com/restore-version-enabled: "true"
+    circleci.com/project-id: 788dd296-2fca-4718-82f8-07db1637a58e
 spec:
   selector:
     matchLabels:
-      app: frontend
+      app: frontend #martches deployment notrollout name
+  strategy:
+    canary:
+      canaryService: frontend-canary  # required
+      stableService: frontend  # required
+      trafficRouting:
+        istio:
+          virtualService:
+            name: namer-dev-virtual-service.istio-ingress  # required
+            #routes:
+            #- primary            # optional if there is a single route in VirtualService, required otherwise
+      steps:
+      - setWeight: 25
+      - pause:
+          duration: 1m
+      - setWeight: 25
+      - pause:
+          duration: 1m
   template:
     metadata:
       labels:
         app: frontend
-        cluster_name: ooops
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -35,7 +41,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
       containers:
-      - name: front
+      - name: frontend
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -146,7 +152,6 @@ spec:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
-
 # [END gke_dev_kubernetes_manifests_frontend_deployment_frontend]
 ---
 # [START gke_dev_kubernetes_manifests_frontend_service_frontend]
@@ -155,7 +160,7 @@ kind: Service
 metadata:
   name: frontend
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: frontend
   ports:
@@ -163,3 +168,16 @@ spec:
     port: 80
     targetPort: 8080
 # [END gke_dev_kubernetes_manifests_frontend_service_frontend]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-canary
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
