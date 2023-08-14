@@ -103,3 +103,16 @@ See the [troubleshooting guide](./docs/troubleshooting.md) for resolving common 
 ## Development
 
 See the [development guide](./docs/development.md) to learn how to run and develop this app locally.
+
+
+## Deploy & Release Integration
+
+Argo Rollouts is enabled, for these clusters.
+
+Frontend `Deployment` was replacwed with a `Rollout` including steps.
+
+Status: you can use `kubectl argo rollouts get rollout frontend-rollout -n boa-dev -w` to see status.
+
+All components tag app name and version. (Version Label is applied by skaffol `-l` flag directly.)
+
+`kustomize.yaml` is used to apply build specific data (id, pipelkine, etc) as annotations to Frontend only currently.
