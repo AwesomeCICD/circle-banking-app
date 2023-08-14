@@ -25,10 +25,26 @@ spec:
             #routes:
             #- primary            # optional if there is a single route in VirtualService, required otherwise
       steps:
+      - setHeaderRoute:
+          # Name of the route that will be created by argo rollouts this must also be configured
+          # in spec.strategy.canary.trafficRouting.managedRoutes
+          name: "frontend-header-route-1"
+          # The matching rules for the header route, if this is missing it acts as a removal of the route.
+          match:
+              # headerName The name of the header to apply the match rules to.
+            - headerName: "x-demo-version"
+              # headerValue must contain exactly one field of exact, regex, or prefix. Not all traffic routers support 
+              # all types
+              headerValue:
+                # Exact will only match if the header value is exactly the same
+                exact: "canary"
       - setWeight: 25
       - pause:
           duration: 1m
-      - setWeight: 25
+      - setWeight: 50
+      - pause:
+          duration: 1m
+      - setWeight: 75
       - pause:
           duration: 1m
   template:
