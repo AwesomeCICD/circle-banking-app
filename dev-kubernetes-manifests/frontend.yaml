@@ -35,7 +35,6 @@ spec:
     metadata:
       labels:
         app: frontend
-        sidecar.istio.io/inject: true
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
