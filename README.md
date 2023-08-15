@@ -109,10 +109,10 @@ See the [development guide](./docs/development.md) to learn how to run and devel
 
 Argo Rollouts is enabled, for these clusters.
 
-Frontend `Deployment` was replacwed with a `Rollout` including steps.
+Frontend `Deployment` was replaced with a `Rollout` including steps.
 
 Status: you can use `kubectl argo rollouts get rollout frontend-rollout -n boa-dev -w` to see status.
 
-All components tag app name and version. (Version Label is applied by skaffol `-l` flag directly.)
+All components tag app name and version. (Version Label is applied by skaffold `-l` flag directly.)
 
-`kustomize.yaml` is used to apply build specific data (id, pipelkine, etc) as annotations to Frontend only currently.
+`kustomize.yaml` is used to apply build specific data (id, pipeline, etc) as annotations to Frontend only currently.
