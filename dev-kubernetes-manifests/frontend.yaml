@@ -1,31 +1,58 @@
-# Copyright 2021 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# [START gke_dev_kubernetes_manifests_frontend_deployment_frontend]
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
-  name: frontend
+  name: frontend-rollout
+  annotations:
+    circleci.com/scale-version-enabled: "true"
+    circleci.com/restart-version-enabled: "true"
+    circleci.com/restore-version-enabled: "true"
 spec:
+  replicas: 4
+  progressDeadlineSeconds: 90
+  rollbackWindow:
+    revisions: 3
   selector:
     matchLabels:
-      app: frontend
+      app: frontend #martches deployment notrollout name
+  strategy:
+    canary:
+      canaryService: frontend-canary.boa-dev  # required
+      stableService: frontend  # required
+      trafficRouting:
+        managedRoutes:
+          - name: frontend-header-route-1
+        istio:
+          virtualService:
+            name: namer-dev-virtual-service.istio-ingress  # required
+            #routes:
+            #- primary            # optional if there is a single route in VirtualService, required otherwise
+      steps:
+      - setHeaderRoute:
+          # Name of the route that will be created by argo rollouts this must also be configured
+          # in spec.strategy.canary.trafficRouting.managedRoutes
+          name: "frontend-header-route-1"
+          # The matching rules for the header route, if this is missing it acts as a removal of the route.
+          match:
+              # headerName The name of the header to apply the match rules to.
+            - headerName: "x-demo-version"
+              # headerValue must contain exactly one field of exact, regex, or prefix. Not all traffic routers support 
+              # all types
+              headerValue:
+                # Exact will only match if the header value is exactly the same
+                exact: "canary"
+      - setWeight: 25
+      - pause:
+          duration: 1m
+      - setWeight: 50
+      - pause:
+          duration: 1m
+      - setWeight: 75
+      - pause:
+          duration: 1m
   template:
     metadata:
       labels:
         app: frontend
-        cluster_name: ooops
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -35,7 +62,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
       containers:
-      - name: front
+      - name: frontend
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -146,7 +173,6 @@ spec:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
-
 # [END gke_dev_kubernetes_manifests_frontend_deployment_frontend]
 ---
 # [START gke_dev_kubernetes_manifests_frontend_service_frontend]
@@ -155,7 +181,7 @@ kind: Service
 metadata:
   name: frontend
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: frontend
   ports:
@@ -163,3 +189,16 @@ spec:
     port: 80
     targetPort: 8080
 # [END gke_dev_kubernetes_manifests_frontend_service_frontend]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-canary
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
