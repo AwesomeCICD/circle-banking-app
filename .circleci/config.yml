@@ -185,6 +185,7 @@ jobs:
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
             export APP_VERSION="0.1.<<pipeline.number>>"
+            export CIRCLE_PIPELINE_ID=<<pipeline.id>>
             #only kuztomizing frontend for D&R demo
             cat .circleci/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
