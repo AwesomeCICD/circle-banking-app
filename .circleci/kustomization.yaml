@@ -5,5 +5,6 @@ commonAnnotations:
   circleci.com/job-number: "${CIRCLE_BUILD_NUM}"
 commonLabels:
   app: frontend
+  version: ${APP_VERSION}
 resources:
 - frontend.yaml
