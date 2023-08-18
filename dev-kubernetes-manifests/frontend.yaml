@@ -23,7 +23,7 @@ spec:
           - name: frontend-header-route-1
         istio:
           virtualService:
-            name: namer-dev-virtual-service.istio-ingress  # required
+            name: frontend-virtual-service  # required
             #routes:
             #- primary            # optional if there is a single route in VirtualService, required otherwise
       steps:
@@ -216,11 +216,11 @@ spec:
     - route:
       - weight: 100
         destination:
-          host: frontend.boa-dev.svc.cluster.local #dev namespace
+          host: frontend
           port:
             number: 80
       - weight: 0
         destination:
-          host: frontend-canary.boa-dev.svc.cluster.local #dev namespace
+          host: frontend-canary
           port:
             number: 80
