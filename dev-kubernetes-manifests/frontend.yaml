@@ -202,3 +202,25 @@ spec:
   - name: http
     port: 80
     targetPort: 8080
+---
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: frontend-virtual-service
+spec:
+  hosts:
+    - "dev.namer.circleci-labs.com"
+  gateways:
+    - istio-ingress/namer-istio-gateway-2
+  http:
+    - route:
+      - weight: 100
+        destination:
+          host: frontend.boa-dev.svc.cluster.local #dev namespace
+          port:
+            number: 80
+      - weight: 0
+        destination:
+          host: frontend-canary.boa-dev.svc.cluster.local #dev namespace
+          port:
+            number: 80
