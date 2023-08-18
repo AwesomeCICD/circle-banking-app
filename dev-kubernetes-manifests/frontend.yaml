@@ -16,7 +16,7 @@ spec:
       app: frontend #martches deployment notrollout name
   strategy:
     canary:
-      canaryService: frontend-canary.boa-dev  # required
+      canaryService: frontend-canary  # required
       stableService: frontend  # required
       trafficRouting:
         managedRoutes:
