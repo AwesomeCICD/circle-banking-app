@@ -184,11 +184,13 @@ jobs:
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
+            export APP_VERSION="0.1.<<pipeline.number>>"
             export CIRCLE_PIPELINE_ID=<<pipeline.id>>
             #only kuztomizing frontend for D&R demo
-            cat .circleci/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
+            cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
+            cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy -l version="0.1.<<pipeline.number>>" --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
             #skaffold render -l version="0.1.<<pipeline.number>>" -l app=frontend -m frontend  --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json > rendered.yaml
       - run:
           name: Wait for deployment
