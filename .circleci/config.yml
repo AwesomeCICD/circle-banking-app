@@ -246,7 +246,7 @@ workflows:
           context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
           filters:
             branches:
-              only: [ main, emea-labeled ]
+              only: [ main ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
