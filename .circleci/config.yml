@@ -208,7 +208,7 @@ jobs:
           command: |
             cd ui-tests
             npx cypress run \
-            --config baseUrl=https://dev.namer.circleci-labs.com \
+            --config baseUrl=https://dev.emea.circleci-labs.com \
             --browser firefox \
             --reporter junit \
             --reporter-options "mochaFile=results/my-test-output-[hash].xml"
@@ -251,7 +251,7 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: production
-                environment: CERA-Cluster-Namer-Prod
+                environment: CERA-Cluster-emea-Prod
 
 
 commands:
@@ -271,9 +271,9 @@ commands:
           name: Load Credentials from Vault
           command: |
             echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.namer.circleci-labs.com"
+            export VAULT_ADDR="https://vault.emea.circleci-labs.com"
             export VAULT_ROLE=boa-${APP_ENV}-deploy
-            echo $VAULT_ROLE
+            echo "$VAULT_ROLE @ $VAULT_ADDR"
             echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
             circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
             cat .circleci/vault/agent.hcl
