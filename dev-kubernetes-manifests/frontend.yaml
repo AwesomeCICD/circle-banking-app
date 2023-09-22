@@ -209,9 +209,9 @@ metadata:
   name: frontend-virtual-service
 spec:
   hosts:
-    - "dev.namer.circleci-labs.com"
+    - "dev.emea.circleci-labs.com"
   gateways:
-    - istio-ingress/namer-istio-gateway-2
+    - istio-ingress/emea-istio-gateway-2
   http:
     - route:
       - weight: 100
