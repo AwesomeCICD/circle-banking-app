@@ -7,7 +7,7 @@ metadata:
     circleci.com/restart-version-enabled: "true"
     circleci.com/restore-version-enabled: "true"
 spec:
-  replicas: 4
+  replicas: 1
   progressDeadlineSeconds: 90
   rollbackWindow:
     revisions: 3
