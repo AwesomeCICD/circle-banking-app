@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: frontend-rollout
+spec:
+  template:
+    metadata:
+      labels:
+        version: ${APP_VERSION}

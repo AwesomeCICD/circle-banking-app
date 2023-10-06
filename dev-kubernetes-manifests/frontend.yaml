@@ -7,7 +7,7 @@ metadata:
     circleci.com/restart-version-enabled: "true"
     circleci.com/restore-version-enabled: "true"
 spec:
-  replicas: 4
+  replicas: 1
   progressDeadlineSeconds: 90
   rollbackWindow:
     revisions: 3
@@ -16,14 +16,14 @@ spec:
       app: frontend #martches deployment notrollout name
   strategy:
     canary:
-      canaryService: frontend-canary.boa-dev  # required
+      canaryService: frontend-canary  # required
       stableService: frontend  # required
       trafficRouting:
         managedRoutes:
           - name: frontend-header-route-1
         istio:
           virtualService:
-            name: namer-dev-virtual-service.istio-ingress  # required
+            name: frontend-virtual-service  # required
             #routes:
             #- primary            # optional if there is a single route in VirtualService, required otherwise
       steps:
@@ -40,15 +40,10 @@ spec:
               headerValue:
                 # Exact will only match if the header value is exactly the same
                 exact: "canary"
-      - setWeight: 25
-      - pause:
-          duration: 1m
       - setWeight: 50
       - pause:
-          duration: 1m
-      - setWeight: 75
-      - pause:
-          duration: 1m
+          duration: 20s
+      - setWeight: 100
   template:
     metadata:
       labels:
@@ -202,3 +197,25 @@ spec:
   - name: http
     port: 80
     targetPort: 8080
+---
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: frontend-virtual-service
+spec:
+  hosts:
+    - "dev.emea.circleci-labs.com"
+  gateways:
+    - istio-ingress/emea-istio-gateway-2
+  http:
+    - route:
+      - weight: 100
+        destination:
+          host: frontend
+          port:
+            number: 80
+      - weight: 0
+        destination:
+          host: frontend-canary
+          port:
+            number: 80
