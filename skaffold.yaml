@@ -36,6 +36,7 @@ build:
   tagPolicy:
     gitCommit:
       variant: AbbrevTreeSha
+      ignoreChanges: true
   artifacts:
   - image: cera-accounts-db
     context: src/accounts-db
@@ -61,6 +62,7 @@ build:
   tagPolicy:
     gitCommit:
       variant: AbbrevTreeSha
+      ignoreChanges: true
   artifacts:
   - image: cera-ledgerwriter
     jib:
@@ -94,6 +96,7 @@ build:
   tagPolicy:
     gitCommit:
       variant: AbbrevTreeSha
+      ignoreChanges: true
     #envTemplate:
     # template: '{{.DOCKER_TAG}}'
   artifacts:
