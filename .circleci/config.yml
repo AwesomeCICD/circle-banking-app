@@ -244,7 +244,7 @@ jobs:
           name: Run Cypress Tests
           command: |
             URL="https://<<parameters.region>>.circleci-labs.com"
-            if[ "<<parameters.boa-environment>>" != "prod" ];then
+            if [ "<<parameters.boa-environment>>" != "prod" ]; then
               URL="https://<<parameters.boa-environment>>.<<parameters.region>>.circleci-labs.com"
             fi
             echo "Testing against ${URL}"
