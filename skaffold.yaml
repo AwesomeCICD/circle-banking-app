@@ -92,8 +92,10 @@ metadata:
   name: frontend # module defining frontend service
 build:    
   tagPolicy:
-    envTemplate:
-      template: '{{.DOCKER_TAG}}'
+    gitCommit:
+      variant: AbbrevTreeSha
+    #envTemplate:
+    # template: '{{.DOCKER_TAG}}'
   artifacts:
   - image: cera-frontend
     context: src/frontend
