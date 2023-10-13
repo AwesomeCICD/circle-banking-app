@@ -34,8 +34,8 @@ build:
   local:
     concurrency: 4
   tagPolicy:
-    envTemplate:
-      template: '{{.DOCKER_TAG}}'
+    gitCommit:
+      variant: AbbrevTreeSha
   artifacts:
   - image: cera-accounts-db
     context: src/accounts-db
@@ -59,8 +59,8 @@ build:
   local:
     concurrency: 4
   tagPolicy:
-    envTemplate:
-      template: '{{.DOCKER_TAG}}'
+    gitCommit:
+      variant: AbbrevTreeSha'
   artifacts:
   - image: cera-ledgerwriter
     jib:
