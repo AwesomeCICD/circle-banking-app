@@ -162,7 +162,8 @@ jobs:
       - run: |
           echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-labs.com
           # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-          ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+          ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+          echo "Jib ready"
           mkdir output
           skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
           ls /tmp/

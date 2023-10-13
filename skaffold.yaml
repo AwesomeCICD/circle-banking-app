@@ -60,7 +60,7 @@ build:
     concurrency: 4
   tagPolicy:
     gitCommit:
-      variant: AbbrevTreeSha'
+      variant: AbbrevTreeSha
   artifacts:
   - image: cera-ledgerwriter
     jib:
