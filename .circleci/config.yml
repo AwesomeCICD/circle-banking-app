@@ -8,7 +8,7 @@ parameters:
     type: enum
     description: where we are deploying, a CERA cluster region
     enum: [ namer, emea]
-    default: emea
+    default: namer
     
 executors:
   with-chrome:
