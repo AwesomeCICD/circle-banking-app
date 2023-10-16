@@ -8,7 +8,7 @@ parameters:
     type: enum
     description: where we are deploying, a CERA cluster region
     enum: [ namer, emea]
-    default: namer
+    default: emea
     
 executors:
   with-chrome:
@@ -147,7 +147,8 @@ jobs:
       - run: |
           curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
           sudo install skaffold /usr/local/bin/
-      - load-credentials    
+      - load-credentials:
+          region: <<parameters.region>>
       - setup_remote_docker:
           docker_layer_caching: true
       - restore_cache:
@@ -186,13 +187,13 @@ jobs:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     environment:
       APP_ENV: <<parameters.boa-environment>>
       CERA_REGION: <<parameters.region>>
     steps:
       - checkout
-      - load-credentials
+      - load-credentials:
+          region: <<parameters.region>>
       # all k8s info (cluster, ns, etc) came from vault.
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
@@ -237,7 +238,6 @@ jobs:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     steps:
       - checkout
       - run: 
@@ -307,7 +307,6 @@ commands:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     steps:
       - run:
           name: install vault agent (if not present)
