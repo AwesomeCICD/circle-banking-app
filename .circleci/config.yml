@@ -264,7 +264,7 @@ jobs:
           path: ui-tests/cypress/screenshots    
    
 workflows:
-  main_<<pipeline.parameters.region>>:
+  main:
     jobs:
       - java-checkstyle:
           context: [ compass-integration-bank-of-aion ]
