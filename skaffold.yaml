@@ -34,8 +34,9 @@ build:
   local:
     concurrency: 4
   tagPolicy:
-    envTemplate:
-      template: '{{.DOCKER_TAG}}'
+    gitCommit:
+      variant: AbbrevTreeSha
+      ignoreChanges: true
   artifacts:
   - image: cera-accounts-db
     context: src/accounts-db
@@ -59,8 +60,9 @@ build:
   local:
     concurrency: 4
   tagPolicy:
-    envTemplate:
-      template: '{{.DOCKER_TAG}}'
+    gitCommit:
+      variant: AbbrevTreeSha
+      ignoreChanges: true
   artifacts:
   - image: cera-ledgerwriter
     jib:
@@ -92,8 +94,11 @@ metadata:
   name: frontend # module defining frontend service
 build:    
   tagPolicy:
-    envTemplate:
-      template: '{{.DOCKER_TAG}}'
+    gitCommit:
+      variant: AbbrevTreeSha
+      ignoreChanges: true
+    #envTemplate:
+    # template: '{{.DOCKER_TAG}}'
   artifacts:
   - image: cera-frontend
     context: src/frontend

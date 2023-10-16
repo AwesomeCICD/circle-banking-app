@@ -7,7 +7,7 @@ metadata:
     circleci.com/restart-version-enabled: "true"
     circleci.com/restore-version-enabled: "true"
 spec:
-  replicas: 4
+  replicas: 1
   progressDeadlineSeconds: 90
   rollbackWindow:
     revisions: 3
@@ -40,15 +40,10 @@ spec:
               headerValue:
                 # Exact will only match if the header value is exactly the same
                 exact: "canary"
-      - setWeight: 25
-      - pause:
-          duration: 1m
       - setWeight: 50
       - pause:
-          duration: 1m
-      - setWeight: 75
-      - pause:
-          duration: 1m
+          duration: 20s
+      - setWeight: 100
   template:
     metadata:
       labels:

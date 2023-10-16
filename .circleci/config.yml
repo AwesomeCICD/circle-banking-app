@@ -3,10 +3,17 @@ orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
           
+parameters:
+  region:
+    type: enum
+    description: where we are deploying, a CERA cluster region
+    enum: [ namer, emea]
+    default: namer
+    
 executors:
   with-chrome:
     docker:
-      - image: 'cypress/browsers:node14.16.0-chrome90-ff88'
+      - image: 'cypress/browsers:node-20.6.1-chrome-116.0.5845.187-1-ff-117.0-edge-116.0.1938.76-1'
   base:
     docker:
       - image: cimg/deploy:2022.08
@@ -118,41 +125,55 @@ jobs:
           path: test-reports
       - store_artifacts:
           path: .circleci/tests/
+
+
+
+
   skaffold-build-push:
-      executor: jdk17
-      environment:
-        APP_ENV: dev
-      steps:
-        - checkout
-        - run: |
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-            sudo install skaffold /usr/local/bin/
-        - load-credentials    
-        - setup_remote_docker:
-            docker_layer_caching: true
-        - restore_cache:
-            keys:
-              - v2-mvn-full-{{ .Branch }}
-              - v2-mvn-full-
-        - restore_cache:
-            keys:
-              - v1-skaffold-{{ .Branch }}
-              - v1-skaffold-
-        - run: |
-            export DOCKER_TAG=build$(git rev-parse HEAD:src)
-            echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.emea.circleci-labs.com
-            # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=1.4.0 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-            mkdir output
-            skaffold build --build-concurrency=4 --default-repo=docker.nexus.emea.circleci-labs.com --file-output=output/tags.json
-            ls /tmp/
-        - save_cache:
-            key: v1-skaffold-{{ .Branch }}
-            paths:
-              - ~/.skaffold/cache
-        - persist_to_workspace:
-            root: output
-            paths: [ 'tags.json' ]
+    parameters:
+      boa-environment:
+        type: string
+        default: dev
+        description: Environment suffix used by namesapce and SA account name.
+      region:
+        type: enum
+        description: where we are deploying, a CERA cluster region
+        enum: [ namer, emea]
+        default: namer
+    executor: jdk17
+    environment:
+      APP_ENV: dev
+    steps:
+      - checkout
+      - run: |
+          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+          sudo install skaffold /usr/local/bin/
+      - load-credentials    
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - restore_cache:
+          keys:
+            - v2-mvn-full-{{ .Branch }}
+            - v2-mvn-full-
+      - restore_cache:
+          keys:
+            - v1-skaffold-{{ .Branch }}
+            - v1-skaffold-
+      - run: |
+          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-labs.com
+          # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
+          ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+          echo "Jib ready"
+          mkdir output
+          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
+          ls /tmp/
+      - save_cache:
+          key: v1-skaffold-{{ .Branch }}
+          paths:
+            - ~/.skaffold/cache
+      - persist_to_workspace:
+          root: output
+          paths: [ 'tags.json' ]
  
 
   deploy:
@@ -162,11 +183,18 @@ jobs:
         type: string
         default: dev
         description: Environment suffix used by namesapce and SA account name.
+      region:
+        type: enum
+        description: where we are deploying, a CERA cluster region
+        enum: [ namer, emea]
+        default: namer
     environment:
       APP_ENV: <<parameters.boa-environment>>
+      CERA_REGION: <<parameters.region>>
     steps:
       - checkout
       - load-credentials
+      # all k8s info (cluster, ns, etc) came from vault.
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
           sudo apt update && sudo apt install kubectl -y
@@ -190,8 +218,7 @@ jobs:
             cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
-            #skaffold render -l version="0.1.<<pipeline.number>>" -l app=frontend -m frontend  --default-repo=docker.nexus.emea.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json > rendered.yaml
+            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
@@ -201,14 +228,29 @@ jobs:
           command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
   e2e:
     executor: with-chrome
+    parameters:
+      boa-environment:
+        type: string
+        default: dev
+        description: Environment suffix used by namesapce and SA account name.
+      region:
+        type: enum
+        description: where we are deploying, a CERA cluster region
+        enum: [ namer, emea]
+        default: namer
     steps:
       - checkout
       - run: 
           name: Run Cypress Tests
           command: |
+            URL="https://<<parameters.region>>.circleci-labs.com"
+            if [ "<<parameters.boa-environment>>" != "prod" ]; then
+              URL="https://<<parameters.boa-environment>>.<<parameters.region>>.circleci-labs.com"
+            fi
+            echo "Testing against ${URL}"
             cd ui-tests
             npx cypress run \
-            --config baseUrl=https://dev.namer.circleci-labs.com \
+            --config baseUrl=${URL} \
             --browser firefox \
             --reporter junit \
             --reporter-options "mochaFile=results/my-test-output-[hash].xml"
@@ -229,8 +271,10 @@ workflows:
       - python-test
       - skaffold-build-push:
           context: cera-vault-oidc
+          region: <<pipeline.parameters.region>>
       - deploy:
           name: Deploy Dev
+          region: <<pipeline.parameters.region>>
           requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
@@ -239,10 +283,12 @@ workflows:
                 environment_type: development
       - e2e:
           requires: [ Deploy Dev ]
+          region: <<pipeline.parameters.region>>
       - deploy:
           name: Deploy Production
           requires: [ e2e ]
           boa-environment: prod
+          region: <<pipeline.parameters.region>>
           context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
           filters:
             branches:
@@ -251,11 +297,17 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: production
-                environment: CERA-Cluster-Namer-Prod
+                environment: CERA-Cluster-namer-Prod
 
 
 commands:
   load-credentials:
+    parameters:
+      region:
+        type: enum
+        description: where we are deploying, a CERA cluster region
+        enum: [ namer, emea]
+        default: namer
     steps:
       - run:
           name: install vault agent (if not present)
@@ -271,7 +323,7 @@ commands:
           name: Load Credentials from Vault
           command: |
             echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.namer.circleci-labs.com"
+            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-labs.com"
             export VAULT_ROLE=boa-${APP_ENV}-deploy
             echo $VAULT_ROLE
             echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
