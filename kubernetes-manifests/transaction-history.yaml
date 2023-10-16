@@ -45,7 +45,7 @@ spec:
         - name: ENABLE_METRICS
           value: "false"
         - name: POLL_MS
-          value: "100"
+          value: "500"
         - name: CACHE_SIZE
           value: "1000"
         - name: CACHE_MINUTES
@@ -54,7 +54,7 @@ spec:
           value: "100"
           # tell Java to obey container memory limits
         - name: JVM_OPTS
-          value: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xms256m -Xmx512m"
+          value: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xms128m -Xmx256m"
         #- name: EXTRA_LATENCY_MILLIS
         #  value: "5000"
         # Valid levels are debug, info, warn, error, fatal.
