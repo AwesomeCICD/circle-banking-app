@@ -204,9 +204,9 @@ metadata:
   name: frontend-virtual-service
 spec:
   hosts:
-    - "dev.namer.circleci-labs.com"
+    - "this gets replaced by Kustomize"
   gateways:
-    - istio-ingress/namer-istio-gateway-2
+    - this-gets-replaces-by-kustomize
   http:
     - route:
       - weight: 100

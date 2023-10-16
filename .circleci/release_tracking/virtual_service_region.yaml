@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: VirtualService
+metadata:
+  name: frontend-virtual-service
+spec:
+  hosts:
+    - "dev.${REGION}.circleci-labs.com"
+  gateways:
+    - istio-ingress/${REGION}-istio-gateway-2

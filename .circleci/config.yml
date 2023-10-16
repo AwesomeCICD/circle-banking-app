@@ -216,6 +216,7 @@ jobs:
             #only kuztomizing frontend for D&R demo
             cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
+            cat .circleci/release_tracking/virtual_service_region.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service_region.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
             skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
       - run:
