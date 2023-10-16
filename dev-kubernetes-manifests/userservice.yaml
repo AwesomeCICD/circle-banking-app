@@ -99,8 +99,8 @@ spec:
             cpu: 200m
             memory: 64Mi
           limits:
-            cpu: 500m
-            memory: 256Mi
+            cpu: 300m
+            memory: 128Mi
       volumes:
       - name: keys
         secret:
