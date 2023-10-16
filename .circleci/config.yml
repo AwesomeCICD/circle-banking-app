@@ -139,7 +139,6 @@ jobs:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     executor: jdk17
     environment:
       APP_ENV: dev
