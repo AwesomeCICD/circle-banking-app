@@ -4,6 +4,6 @@ metadata:
   name: frontend-virtual-service
 spec:
   hosts:
-    - "dev.${REGION}.circleci-labs.com"
+    - "dev.${CERA_REGION}.circleci-labs.com"
   gateways:
-    - istio-ingress/${REGION}-istio-gateway-2
+    - istio-ingress/${CERA_REGION}-istio-gateway-2
