@@ -10,3 +10,4 @@ resources:
 - frontend.yaml
 patchesStrategicMerge:
 - template_patch.yaml
+- virtual_service_region.yaml

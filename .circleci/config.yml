@@ -8,20 +8,22 @@ parameters:
     type: enum
     description: where we are deploying, a CERA cluster region
     enum: [ namer, emea]
-    default: namer
+    default: emea
     
 executors:
   with-chrome:
     docker:
       - image: 'cypress/browsers:node-20.6.1-chrome-116.0.5845.187-1-ff-117.0-edge-116.0.1938.76-1'
+
   base:
     docker:
       - image: cimg/deploy:2022.08
+
   jdk17:
     docker:
       - image: cimg/openjdk:17.0.3
-    
     resource_class: xlarge
+
   python38:
     docker:
       - image: cimg/python:3.8
@@ -139,7 +141,6 @@ jobs:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     executor: jdk17
     environment:
       APP_ENV: dev
@@ -148,7 +149,8 @@ jobs:
       - run: |
           curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
           sudo install skaffold /usr/local/bin/
-      - load-credentials    
+      - load-credentials:
+          region: <<parameters.region>>
       - setup_remote_docker:
           docker_layer_caching: true
       - restore_cache:
@@ -187,13 +189,13 @@ jobs:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     environment:
       APP_ENV: <<parameters.boa-environment>>
       CERA_REGION: <<parameters.region>>
     steps:
       - checkout
-      - load-credentials
+      - load-credentials:
+          region: <<parameters.region>>
       # all k8s info (cluster, ns, etc) came from vault.
       - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
       - run: |
@@ -217,6 +219,7 @@ jobs:
             #only kuztomizing frontend for D&R demo
             cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
+            cat .circleci/release_tracking/virtual_service_region.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service_region.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
             skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
       - run:
@@ -237,7 +240,6 @@ jobs:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     steps:
       - checkout
       - run: 
@@ -272,20 +274,21 @@ workflows:
       - skaffold-build-push:
           context: cera-vault-oidc
           region: <<pipeline.parameters.region>>
+          name: Skaffold build & Push [<<pipeline.parameters.region>>]
       - deploy:
-          name: Deploy Dev
+          name: Deploy Dev [<<pipeline.parameters.region>>]
           region: <<pipeline.parameters.region>>
-          requires: [ skaffold-build-push, python-test, java-test-and-code-cov ]
+          requires: [ 'Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
       - e2e:
-          requires: [ Deploy Dev ]
+          requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
           region: <<pipeline.parameters.region>>
       - deploy:
-          name: Deploy Production
+          name: Deploy Production [<<pipeline.parameters.region>>]
           requires: [ e2e ]
           boa-environment: prod
           region: <<pipeline.parameters.region>>
@@ -307,7 +310,6 @@ commands:
         type: enum
         description: where we are deploying, a CERA cluster region
         enum: [ namer, emea]
-        default: namer
     steps:
       - run:
           name: install vault agent (if not present)

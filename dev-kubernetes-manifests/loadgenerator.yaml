@@ -51,7 +51,7 @@ spec:
         - name: FRONTEND_ADDR
           value: "frontend:80"
         - name: USERS
-          value: "5"
+          value: "2"
         - name: LOG_LEVEL
           value: "error"
         resources:
@@ -60,5 +60,5 @@ spec:
             memory: 128Mi
           limits:
             cpu: 250m
-            memory: 512Mi
+            memory: 256Mi
 # [END gke_dev_kubernetes_manifests_loadgenerator_deployment_loadgenerator]
