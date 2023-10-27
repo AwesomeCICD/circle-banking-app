@@ -7,7 +7,7 @@ parameters:
   region:
     type: enum
     description: where we are deploying, a CERA cluster region
-    enum: [ namer, emea]
+    enum: [ namer, emea, japac]
     default: emea
     
 executors:
@@ -138,9 +138,8 @@ jobs:
         default: dev
         description: Environment suffix used by namesapce and SA account name.
       region:
-        type: enum
+        type: string
         description: where we are deploying, a CERA cluster region
-        enum: [ namer, emea]
     executor: jdk17
     environment:
       APP_ENV: dev
@@ -186,9 +185,8 @@ jobs:
         default: dev
         description: Environment suffix used by namesapce and SA account name.
       region:
-        type: enum
+        type: string
         description: where we are deploying, a CERA cluster region
-        enum: [ namer, emea]
     environment:
       APP_ENV: <<parameters.boa-environment>>
       CERA_REGION: <<parameters.region>>
@@ -237,9 +235,8 @@ jobs:
         default: dev
         description: Environment suffix used by namesapce and SA account name.
       region:
-        type: enum
+        type: string
         description: where we are deploying, a CERA cluster region
-        enum: [ namer, emea]
     steps:
       - checkout
       - run: 
@@ -307,9 +304,8 @@ commands:
   load-credentials:
     parameters:
       region:
-        type: enum
+        type: string
         description: where we are deploying, a CERA cluster region
-        enum: [ namer, emea]
     steps:
       - run:
           name: install vault agent (if not present)
