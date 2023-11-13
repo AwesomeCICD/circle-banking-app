@@ -18,7 +18,7 @@ executors:
   python38:
     docker:
       - image: cimg/python:3.8
-
+#tst
 
 jobs:
   python-checkstyle:
@@ -271,5 +271,6 @@ commands:
             jq -r '.data.data | to_entries[] | "export K8S_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/cluster-secret.json >> $BASH_ENV
             vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
             jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
-
+     
+     
 
