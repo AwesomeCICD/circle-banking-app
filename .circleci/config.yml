@@ -333,4 +333,3 @@ commands:
             source .circleci/vault/setenv
             #export for other steps
           name: Set Environment Variables from Vault
-
