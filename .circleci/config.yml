@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.2
+  compass: atlassian-labs/compass@0.1.3
   maven: circleci/maven@1.4.1
           
 executors:
@@ -272,4 +272,4 @@ commands:
             vault read -format=json secret/data/nexus/boa-deployer > /tmp/nexus-secret.json
             jq -r '.data.data | to_entries[] | "export NEXUS_"+(.key | ascii_upcase)+"="+(.value | @sh) ' /tmp/nexus-secret.json >> $BASH_ENV
 
-# VS Code Extension Version: 1.5.1
+
