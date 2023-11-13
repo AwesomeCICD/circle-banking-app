@@ -41,6 +41,7 @@ jobs:
 
   python-test:
     executor: python38
+    parallelism: 3
     steps:
       - checkout
       - run: mkdir test-reports
