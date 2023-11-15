@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.2
+  compass: atlassian-labs/compass@0.1.3
   maven: circleci/maven@1.4
           
 parameters:
