@@ -1,4 +1,4 @@
-name: "Continuous Integration - Pull Request"
+name: "Github Actions - Bank of Aion"
 on: push
 jobs:
   java-checkstyle:
