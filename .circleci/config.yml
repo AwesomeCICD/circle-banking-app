@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  maven: circleci/maven@1.3.0
+  maven: circleci/maven@1.4.1
           
 executors:
   with-chrome:
@@ -38,7 +38,6 @@ jobs:
           command: |
             for SERVICE in "contacts" "userservice"; do
               echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
               pushd src/$SERVICE
                 python3 -m venv $HOME/venv-$SERVICE
                 source $HOME/venv-$SERVICE/bin/activate
@@ -205,13 +204,13 @@ workflows:
       - deploy:
           name: Deploy Dev
           requires: [ skaffold-build-push ]
-          context: [ reference-arch-aws-oidc, cera-boa-dev, compass-integration-bank-of-aion ]
+          context: [ reference-arch-aws-oidc, compass-integration-bank-of-aion ]
       - e2e:
           requires: [ Deploy Dev ]
       - deploy:
           name: Deploy Production
           requires: [ e2e ]
-          context: [ reference-arch-aws-oidc, cera-boa-prod, compass-integration-bank-of-aion ]
+          context: [ reference-arch-aws-oidc, compass-integration-bank-of-aion ]
           filters:
             branches:
               only: [ main ]
