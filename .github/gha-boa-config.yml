@@ -1,5 +1,7 @@
 name: "Github Actions - Bank of Aion"
 on: push
+branches:
+    - demo-aaronfox
 jobs:
   java-checkstyle:
     runs-on:
