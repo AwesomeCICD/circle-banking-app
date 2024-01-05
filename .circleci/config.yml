@@ -77,7 +77,7 @@ jobs:
           name: Test Python Services
           command: |
             MODULES=("contacts" "userservice")
-            MY_MODULES=`echo "${MODULES[@]}" | circleci tests split`
+            MY_MODULES=`echo ${MODULES[@]} | circleci tests split`
             echo "Running modules ${MY_MODULES[@]}"
             for MOD in MY_MODULES; do
                 pushd src/$MOD
