@@ -57,7 +57,7 @@ jobs:
                 pip install -r requirements.txt
                 #CLI wraps test runner to allow "rerun failed tests only"
                 TEST_FILES=$(circleci tests glob "tests/test_*.py")
-                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
+                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
                 deactivate
               # return to previously saved path
               popd
