@@ -77,10 +77,10 @@ jobs:
           name: Test Python Services
           command: |
             MODULES=("contacts" "userservice")
-            MY_MODULES=`echo ${MODULES[@]} | circleci tests split`
+            MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
             echo "Running modules ${MY_MODULES[@]}"
-            for MOD in MY_MODULES; do
-                pushd src/$MOD
+            for MOD in "${MY_MODULES[@]}"; do
+                pushd src/$MOD >/dev/null
                 python3 -m venv $HOME/venv-$MOD
                 source $HOME/venv-$MOD/bin/activate
                 pip install --upgrade pip
@@ -88,8 +88,8 @@ jobs:
                 #CLI wraps test runner to allow "rerun failed tests only"
                 python -m pytest tests --junit-xml=../../test-reports/report-${MOD}.xml -v -p no:warnings
                 deactivate
-              # return to previously saved path
-              popd
+                # return to previously saved path
+                popd >/dev/null
             done
       - store_test_results:
           path: test-reports
