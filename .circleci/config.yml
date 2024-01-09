@@ -42,8 +42,7 @@ jobs:
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
-    <<: *python38
-    resource_class: small
+    executor: python38
 
     steps:
       - checkout
@@ -72,7 +71,8 @@ jobs:
           path: test-reports
 
   python-test-parallel:
-    executor: python38
+    <<: *python38
+    resource_class: small
     parallelism: 2 #match number of python services
     steps:
       - checkout
