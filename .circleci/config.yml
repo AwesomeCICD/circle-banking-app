@@ -1,4 +1,5 @@
 version: 2.1
+
 orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
@@ -24,11 +25,12 @@ executors:
       - image: cimg/openjdk:17.0.3
     resource_class: xlarge
 
-  python38:
+  python38: &python38
     docker:
       - image: cimg/python:3.8
 
 
+   
 jobs:
   python-checkstyle:
     executor: python38
@@ -40,7 +42,9 @@ jobs:
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
-    executor: python38
+    <<: *python38
+    resource_class: small
+
     steps:
       - checkout
       - run: mkdir test-reports
