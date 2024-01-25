@@ -220,5 +220,5 @@ class BalanceReaderControllerTest {
         assertNotNull(actualResult);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, actualResult.getStatusCode());
     }
-
+    
 }
