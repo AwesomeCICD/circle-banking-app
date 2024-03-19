@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger('config')
 
 bad_context = "cera-vault-oidc-prod"
-dev_deploy = "Deploy Dev"
+dev_deploy_prefix = 'Deploy Dev'
 main_workflow = "main"
 class ConfigChanger:
 
@@ -21,23 +21,24 @@ class ConfigChanger:
             yaml.dump(self.config, file)
 
     def the_dev_deploy_workflow_definition(self):
-        job = self.get_workflow_job_named(dev_deploy)
+        job = self.get_workflow_job_with_prefix(dev_deploy_prefix)
         return job
     
-    def get_workflow_job_named(self, name):
+    def get_workflow_job_with_prefix(self, prefix):
         for job in self.config['workflows'][main_workflow]['jobs']:
-            if job == name:
-                #simple key, construct
-                return {"name":name}
-            elif name in job:
-                #complext without explicit mname, add it
-                job[name]['name'] = name
-                return job[name]
-            elif isinstance(job,dict) :
+            if isinstance(job,dict) :
                 # complext object might override name
-                job = next(iter(job.values()))
-                if "name" in job and job['name'] == name:
+                key = next(iter(job.keys()))
+                print(key)
+                job = job[key]
+                if key.startswith(prefix):
+                    job['name']=key
                     return job
+                elif "name" in job and job['name'].startswith(prefix):
+                    return job
+            elif isinstance(job,str) and job.startswith(prefix):
+                #simple key, construct
+                return {"name": job}
         
 
     def add_policy_violation(self):
