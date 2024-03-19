@@ -29,7 +29,6 @@ class ConfigChanger:
             if isinstance(job,dict) :
                 # complext object might override name
                 key = next(iter(job.keys()))
-                print(key)
                 job = job[key]
                 if key.startswith(prefix):
                     job['name']=key
