@@ -305,7 +305,7 @@ workflows:
       - deploy:
           name: Deploy Dev [<<pipeline.parameters.region>>]
           region: <<pipeline.parameters.region>>
-          requires: [hold,'Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
+          requires: ['Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
@@ -313,6 +313,8 @@ workflows:
                 environment_type: development
       - hold:
           type: approval
+          requires:
+          - "python-test, java-test-and-code-cov,python-checkstyle"
       - e2e:
           requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
           region: <<pipeline.parameters.region>>
