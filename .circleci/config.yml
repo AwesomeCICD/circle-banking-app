@@ -300,12 +300,13 @@ workflows:
       - python-test-parallel
       - skaffold-build-push:
           context: cera-vault-oidc
+          requires: [java-test-and-code-cov,python-checkstyle, python-test, python-test-parallel]
           region: <<pipeline.parameters.region>>
           name: Skaffold build & Push [<<pipeline.parameters.region>>]
       - deploy:
           name: Deploy Dev [<<pipeline.parameters.region>>]
           region: <<pipeline.parameters.region>>
-          requires: ['Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
+          requires: ['Skaffold build & Push [<<pipeline.parameters.region>>]',hold]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
