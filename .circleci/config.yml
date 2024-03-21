@@ -313,8 +313,6 @@ workflows:
                 environment_type: development
       - hold:
           type: approval
-          requires:
-          - "python-test, java-test-and-code-cov,python-checkstyle"
       - e2e:
           requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
           region: <<pipeline.parameters.region>>
