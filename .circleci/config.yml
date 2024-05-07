@@ -34,7 +34,9 @@ jobs:
     executor: python38
     steps:
       - checkout
-      - run: pip install pylint
+      - run: 
+          name: "Install PyLint"
+          command: pip install pylint
       - run:
           name: Lint Python
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
