@@ -314,6 +314,7 @@ workflows:
                 environment_type: development
       - hold:
           type: approval
+          requires: ["Skaffold build & Push [<<pipeline.parameters.region>>]"]
       - e2e:
           requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
           region: <<pipeline.parameters.region>>
