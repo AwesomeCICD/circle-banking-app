@@ -306,7 +306,7 @@ workflows:
       - deploy:
           name: Deploy Dev [<<pipeline.parameters.region>>]
           region: <<pipeline.parameters.region>>
-          requires: [Skaffold build & Push [<<pipeline.parameters.region>>]]
+          requires: ["Skaffold build & Push [<<pipeline.parameters.region>>]"]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc]
           post-steps:
             - compass/notify_deployment:
