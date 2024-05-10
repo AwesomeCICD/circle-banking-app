@@ -307,7 +307,7 @@ workflows:
           name: Deploy Dev [<<pipeline.parameters.region>>]
           region: <<pipeline.parameters.region>>
           requires: ["Skaffold build & Push [<<pipeline.parameters.region>>]", hold]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
@@ -324,7 +324,7 @@ workflows:
           boa-environment: prod
           region: <<pipeline.parameters.region>>
           
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           filters:
             branches:
               only: [ main ]
