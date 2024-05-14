@@ -6,8 +6,8 @@ The CircleCI @SolutionsEngineering team maintains this repo for deployment to AW
 
 ### Cluster Namespaces and Service Accounts
 
-Each CERA Cluster (one per region, and also feature branches) has Service Accounts automaticallycreated for BoA.
+Each CERA Cluster (one per region, and also feature branches) has Service Accounts automaticallycreated for Bank Corp App.
 
-The Service Accounts allow BoankOfAion application to talk to EKS cluster without AWS admin credentials.
+The Service Accounts allow App application to talk to EKS cluster without AWS admin credentials.
 
 See `reference-architecture` repo for provisioning.

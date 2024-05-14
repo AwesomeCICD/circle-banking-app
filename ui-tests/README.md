@@ -4,7 +4,7 @@ End-to-end tests use the [Cypress](cypress.io) test runner.
 
 ## Prerequisites
 
-1. [BoA Development Guide]((../../../docs/development.md))
+1. [Development Guide]((../../../docs/development.md))
     * [Docker Desktop](https://www.docker.com/products/docker-desktop)
     * A working CCI Bank Corp deployment
 1. Ensure you are authenticated to the correct cluster

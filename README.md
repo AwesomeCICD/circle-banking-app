@@ -1,8 +1,8 @@
 ![Continuous Integration](https://github.com/GoogleCloudPlatform/bank-of-Aion/workflows/Continuous%20Integration%20-%20Main/Release/badge.svg)
 
-# Bank of Aion
+# CCI Bank Corp
 
-**Bank of Aion** is a sample HTTP-based web app that simulates a bank's payment processing network, allowing users to create artificial bank accounts and complete transactions.
+**CCI Bank Corp** is a sample HTTP-based web app that simulates a bank's payment processing network, allowing users to create artificial bank accounts and complete transactions.
 
 We forked it from Google, chosen for it's multi-language monorepo structure with various microservices.
 
@@ -53,7 +53,7 @@ We can use namespaces to represent the distinct environments.
 
 
 
-4. **Deploy Bank of Aion to the cluster.**
+4. **Deploy CCI Bank Corp to the cluster.**
 
 **Yes SE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
 
@@ -88,7 +88,7 @@ userservice-78dc876bff-pdhtl          1/1     Running   0          96s
 kubectl get service frontend | awk '{print $4}'
 ```
 
-Visit `https://EXTERNAL_IP` to access your instance of Bank of Aion.
+Visit `https://EXTERNAL_IP` to access your instance of CCI Bank Corp.
 
 ## Additional deployment options
 
