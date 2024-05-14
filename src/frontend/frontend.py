@@ -403,7 +403,7 @@ def create_app():
                                default_user=os.getenv('DEFAULT_USERNAME', ''),
                                default_password=os.getenv(
                                    'DEFAULT_PASSWORD', ''),
-                               bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
+                               bank_name=os.getenv('BANK_NAME', 'CCI Bank Corp'))
 
     @app.route('/login', methods=['POST'])
     def login():
@@ -463,7 +463,7 @@ def create_app():
                                pod_region=pod_region,
                                pod_group=pod_group,
                                pod_namespace=namespace,
-                               bank_name=os.getenv('BANK_NAME', 'Bank of Anthos'))
+                               bank_name=os.getenv('BANK_NAME', 'CCI Bank Corp'))
 
     @app.route("/signup", methods=['POST'])
     def signup():

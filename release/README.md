@@ -1,14 +1,14 @@
-# Releasing Bank of Anthos
+# Releasing CCI Bank Corp
 
-This document describes how maintainers can tag and push a new release of Bank of Anthos.
+This document describes how maintainers can tag and push a new release of CCI Bank Corp.
 
 ## Prerequisites for tagging a release
 
 1. **Manually test** the latest main commit by verifying the user journeys below. If you encounter any bugs or documentation in need of fixing, make those changes before proceeding with the release.
 
-- User can deploy Bank of Anthos on a new GCP project/GKE cluster following README instructions, replacing `kubernetes-manifests/` with `dev-kubernetes-manifests/`
-- User can deploy Bank of Anthos on a GKE cluster with the latest Anthos Service Mesh enabled, by deploying `istio-manifests/` on top of the kubernetes manifests
-- User can deploy Bank of Anthos on a GKE cluster with Workload Identity enabled, using the WI instructions in the README.
+- User can deploy CCI Bank Corp on a new GCP project/GKE cluster following README instructions, replacing `kubernetes-manifests/` with `dev-kubernetes-manifests/`
+- User can deploy CCI Bank Corp on a GKE cluster with the latest Anthos Service Mesh enabled, by deploying `istio-manifests/` on top of the kubernetes manifests
+- User can deploy CCI Bank Corp on a GKE cluster with Workload Identity enabled, using the WI instructions in the README.
 - User can see Java app-level metrics by creating the Cloud Monitoring dashboard in the `extras/` directory
 - User can see traces in Cloud Trace
 - User can toggle `ENABLE_METRICS=false` and `ENABLE_TRACING=false` to turn off metrics and trace export to Cloud Operations
@@ -82,7 +82,7 @@ The release notes should contain a brief description of the changes since the pr
 
 Once the release notes are published, you should then replace the version of the production environment to the newly published version.
 
-First, make sure you are connected to the production cluster (**note:** this requires authorization access to the Bank of Anthos cluster):
+First, make sure you are connected to the production cluster (**note:** this requires authorization access to the CCI Bank Corp cluster):
 ```
 gcloud container clusters get-credentials bank-of-anthos-release --zone us-central1-c --project bank-of-anthos-ci
 ```

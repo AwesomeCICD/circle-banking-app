@@ -1,9 +1,9 @@
-# Bank of Anthos Quickstart
+# CCI Bank Corp Quickstart
 
 ## 
-This tutorial shows you how to deploy the Bank of Anthos app to a Kubernetes cluster.
+This tutorial shows you how to deploy the CCI Bank Corp app to a Kubernetes cluster.
 
-You'll be able to run Bank of Anthos on:
+You'll be able to run CCI Bank Corp on:
 - a local **[minikube](https://minikube.sigs.k8s.io/docs/)** cluster, which comes built in to the Cloud Shell instance
 - a **[Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine)** cluster using a new or existing [Google Cloud Platform project](https://cloud.google.com/resource-manager/docs/creating-managing-projects#creating_a_project)
 
@@ -57,7 +57,7 @@ Once you've configured your minikube or GKE cluster, you're ready to move on to 
 
 ## Deploy JWT token
 
-Bank of Anthos uses a JWT token for user account creation and authentication. 
+CCI Bank Corp uses a JWT token for user account creation and authentication. 
 
 To deploy the token:
 
@@ -76,11 +76,11 @@ To deploy the token:
 
 This deploys the demo JWT public key to your cluster as a Secret.
 
-For more information about using JWT keys in Bank of Anthos, check out the <walkthrough-editor-open-file filePath="extras/jwt/README.md">JWT Key Pair Secret README</walkthrough-editor-open-file>.
+For more information about using JWT keys in CCI Bank Corp, check out the <walkthrough-editor-open-file filePath="extras/jwt/README.md">JWT Key Pair Secret README</walkthrough-editor-open-file>.
 
 ## Run on Kubernetes
 
-Now you can run Bank of Anthos on your Kubernetes cluster!
+Now you can run CCI Bank Corp on your Kubernetes cluster!
 
 1. Launch the <walkthrough-editor-spotlight spotlightId="cloud-code-status-bar">Cloud Code menu</walkthrough-editor-spotlight> from the status bar and select <walkthrough-editor-spotlight spotlightId="cloud-code-run-on-k8s">Run on Kubernetes</walkthrough-editor-spotlight>.
 
@@ -94,7 +94,7 @@ Cloud Code uses configurations defined in <walkthrough-editor-open-file filePath
 
 5. Once the app is running, the local URLs will be displayed in the <walkthrough-editor-spotlight spotlightId="output">Output</walkthrough-editor-spotlight> terminal. 
 
-7. To access your Bank of Anthos frontend service, click on the <walkthrough-spotlight-pointer spotlightId="devshell-web-preview-button" target="cloudshell">Web Preview button</walkthrough-spotlight-pointer> in the upper right of the editor window.
+7. To access your CCI Bank Corp frontend service, click on the <walkthrough-spotlight-pointer spotlightId="devshell-web-preview-button" target="cloudshell">Web Preview button</walkthrough-spotlight-pointer> in the upper right of the editor window.
 
 8. Select **Change Port** and enter '4503' as the port, then click **Change and Preview**. Your app will open in a new window. 
  
@@ -124,12 +124,12 @@ If you've deployed your app to a GKE cluster in your Google Cloud Platform proje
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
-Congratulations! You've successfully deployed Bank of Anthos using Cloud Shell.
+Congratulations! You've successfully deployed CCI Bank Corp using Cloud Shell.
 
 <walkthrough-inline-feedback></walkthrough-inline-feedback>
 
 ##### What's next?
 
-Explore the GCP products used in Bank of Anthos: [GKE](https://cloud.google.com/kubernetes-engine), [Anthos Service Mesh](https://cloud.google.com/anthos/service-mesh), [Anthos Config Management](https://cloud.google.com/anthos/config-management), [Migrate for Anthos](https://cloud.google.com/migrate/anthos), [Spring Cloud GCP](https://spring.io/projects/spring-cloud-gcp), and [Cloud Operations](https://cloud.google.com/products/operations).
+Explore the GCP products used in CCI Bank Corp: [GKE](https://cloud.google.com/kubernetes-engine), [Anthos Service Mesh](https://cloud.google.com/anthos/service-mesh), [Anthos Config Management](https://cloud.google.com/anthos/config-management), [Migrate for Anthos](https://cloud.google.com/migrate/anthos), [Spring Cloud GCP](https://spring.io/projects/spring-cloud-gcp), and [Cloud Operations](https://cloud.google.com/products/operations).
 
 Learn more about the [Cloud Shell](https://cloud.google.com/shell) IDE environment and the [Cloud Code](https://cloud.google.com/code) extension.

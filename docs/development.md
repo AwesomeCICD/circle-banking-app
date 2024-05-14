@@ -1,6 +1,6 @@
 # Development Guide
 
-This document describes how to develop and add features to the Bank of Anthos application in your local environment. 
+This document describes how to develop and add features to the CCI Bank Corp application in your local environment. 
 
 ## Prerequisites 
 
