@@ -1,7 +1,7 @@
 # TLS with Google Managed Certificates
 
 This directory contains a Kubernetes manifest that can be modified to enable secure TLS
-for Bank of Anthos. More information can be found in the [GCP docs](https://cloud.google.com/kubernetes-engine/docs/how-to/managed-certs)
+for CCI Bank Corp. More information can be found in the [GCP docs](https://cloud.google.com/kubernetes-engine/docs/how-to/managed-certs)
 
 ## Steps
 

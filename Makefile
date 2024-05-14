@@ -38,7 +38,7 @@ ifndef GCS_BUCKET
 	# GCS_BUCKET is undefined
 	# ATTENTION: Deployment proceeding with canonical pre-built monolith artifacts
 endif
-	# build and deploy Bank of Anthos along with a monolith backend service
+	# build and deploy CCI Bank Corp along with a monolith backend service
 	mvn -f src/ledgermonolith/ package
 	src/ledgermonolith/scripts/build-artifacts.sh
 	src/ledgermonolith/scripts/deploy-monolith.sh

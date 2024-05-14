@@ -33,7 +33,7 @@ Implemented in Python with Flask.
 - `DEFAULT_PASSWORD`
   - a string to pre-populate the "password" field. Optional
 - `BANK_NAME`
-  - a string that will be shown in the navbar to indicate the name of the bank. Optional, defaults to `Bank of Anthos`
+  - a string that will be shown in the navbar to indicate the name of the bank. Optional, defaults to `CCI Bank Corp`
 - `CIRCLECI_LOGO`
   - boolean, set to `true` to toggle the CymbalBank logo and name. Defaults to `false`.
 
