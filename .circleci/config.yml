@@ -179,6 +179,7 @@ jobs:
           curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
           sudo install skaffold /usr/local/bin/
           sudo apt update
+          sudo uninstall python3.8
           sudo apt install python3-pip
       - load-credentials:
           region: <<parameters.region>>

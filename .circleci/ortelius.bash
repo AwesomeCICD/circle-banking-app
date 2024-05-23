@@ -8,6 +8,6 @@ echo "export IMAGE_TAG=${SKAFFOLD_IMAGE_TAG}" >> $BASH_ENV #make available to pa
 pip install ortelius-cli
 python3 -m pip install cyclonedx-bom
 pushd $SKAFFOLD_BUILD_CONTEXT
-cyclonedx-py --requirements 
+cyclonedx-py requirements > cyclonedx@cyclonedx.json
 dh updatecomp --rsp ortelius.toml --deppkg "cyclonedx@cyclonedx.json"
 popd
