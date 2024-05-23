@@ -11,7 +11,7 @@ Version = "${SKAFFOLD_IMAGE_TAG}"
 [Attributes]
     DockerBuildDate = "${BLDDATE}"
     DockerRepo = "${DOCKERREPO}"
-    DockerSha = "${SKAFFOLD_IMAGE_TAG}"
+    DockerSha = "${DOCKERSHA}"
     DockerTag = "${SKAFFOLD_IMAGE_TAG}"
     #SlackChannel = "your Slack Channel" 
     ServiceOwner = "${DHUSER}"

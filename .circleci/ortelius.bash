@@ -3,10 +3,9 @@ echo "REPO: ${SKAFFOLD_IMAGE_REPO}"
 echo "IMAGE: ${SKAFFOLD_IMAGE}"
 echo "TAG: ${SKAFFOLD_IMAGE_TAG}"
 echo "NAME: ${SKAFFOLD_IMAGE%":$SKAFFOLD_IMAGE_TAG"}"
-env
 echo "+++++++++++"
 
-
+export DOCKERSHA=`docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE}`
 export DHURL="https://console.deployhub.com"
 export DHUSER=eddiewebb-ci
 export DHPASS=logincci
