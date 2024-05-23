@@ -6,4 +6,4 @@ spec:
   template:
     metadata:
       labels:
-        version: ${APP_VERSION}
+        version: ${IMAGE_TAG}

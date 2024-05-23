@@ -34,7 +34,8 @@ jobs:
     executor: python38
     steps:
       - checkout
-      - run: pip install pylint
+      - run: |
+          pip --upgrade install pylintp
       - run:
           name: Lint Python
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
@@ -195,6 +196,8 @@ jobs:
           ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
           echo "Jib ready"
           mkdir output
+          pip install ortelius-cli
+          python -m pip install cyclonedx-bom
           skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
           ls /tmp/
       - save_cache:
@@ -237,11 +240,12 @@ jobs:
       - attach_workspace:
           at: output
       - run: 
-          name: Deploy CCI Bank Corp Services
+          name: Deploy CCI Bank Corp Servicesf
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            export APP_VERSION="0.1.<<pipeline.number>>"
+            #export APP_VERSION="0.1.<<pipeline.number>>"
+            export IMAGE_TAG=`git rev-parse --short HEAD:./` #hopefully this matches what is set by Skafolf on images, but only used to identify app in k8s labels.
             export CIRCLE_PIPELINE_ID=<<pipeline.id>>
             #only kuztomizing frontend for D&R demo
             cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml

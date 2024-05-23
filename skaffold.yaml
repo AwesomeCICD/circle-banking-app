@@ -67,6 +67,10 @@ build:
   - image: cera-ledgerwriter
     jib:
       project: src/ledgerwriter
+    hooks:
+      before:
+        - command: ["sh", "-c", ".circleci/ortelius.sh"]
+          os: [darwin, linux]
   - image: cera-balancereader
     jib:
       project: src/balancereader
