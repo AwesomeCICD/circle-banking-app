@@ -178,6 +178,7 @@ jobs:
       - run: |
           curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
           sudo install skaffold /usr/local/bin/
+          sudo apt install python3-pip
       - load-credentials:
           region: <<parameters.region>>
       - setup_remote_docker:
@@ -196,7 +197,7 @@ jobs:
           ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
           echo "Jib ready"
           mkdir output
-          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
+          skaffold build -v debug --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
           ls /tmp/
       - save_cache:
           key: v1-skaffold-{{ .Branch }}
