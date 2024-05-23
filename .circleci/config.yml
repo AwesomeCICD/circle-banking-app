@@ -35,7 +35,7 @@ jobs:
     steps:
       - checkout
       - run: |
-          pip install pylintp
+          pip install pylint
       - run:
           name: Lint Python
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
@@ -196,8 +196,6 @@ jobs:
           ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
           echo "Jib ready"
           mkdir output
-          pip install ortelius-cli
-          python -m pip install cyclonedx-bom
           skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
           ls /tmp/
       - save_cache:
