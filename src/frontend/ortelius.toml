@@ -1,0 +1,18 @@
+# Application Name and Version - not required. If not used the Component will not be associated to an Application
+Application = "GLOBAL.eddiewebb.CircleCI Orb"
+Application_Version = "CCI Bank Corp" 
+
+# Define Component Name, Variant and Version - required
+Name = "GLOBAL.eddiewebb.CircleCI Orb.Frontend"
+Variant = "${GIT_BRANCH}"
+Version = "${IMAGE_TAG}"
+
+# Key/Values to associate to the Component Version
+[Attributes]
+    DockerBuildDate = "${BLDDATE}"
+    DockerRepo = "${DOCKERREPO}"
+    DockerSha = "${DIGEST}"
+    DockerTag = "${IMAGE_TAG}"
+    #SlackChannel = "your Slack Channel" 
+    ServiceOwner = "${DHUSER}"
+    ServiceOwnerEmail = "eddie@circleci.com"
