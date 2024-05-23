@@ -16,5 +16,5 @@ export IMAGE_TAG=${SKAFFOLD_IMAGE_TAG}  #skafoold sets from git tree specific sh
 pip install ortelius-cli
 python3 -m pip install cyclonedx-bom
 cd $SKAFFOLD_BUILD_CONTEXT
-cyclonedx-py requirements > cyclonedx@cyclonedx.json
+cyclonedx-py requirements > cyclonedx.json
 dh updatecomp --rsp ortelius.toml --deppkg "cyclonedx@cyclonedx.json"
