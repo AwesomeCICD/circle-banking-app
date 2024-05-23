@@ -1,6 +1,6 @@
 # Application Name and Version - not required. If not used the Component will not be associated to an Application
-Application = "GLOBAL.eddiewebb.CircleCI Orb"
-Application_Version = "CCI Bank Corp" 
+Application = "GLOBAL.eddiewebb.CircleCI Orb.CCI Bank Corp"
+Application_Version = "1" 
 
 # Define Component Name, Variant and Version - required
 Name = "GLOBAL.eddiewebb.CircleCI Orb.Frontend"

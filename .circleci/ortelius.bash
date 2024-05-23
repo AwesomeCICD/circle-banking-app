@@ -3,6 +3,7 @@ echo "REPO: ${SKAFFOLD_IMAGE_REPO}"
 echo "IMAGE: ${SKAFFOLD_IMAGE}"
 echo "TAG: ${SKAFFOLD_IMAGE_TAG}"
 echo "NAME: ${SKAFFOLD_IMAGE%":$SKAFFOLD_IMAGE_TAG"}"
+env
 echo "+++++++++++"
 
 

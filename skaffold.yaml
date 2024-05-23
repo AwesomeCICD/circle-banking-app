@@ -104,7 +104,7 @@ build:
   - image: cera-frontend
     context: src/frontend
     hooks:
-      before:
+      after:
         - command: ["sh", "-c", ".circleci/ortelius.bash"]
           os: [darwin, linux]
 deploy:
