@@ -1,23 +1,27 @@
-echo "++++++++++"
-echo "REPO: ${SKAFFOLD_IMAGE_REPO}"
-echo "IMAGE: ${SKAFFOLD_IMAGE}"
-echo "TAG: ${SKAFFOLD_IMAGE_TAG}"
-echo "NAME: ${SKAFFOLD_IMAGE%":$SKAFFOLD_IMAGE_TAG"}"
-echo "DIGEST: $(docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE})"
-echo "+++++++++++"
 
 #export DOCKERSHA=`docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE}`
-export DOCKERSHA=`docker manifest inspect ${SKAFFOLD_IMAGE} | jq '.config.digest'`
+export DOCKERSHA=`docker manifest inspect ${SKAFFOLD_IMAGE} | jq -r '.config.digest'`
 export DHURL="https://console.deployhub.com"
 export DHUSER=eddiewebb-ci
 export DHPASS=logincci
 export DOCKERREPO=${SKAFFOLD_IMAGE%":$SKAFFOLD_IMAGE_TAG"}
 export IMAGE_TAG=${SKAFFOLD_IMAGE_TAG}  #skafoold sets from git tree specific sha
+export PROJECT_DIR=${1:-$SKAFFOLD_WORKING_DIR}
+
+echo "++++++++++"
+echo "REPO: ${SKAFFOLD_IMAGE_REPO}"
+echo "IMAGE: ${SKAFFOLD_IMAGE}"
+echo "TAG: ${SKAFFOLD_IMAGE_TAG}"
+echo "NAME: ${DOCKERREPO}"
+echo "DIGEST: ${DOCKERSHA}"
+echo "P_DIR: ${PROJECT_DIR}"
+echo "+++++++++++"
+
 #echo "export IMAGE_TAG=${SKAFFOLD_IMAGE_TAG}" >> $BASH_ENV #make available to parent CCI job steps that come
           
 pip install ortelius-cli
 python3 -m pip install cyclonedx-bom
-cd $SKAFFOLD_BUILD_CONTEXT
+cd $PROJECT_DIR
 if [ -f requirements.txt ];then
     echo "Generating SBOm for python app"
     cyclonedx-py requirements > cyclonedx.json
