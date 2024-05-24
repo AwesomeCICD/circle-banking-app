@@ -12,6 +12,7 @@ target/
 .idea/
 settings.json
 pyvenv.cfg
+cyclonedx.xml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

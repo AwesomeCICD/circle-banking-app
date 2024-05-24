@@ -1,3 +1,7 @@
+echo $1
+echo "2:$2"
+echo "$@"
+
 
 #export DOCKERSHA=`docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE}`
 export DOCKERSHA=`docker manifest inspect ${SKAFFOLD_IMAGE} | jq -r '.config.digest'`
