@@ -68,6 +68,10 @@ build:
   - image: cera-ledgerwriter
     jib:
       project: src/ledgerwriter
+    hooks:
+      after:
+        - command: ["sh", "-c", ".circleci/ortelius.bash"]
+          os: [darwin, linux]
   - image: cera-balancereader
     jib:
       project: src/balancereader
@@ -76,6 +80,10 @@ build:
       project: src/transactionhistory
   - image: cera-contacts
     context: src/contacts
+    hooks:
+      after:
+        - command: ["sh", "-c", ".circleci/ortelius.bash"]
+          os: [darwin, linux]
   - image: cera-userservice
     context: src/userservice
 deploy:

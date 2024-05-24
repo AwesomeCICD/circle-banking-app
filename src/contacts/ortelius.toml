@@ -3,7 +3,7 @@ Application = "GLOBAL.eddiewebb.CircleCI Orb.CCI Bank Corp"
 Application_Version = "1" 
 
 # Define Component Name, Variant and Version - required
-Name = "GLOBAL.eddiewebb.CircleCI Orb.Frontend"
+Name = "GLOBAL.eddiewebb.CircleCI Orb.Contacts Service"
 Variant = "${CIRCLE_BRANCH}"
 Version = "${SKAFFOLD_IMAGE_TAG}"
 
