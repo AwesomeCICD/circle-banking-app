@@ -94,6 +94,10 @@ deploy:
     - dev-kubernetes-manifests/ledger-writer.yaml
     - dev-kubernetes-manifests/transaction-history.yaml
     - dev-kubernetes-manifests/userservice.yaml
+    hooks:
+      after:
+        - command: ["sh", "-c", '.circleci/ortelius.bash deploy dev']
+          os: [darwin, linux]
 # [END gke_bank_of_anthos_skaffold_config_backend]
 ---
 # [START gke_bank_of_anthos_skaffold_config_frontend]
