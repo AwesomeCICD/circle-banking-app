@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.transactionhistory;
+package com.circleci.samples.bankcorp.transactionhistory;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

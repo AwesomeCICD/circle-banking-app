@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.balancereader;
+package com.circleci.samples.bankcorp.balancereader;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

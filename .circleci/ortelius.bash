@@ -6,7 +6,8 @@ echo "NAME: ${SKAFFOLD_IMAGE%":$SKAFFOLD_IMAGE_TAG"}"
 echo "DIGEST: $(docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE})"
 echo "+++++++++++"
 
-export DOCKERSHA=`docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE}`
+#export DOCKERSHA=`docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE}`
+export DOCKERSHA=`docker manifest inspect ${SKAFFOLD_IMAGE} | jq '.config.digest'`
 export DHURL="https://console.deployhub.com"
 export DHUSER=eddiewebb-ci
 export DHPASS=logincci

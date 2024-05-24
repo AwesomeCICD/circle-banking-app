@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.ledgerwriter;
+package com.circleci.samples.bankcorp.ledgerwriter;
 
 import java.util.Date;
 

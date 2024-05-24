@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.balancereader;
+package com.circleci.samples.bankcorp.balancereader;
 
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
@@ -27,6 +27,8 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.circleci.samples.bankcorp.balancereader.BalanceReaderController;
+import com.circleci.samples.bankcorp.balancereader.LedgerReader;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import org.junit.jupiter.api.BeforeEach;

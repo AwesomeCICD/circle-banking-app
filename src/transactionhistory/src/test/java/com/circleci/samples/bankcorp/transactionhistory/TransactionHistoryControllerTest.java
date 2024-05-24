@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.transactionhistory;
+package com.circleci.samples.bankcorp.transactionhistory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,6 +25,9 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.circleci.samples.bankcorp.transactionhistory.LedgerReader;
+import com.circleci.samples.bankcorp.transactionhistory.Transaction;
+import com.circleci.samples.bankcorp.transactionhistory.TransactionHistoryController;
 import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import io.micrometer.core.instrument.Clock;
