@@ -2,7 +2,7 @@
 export DHURL="https://console.deployhub.com"
 export DHUSER=eddiewebb-ci
 export DHPASS=logincci
-export BUILD_OR_DEPLOY=${1:="build"}
+export BUILD_OR_DEPLOY=${1:-"build"}
 
 echo "++++++++++"
 echo "action: $BUILD_OR_DEPLOY"
