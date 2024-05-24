@@ -9,10 +9,17 @@ Version = "${SKAFFOLD_IMAGE_TAG}"
 
 # Key/Values to associate to the Component Version (set by ortelius.bash, which is called by skaffold for components.)
 [Attributes]
+    BuildId = "${CIRCLE_PIPELINE_ID}"
+    BuildUrl ="${CIRCLE_BUILD_URL}"
+    Category = "MicroService"
+    Description = "User website to intiate online banking services."
     DockerBuildDate = "${BLDDATE}"
     DockerRepo = "${DOCKERREPO}"
     DockerSha = "${DOCKERSHA}"
     DockerTag = "${SKAFFOLD_IMAGE_TAG}"
+    GitCommit = "${CIRCLE_SHA1}"
+    GitUrl = "${CIRCLE_REPOSITORY_URL:-Unknown}"
+    GitRepo = "${CIRCLE_PROJECT_REPONAME}"
     #SlackChannel = "your Slack Channel" 
     ServiceOwner = "${DHUSER}"
     ServiceOwnerEmail = "eddie@circleci.com"

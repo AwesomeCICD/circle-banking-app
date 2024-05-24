@@ -5,7 +5,7 @@ export DHUSER=eddiewebb-ci
 export DHPASS=logincci
 export DOCKERREPO=${SKAFFOLD_IMAGE%":$SKAFFOLD_IMAGE_TAG"}
 export IMAGE_TAG=${SKAFFOLD_IMAGE_TAG}  #skafoold sets from git tree specific sha
-export PROJECT_DIR=${1:-$SKAFFOLD_WORK_DIR}
+export PROJECT_DIR=${1:-$SKAFFOLD_BUILD_CONTEXT}
 
 echo "++++++++++"
 echo "REPO: ${SKAFFOLD_IMAGE_REPO}"
