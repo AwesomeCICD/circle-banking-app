@@ -1,8 +1,3 @@
-echo $1
-echo "2:$2"
-echo "$@"
-
-
 #export DOCKERSHA=`docker inspect --format='{{index .RepoDigests 0}}' ${SKAFFOLD_IMAGE}`
 export DOCKERSHA=`docker manifest inspect ${SKAFFOLD_IMAGE} | jq -r '.config.digest'`
 export DHURL="https://console.deployhub.com"
@@ -10,7 +5,7 @@ export DHUSER=eddiewebb-ci
 export DHPASS=logincci
 export DOCKERREPO=${SKAFFOLD_IMAGE%":$SKAFFOLD_IMAGE_TAG"}
 export IMAGE_TAG=${SKAFFOLD_IMAGE_TAG}  #skafoold sets from git tree specific sha
-export PROJECT_DIR=${1:-$SKAFFOLD_WORKING_DIR}
+export PROJECT_DIR=${1:-$SKAFFOLD_WORK_DIR}
 
 echo "++++++++++"
 echo "REPO: ${SKAFFOLD_IMAGE_REPO}"
