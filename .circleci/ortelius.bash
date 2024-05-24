@@ -9,7 +9,7 @@ echo "action: $BUILD_OR_DEPLOY"
 if [ "$BUILD_OR_DEPLOY" = "deploy" ];then
     shift
     DEPLOY_ENV=${1:-"dev"}
-    cho "DEPLOY_ENV: ${DEPLOY_ENV}"
+    echo "DEPLOY_ENV: ${DEPLOY_ENV}"
 else    
     BUILD_OR_DEPLOY=build
     export DOCKERSHA=`docker manifest inspect ${SKAFFOLD_IMAGE} | jq -r '.config.digest'`
