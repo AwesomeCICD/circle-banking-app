@@ -6,7 +6,7 @@ export BUILD_OR_DEPLOY=${1}
 
 echo "++++++++++"
 echo "action: $BUILD_OR_DEPLOY"
-if [ "$BUILD_OR_DEPLOY" -eq "deploy" ];then
+if [ "$BUILD_OR_DEPLOY" = "deploy" ];then
     shift
     DEPLOY_ENV=${1:-"dev"}
     cho "DEPLOY_ENV: ${DEPLOY_ENV}"
