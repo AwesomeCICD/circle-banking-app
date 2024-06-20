@@ -324,10 +324,10 @@ workflows:
           requires: ['Skaffold build & Push [<<pipeline.parameters.region>>]']
       - deploy-prod:
           name: Deploy Production
-          requires: [vulnerability-scan]
+          requires: ['Vulnerability Scan']
       - e2e-test:
           name: e2e
-          requires: [deploy-prod]
+          requires: ['Deploy Production']
      # - deploy:
      #     name: Deploy Dev [<<pipeline.parameters.region>>]
      #     region: <<pipeline.parameters.region>>
