@@ -321,7 +321,7 @@ workflows:
           name: Skaffold build & Push [<<pipeline.parameters.region>>]
       - vulnerability-scan:
           name: Vulnerability Scan
-          requires: ['Skaffold build & Push [<<pipeline.parameters.region>>]']
+          requires: ['Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov]
       - deploy-prod:
           name: Deploy Production
           requires: ['Vulnerability Scan']
