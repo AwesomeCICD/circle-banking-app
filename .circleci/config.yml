@@ -105,6 +105,23 @@ jobs:
           steps: 
           - run: ./mvnw checkstyle:check
 
+  vulnerability-scan:
+    executor: jdk17
+    steps:
+      - checkout
+      - run: sleep 5
+
+  e2e-test:
+    executor: jdk17
+    steps:
+      - checkout
+      - run: sleep 5
+
+  deploy-prod:
+    executor: jdk17
+    steps:
+      - checkout
+      - run: sleep 5
 
   java-test-and-code-cov:
     executor: jdk17
@@ -302,18 +319,27 @@ workflows:
           context: cera-vault-oidc
           region: <<pipeline.parameters.region>>
           name: Skaffold build & Push [<<pipeline.parameters.region>>]
-      - deploy:
-          name: Deploy Dev [<<pipeline.parameters.region>>]
-          region: <<pipeline.parameters.region>>
-          requires: [ 'Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
-      - e2e:
-          requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
-          region: <<pipeline.parameters.region>>
+      - vulnerability-scan:
+          name: Vulnerability Scan
+          requires: ['Skaffold build & Push [<<pipeline.parameters.region>>]']
+      - deploy-prod:
+          name: Deploy Production
+          requires: [vulnerability-scan]
+      - e2e-test:
+          name: e2e
+          requires: [deploy-prod]
+     # - deploy:
+     #     name: Deploy Dev [<<pipeline.parameters.region>>]
+     #     region: <<pipeline.parameters.region>>
+     #     requires: [ 'Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
+     #     context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
+     #     post-steps:
+     #       - compass/notify_deployment:
+     #           token_name: COMPASS_CCI_TOKEN
+     #           environment_type: development
+     # - e2e:
+     #     requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
+     #     region: <<pipeline.parameters.region>>
       - deploy:
           name: Deploy Production [<<pipeline.parameters.region>>]
           requires: [ e2e ]
