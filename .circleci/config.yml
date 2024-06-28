@@ -7,7 +7,7 @@ parameters:
   region:
     type: enum
     description: where we are deploying, a CERA cluster region
-    enum: [ namer, emea, japac]
+    enum: [ namer, emea]
     default: emea
     
 executors:
