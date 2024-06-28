@@ -190,12 +190,12 @@ jobs:
             - v1-skaffold-{{ .Branch }}
             - v1-skaffold-
       - run: |
-          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-labs.com
+          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-fieldeng.com
           # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
           ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
           echo "Jib ready"
           mkdir output
-          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
+          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --file-output=output/tags.json
           ls /tmp/
       - save_cache:
           key: v1-skaffold-{{ .Branch }}
@@ -248,7 +248,7 @@ jobs:
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
             cat .circleci/release_tracking/virtual_service_region.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service_region.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
@@ -271,9 +271,9 @@ jobs:
       - run: 
           name: Run Cypress Tests
           command: |
-            URL="https://<<parameters.region>>.circleci-labs.com"
+            URL="https://<<parameters.region>>.circleci-fieldeng.com"
             if [ "<<parameters.app-environment>>" != "prod" ]; then
-              URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-labs.com"
+              URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-fieldeng.com"
             fi
             echo "Testing against ${URL}"
             cd ui-tests
@@ -351,7 +351,7 @@ commands:
           name: Load Credentials from Vault
           command: |
             echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-labs.com"
+            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-fieldeng.com"
             export VAULT_ROLE=boa-${APP_ENV}-deploy
             echo $VAULT_ROLE
             echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
