@@ -317,13 +317,19 @@ workflows:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
       - e2e:
-          requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
-          region: <<pipeline.parameters.region>>
+          matrix:
+            parameters:
+              region: [<< pipeline.parameters.deploy-regions >>]
+          requires: [ 'Deploy Dev [<<matrix.region>>]' ]
+          region: <<matrix.region>>
       - deploy:
-          name: Deploy Production [<<pipeline.parameters.region>>]
+          matrix:
+            parameters:
+              region: [<< pipeline.parameters.deploy-regions >>]
+          name: Deploy Production [<<matrix.region>>]
           requires: [ e2e ]
           app-environment: prod
-          region: <<pipeline.parameters.region>>
+          region: <<matrix.region>>
           context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
           filters:
             branches:
