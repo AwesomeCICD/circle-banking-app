@@ -3,12 +3,6 @@ orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
           
-parameters:
-  deploy-regions:
-    type: string
-    description: where we are deploying, a CERA cluster region comma,seprated,enums
-    default: emea,namer
-    
 executors:
   with-chrome:
     docker:
@@ -300,14 +294,14 @@ workflows:
       - skaffold-build-push:
           matrix:
             parameters:
-              region: [<< pipeline.parameters.deploy-regions >>]
+              region: [emea, namer]
           context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - deploy:
           matrix:
             parameters:
-              region: [<< pipeline.parameters.deploy-regions >>]
+              region: [emea,namer]
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
           requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
@@ -319,15 +313,17 @@ workflows:
       - e2e:
           matrix:
             parameters:
-              region: [<< pipeline.parameters.deploy-regions >>]
+              region: [emea,namer]
+          name: e2e [<<matrix.region>>]
           requires: [ 'Deploy Dev [<<matrix.region>>]' ]
           region: <<matrix.region>>
       - deploy:
           matrix:
             parameters:
-              region: [<< pipeline.parameters.deploy-regions >>]
+              region: [emea,namer]
           name: Deploy Production [<<matrix.region>>]
-          requires: [ e2e ]
+          requires: 
+            - 'e2e [<<matrix.region>>]'
           app-environment: prod
           region: <<matrix.region>>
           context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
