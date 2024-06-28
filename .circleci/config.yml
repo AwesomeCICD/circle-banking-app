@@ -4,11 +4,10 @@ orbs:
   maven: circleci/maven@1.4
           
 parameters:
-  region:
-    type: enum
-    description: where we are deploying, a CERA cluster region
-    enum: [ namer, emea]
-    default: emea
+  deploy-regions:
+    type: string
+    description: where we are deploying, a CERA cluster region comma,seprated,enums
+    default: emea,namer
     
 executors:
   with-chrome:
@@ -299,13 +298,19 @@ workflows:
       - python-test
       - python-test-parallel
       - skaffold-build-push:
+          matrix:
+            parameters:
+              region: [<< pipeline.parameters.deploy-regions >>]
           context: cera-vault-oidc
-          region: <<pipeline.parameters.region>>
-          name: Skaffold build & Push [<<pipeline.parameters.region>>]
+          region: <<matrix.region>>
+          name: Skaffold build & Push [<<matrix.region>>]
       - deploy:
-          name: Deploy Dev [<<pipeline.parameters.region>>]
-          region: <<pipeline.parameters.region>>
-          requires: [ 'Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
+          matrix:
+            parameters:
+              region: [<< pipeline.parameters.deploy-regions >>]
+          name: Deploy Dev [<<matrix.region>>]
+          region: <<matrix.region>>
+          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
