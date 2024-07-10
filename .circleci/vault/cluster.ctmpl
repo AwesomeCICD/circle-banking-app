@@ -1,7 +1,7 @@
 {{$appenv := env "APP_ENV"}}
-{{$apppath :=  "secret/cluster/boa" }}
+{{$apppath :=  "secret/cluster/cba" }}
 {{ if eq $appenv "dev" }}
-    {{$apppath = printf "secret/cluster/boa-%s" $appenv}}
+    {{$apppath = printf "secret/cluster/cba-%s" $appenv}}
 {{ end }}
 {{ with secret $apppath }}
    # Secrets for {{ $appenv }} from {{ $apppath }}
@@ -22,7 +22,7 @@
 
 
 ## Nexus Credentials
-{{ with secret "secret/nexus/boa-deployer" }}
+{{ with secret "secret/nexus/cera-deployer" }}
     export DOCKER_LOGIN="{{ .Data.data.username }}"
     export DOCKER_PWD="{{ .Data.data.password }}"
     echo "export DOCKER_LOGIN=\"{{ .Data.data.username }}\"" >> $BASH_ENV

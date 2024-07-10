@@ -1,10 +1,9 @@
-![Continuous Integration](https://github.com/GoogleCloudPlatform/bank-of-Aion/workflows/Continuous%20Integration%20-%20Main/Release/badge.svg)
-
 # CCI Bank Corp
 
 **CCI Bank Corp** is a sample HTTP-based web app that simulates a bank's payment processing network, allowing users to create artificial bank accounts and complete transactions.
 
-We forked it from Google, chosen for it's multi-language monorepo structure with various microservices.
+We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https://github.com/GoogleCloudPlatform/bank-of-Aion/)
+, chosen for it's multi-language monorepo structure with various microservices.
 
 
 ## Screenshots
@@ -36,24 +35,19 @@ We forked it from Google, chosen for it's multi-language monorepo structure with
 
 ### Concepts
  The credentials are comprised of a CA certificate and a secret token, pulled from CERA vault (Hashicorp). (See reference-architecture).  Those are provided to Dev team as a CCI Context for each environment via OIDC claims in vault.
- - `cera-boa-dev` a dev context
- - `cera-boa-prod` a prod context
+
+ The application must define what role & `VAULT_ADDRESS` to connect to, which with set the appropriate environment's secrets.
+
+ Available Roles (in any CERA Region)
+ - cba-prod
+ - cba-dev
+
  The appropriate deployment jobs access a `K8_TOKEN` and `K8_CERT` that is used to define connection along with the URL, CLUSTER_NAME, and NAMESPACE
 
-We can use namespaces to represent the distinct environments.
 
 
 
-
-
-1. Modify the Namespace to avoid collision OR target a non shared cluster
-(CI process will handle this)
-
-2. Ensure you have access to EKS cluster via AWS SSO or K8s ServiceAccount (ci process uses latter)
-
-
-
-4. **Deploy CCI Bank Corp to the cluster.**
+1. **Deploy CCI Bank Corp to the cluster.**
 
 **Yes SE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
 
@@ -111,7 +105,7 @@ Argo Rollouts is enabled, for these clusters.
 
 Frontend `Deployment` was replaced with a `Rollout` including steps.
 
-Status: you can use `kubectl argo rollouts get rollout frontend-rollout -n boa-dev -w` to see status.
+Status: you can use `kubectl argo rollouts get rollout frontend-rollout -n cba-dev -w` to see status.
 
 All components tag app name and version. (Version Label is applied by skaffold `-l` flag directly.)
 
