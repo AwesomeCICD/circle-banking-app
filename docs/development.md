@@ -106,7 +106,7 @@ You can use the `skaffold` tool to build and deploy your code to the SE CERA Clu
 **NOTE:** You must set docker to login to Nexus!
 
 ```shell
-echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-fieldeng.com
+echo "${NEXUS_PASSWORD}" | docker login --username ${NEXUS_USERNAME} --password-stdin docker.nexus.cera.circleci-capitalone-demo.com
 ```
 Nexus password can be created per SE.  Admin creds in team vault.
 
@@ -116,7 +116,7 @@ The [`skaffold dev`](https://skaffold.dev/docs/references/cli/#skaffold-dev) com
 
 ```
 # kubectl config use-context <CLUSTER_CONTEXT_TO_TARGET>
-skaffold dev --default-repo=docker.nexus.cera.circleci-fieldeng.com -n MY_NAMESPACE
+skaffold dev --default-repo=docker.nexus.cera.circleci-capitalone-demo.com -n MY_NAMESPACE
 ```
 
 
@@ -125,7 +125,7 @@ skaffold dev --default-repo=docker.nexus.cera.circleci-fieldeng.com -n MY_NAMESP
 The [`skaffold run`](https://skaffold.dev/docs/references/cli/#skaffold-run) command build and deploys the services to our SE cluster one time, then exits. 
 
 ```
-skaffold run --default-repo=docker.nexus.cera.circleci-fieldeng.com -n MY_NAMESPACE
+skaffold run --default-repo=docker.nexus.cera.circleci-capitalone-demo.com -n MY_NAMESPACE
 ```
 
 ### Running services selectively
@@ -140,13 +140,13 @@ Skaffold reads the [skaffold.yaml](../skaffold.yaml) file to understand the proj
 To work with only the `frontend` module, run:
 
 ```
-skaffold dev --default-repo=docker.nexus.cera.circleci-fieldeng.com  -m setup,frontend -n MY_NAMESPACE
+skaffold dev --default-repo=docker.nexus.cera.circleci-capitalone-demo.com  -m setup,frontend -n MY_NAMESPACE
 ```
 
 To work with both `frontend` and `backend` modules, run:
 
 ```
-skaffold dev --default-repo=docker.nexus.cera.circleci-fieldeng.com  -m setup -m frontend -m backend -n MY_NAMESPACE
+skaffold dev --default-repo=docker.nexus.cera.circleci-capitalone-demo.com  -m setup -m frontend -m backend -n MY_NAMESPACE
 ```
 
 ## Continuous Integration

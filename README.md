@@ -52,7 +52,7 @@ We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https:
 **Yes SE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
 
 ```
-skaffold run --tag=build-local --default-repo=docker.nexus.cera.circleci-fieldeng.com
+skaffold run --tag=build-local --default-repo=docker.nexus.cera.circleci-capitalone-demo.com
 ```
 
 5. **Wait for the Pods to be ready.**
