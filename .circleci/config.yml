@@ -294,20 +294,20 @@ workflows:
       - skaffold-build-push:
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [namer]
           context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - hold:
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [namer]
           type: approval
           requires: ['Skaffold build & Push [<<matrix.region>>]',java-checkstyle,python-checkstyle,python-test,python-test-parallel,java-test-and-code-cov,]
       - deploy:
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [namer]
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
           requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov,hold ]
@@ -319,14 +319,14 @@ workflows:
       - e2e:
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [namer]
           name: e2e [<<matrix.region>>]
           requires: [ 'Deploy Dev [<<matrix.region>>]' ]
           region: <<matrix.region>>
       - deploy:
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [namer]
           name: Deploy Production [<<matrix.region>>]
           requires: 
             - 'e2e [<<matrix.region>>]'
