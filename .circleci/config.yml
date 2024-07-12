@@ -291,9 +291,6 @@ workflows:
       - python-checkstyle
       - python-test
       - python-test-parallel
-      - hold:
-            type: approval
-            requires: [java-checkstyle,python-checkstyle,python-test,python-test-parallel,java-test-and-code-cov,'Skaffold build & Push [<<matrix.region>>]']
       - skaffold-build-push:
           matrix:
             parameters:
@@ -301,6 +298,12 @@ workflows:
           context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
+      - hold:
+          matrix:
+            parameters:
+              region: [emea,namer]
+          type: approval
+          requires: ['Skaffold build & Push [<<matrix.region>>]',java-checkstyle,python-checkstyle,python-test,python-test-parallel,java-test-and-code-cov,]
       - deploy:
           matrix:
             parameters:
