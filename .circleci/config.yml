@@ -293,6 +293,7 @@ workflows:
       - python-test-parallel
       - hold:
             type: approval
+            requires: [java-checkstyle,python-checkstyle,python-test,python-test-parallel,java-test-and-code-cov,'Skaffold build & Push [<<matrix.region>>]']
       - skaffold-build-push:
           matrix:
             parameters:
