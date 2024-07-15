@@ -299,6 +299,9 @@ workflows:
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - hold:
+          matrix:
+            parameters:
+              region: [namer]
           type: approval
           requires: ['Skaffold build & Push [<<matrix.region>>]',java-checkstyle,python-checkstyle,python-test,python-test-parallel,java-test-and-code-cov]
       - deploy:
