@@ -308,6 +308,7 @@ workflows:
               region: [namer]
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
+          context: [cera-vault-oidc ]
           requires: [ hold ]
       - e2e:
           matrix:
@@ -325,6 +326,7 @@ workflows:
             - 'e2e [<<matrix.region>>]'
           app-environment: prod
           region: <<matrix.region>>
+          context: [cera-vault-oidc-prod ]
           filters:
             branches:
               only: [ main ]
