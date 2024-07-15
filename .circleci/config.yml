@@ -1,6 +1,5 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
           
 executors:
@@ -285,8 +284,7 @@ jobs:
 workflows:
   main:
     jobs:
-      - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
+      - java-checkstyle
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
@@ -295,7 +293,6 @@ workflows:
           matrix:
             parameters:
               region: [namer]
-          context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - hold:
@@ -311,11 +308,6 @@ workflows:
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
           requires: [ hold ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
       - e2e:
           matrix:
             parameters:
@@ -332,15 +324,10 @@ workflows:
             - 'e2e [<<matrix.region>>]'
           app-environment: prod
           region: <<matrix.region>>
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
           filters:
             branches:
               only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-namer-Prod
+          
 
 
 commands:
