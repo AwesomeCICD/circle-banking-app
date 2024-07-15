@@ -298,13 +298,16 @@ workflows:
           context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
+      - hold:
+          type: approval
+          requires: ['Skaffold build & Push [<<matrix.region>>]',java-checkstyle,python-checkstyle,python-test,python-test-parallel,java-test-and-code-cov]
       - deploy:
           matrix:
             parameters:
               region: [namer]
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
-          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
+          requires: [ hold ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
