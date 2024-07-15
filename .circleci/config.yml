@@ -293,6 +293,7 @@ workflows:
           matrix:
             parameters:
               region: [namer]
+          context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - hold:
