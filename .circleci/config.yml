@@ -3,13 +3,6 @@ orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
           
-parameters:
-  region:
-    type: enum
-    description: where we are deploying, a CERA cluster region
-    enum: [ namer, emea, japac]
-    default: emea
-    
 executors:
   with-chrome:
     docker:
@@ -190,12 +183,12 @@ jobs:
             - v1-skaffold-{{ .Branch }}
             - v1-skaffold-
       - run: |
-          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-labs.com
+          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-fieldeng.com
           # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
           ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
           echo "Jib ready"
           mkdir output
-          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --file-output=output/tags.json
+          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --file-output=output/tags.json
           ls /tmp/
       - save_cache:
           key: v1-skaffold-{{ .Branch }}
@@ -248,7 +241,7 @@ jobs:
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
             cat .circleci/release_tracking/virtual_service_region.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service_region.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-labs.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
@@ -271,9 +264,9 @@ jobs:
       - run: 
           name: Run Cypress Tests
           command: |
-            URL="https://<<parameters.region>>.circleci-labs.com"
+            URL="https://<<parameters.region>>.circleci-fieldeng.com"
             if [ "<<parameters.app-environment>>" != "prod" ]; then
-              URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-labs.com"
+              URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-fieldeng.com"
             fi
             echo "Testing against ${URL}"
             cd ui-tests
@@ -299,26 +292,40 @@ workflows:
       - python-test
       - python-test-parallel
       - skaffold-build-push:
+          matrix:
+            parameters:
+              region: [emea, namer]
           context: cera-vault-oidc
-          region: <<pipeline.parameters.region>>
-          name: Skaffold build & Push [<<pipeline.parameters.region>>]
+          region: <<matrix.region>>
+          name: Skaffold build & Push [<<matrix.region>>]
       - deploy:
-          name: Deploy Dev [<<pipeline.parameters.region>>]
-          region: <<pipeline.parameters.region>>
-          requires: [ 'Skaffold build & Push [<<pipeline.parameters.region>>]', python-test, java-test-and-code-cov ]
+          matrix:
+            parameters:
+              region: [emea,namer]
+          name: Deploy Dev [<<matrix.region>>]
+          region: <<matrix.region>>
+          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
           context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
       - e2e:
-          requires: [ 'Deploy Dev [<<pipeline.parameters.region>>]' ]
-          region: <<pipeline.parameters.region>>
+          matrix:
+            parameters:
+              region: [emea,namer]
+          name: e2e [<<matrix.region>>]
+          requires: [ 'Deploy Dev [<<matrix.region>>]' ]
+          region: <<matrix.region>>
       - deploy:
-          name: Deploy Production [<<pipeline.parameters.region>>]
-          requires: [ e2e ]
+          matrix:
+            parameters:
+              region: [emea,namer]
+          name: Deploy Production [<<matrix.region>>]
+          requires: 
+            - 'e2e [<<matrix.region>>]'
           app-environment: prod
-          region: <<pipeline.parameters.region>>
+          region: <<matrix.region>>
           context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
           filters:
             branches:
@@ -351,8 +358,8 @@ commands:
           name: Load Credentials from Vault
           command: |
             echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-labs.com"
-            export VAULT_ROLE=boa-${APP_ENV}-deploy
+            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-fieldeng.com"
+            export VAULT_ROLE=cba-${APP_ENV}-deploy
             echo $VAULT_ROLE
             echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
             circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
