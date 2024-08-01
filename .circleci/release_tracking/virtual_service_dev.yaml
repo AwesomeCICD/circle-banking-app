@@ -6,4 +6,4 @@ spec:
   hosts:
     - "dev.${CERA_REGION}.circleci-fieldeng.com"
   gateways:
-    - istio-ingress/${CERA_REGION}-istio-gateway-2
+    - istio-ingress/${CERA_REGION}-istio-gateway-subdomains
