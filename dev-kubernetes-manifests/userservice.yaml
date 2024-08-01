@@ -77,6 +77,8 @@ spec:
           value: "true"
         - name: TOKEN_EXPIRY_SECONDS
           value: "3600"
+        - name: JVM_OPTS
+          value: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xms96m -Xmx128m"
         - name: PRIV_KEY_PATH
           value: "/tmp/.ssh/privatekey"
         # Valid levels are debug, info, warning, error, critical. If no valid level is set, gunicorn will default to info.
@@ -97,10 +99,10 @@ spec:
         resources:
           requests:
             cpu: 200m
-            memory: 64Mi
+            memory: 128Mi
           limits:
-            cpu: 250m
-            memory: 190Mi
+            cpu: 300m
+            memory: 256Mi
       volumes:
       - name: keys
         secret:
