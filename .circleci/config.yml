@@ -370,4 +370,4 @@ commands:
             source .circleci/vault/setenv
             #export for other steps
           name: Set Environment Variables from Vault
-# VS Code Extension Version: 1.5.1
+# VS Code Extension Version: 1.5
