@@ -264,16 +264,18 @@ jobs:
       - run:
           name: Install coverage reporter
           command: |
+            cd ui-tests
             npm install --save-dev cypress-circleci-reporter
+            pwd
       - run: 
           name: Run Cypress Tests
           command: |
+            pwd
             URL="https://<<parameters.region>>.circleci-fieldeng.com"
             if [ "<<parameters.app-environment>>" != "prod" ]; then
               URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-fieldeng.com"
             fi
             echo "Testing against ${URL}"
-            cd ui-tests
             circleci tests glob "cypress/**/*.cy.js" | circleci tests run --command="xargs \
             npx cypress run \
             --config baseUrl=${URL} \
