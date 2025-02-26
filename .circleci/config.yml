@@ -280,11 +280,10 @@ jobs:
             --config baseUrl=${URL} \
             --browser firefox \
             --reporter cypress-circleci-reporter \
-            --reporter-options 'mochaFile=results/my-test-output-[hash].xml' \
             --spec" \
             --verbose
       - store_test_results:
-          path: ui-tests/results
+          path: ui-tests/test_results/cypress/
       - store_artifacts:
           path: ui-tests/cypress/videos
       - store_artifacts:
