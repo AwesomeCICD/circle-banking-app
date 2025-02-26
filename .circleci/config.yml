@@ -280,7 +280,7 @@ jobs:
             --config baseUrl=${URL} \
             --browser firefox \
             --reporter cypress-circleci-reporter \
-            --reporter-options "mochaFile=results/my-test-output-[hash].xml" \
+            --reporter-options 'mochaFile=results/my-test-output-[hash].xml' \
             --spec" \
             --verbose
       - store_test_results:
