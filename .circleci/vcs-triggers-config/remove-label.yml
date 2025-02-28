@@ -1,0 +1,18 @@
+version: 2.1
+
+jobs:
+  remove-label:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Remove Label from PR
+          command: |
+            curl -X DELETE -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/AwesomeCICD/circle-banking-app/issues/2/labels/run-ci"
+
+
+workflows:
+  hello_world:
+    jobs:
+      - remove-label
+      
