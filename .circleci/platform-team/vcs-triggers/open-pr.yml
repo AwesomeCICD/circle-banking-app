@@ -8,14 +8,14 @@ executors:
       - image: cimg/openjdk:17.0.3
     resource_class: xlarge
 
-  python313:
+  python38:
     docker:
-      - image: cimg/python:3.13
+      - image: cimg/python:3.8
 
 
 jobs:
   python-checkstyle:
-    executor: python313
+    executor: python38
     steps:
       - checkout
       - run: pip install pylint
@@ -24,7 +24,7 @@ jobs:
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
-    executor: python313
+    executor: python38
     steps:
       - checkout
       - run: mkdir test-reports
@@ -52,7 +52,7 @@ jobs:
           path: test-reports
 
   python-test-parallel:
-    executor: python313
+    executor: python38
     parallelism: 2 #match number of python services
     steps:
       - checkout
