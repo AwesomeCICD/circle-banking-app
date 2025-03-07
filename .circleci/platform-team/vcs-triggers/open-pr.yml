@@ -142,7 +142,7 @@ jobs:
           path: .circleci/tests/
    
 workflows:
-  main:
+  open-pr:
     jobs:
       - java-checkstyle:
           context: [ compass-integration-bank-of-aion ]
