@@ -128,3 +128,30 @@ spec:
     port: 8080
     targetPort: 8080
 # [END gke_dev_kubernetes_manifests_userservice_service_userservice]
+---
+# apiVersion: argoproj.io/v1alpha1
+# kind: AnalysisTemplate
+# metadata:
+#   name: user-signup-rate
+# spec:
+#   # this analysis template requires a service name and namespace to be supplied to the query
+#   metrics:
+#   - name: user-signup-rate
+#     interval: 10s
+#     initialDelay: 40s
+#     successCondition: result[0] > 0.90 #if empty response from server
+#     failureLimit: 2
+#     provider:
+#       prometheus:
+#         address: http://prometheus-server.istio-system:80
+#         query: >+
+#           sum(irate(istio_requests_total{
+#             reporter="destination",
+#             destination_service=~"dr-demo-canary.{{ .Values.namespace }}.svc.cluster.local",
+#             response_code!~"5.*"}[25s])
+#           )
+#           /
+#           sum(irate(istio_requests_total{
+#             reporter="destination",
+#             destination_service=~"dr-demo-canary.{{ .Values.namespace }}.svc.cluster.local"}[25s])
+#           )
