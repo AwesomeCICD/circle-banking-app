@@ -47,7 +47,6 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
 from prometheus_flask_exporter import PrometheusMetrics
-import time
 
 metrics = PrometheusMetrics.for_app_factory()
 
@@ -56,7 +55,6 @@ def create_app():
     of the Userservice Flask App
     """
     app = Flask(__name__)
-
   
     # Disabling unused-variable for lines with route decorated functions
     # as pylint thinks they are unused
@@ -276,11 +274,11 @@ def create_app():
         app.logger.critical("users_db database connection failed")
         sys.exit(1)
     
-    return app
+    metrics.init_app(app)
 
+    return app
 
 if __name__ == "__main__":
     # Create an instance of flask server when called directly
     USERSERVICE = create_app()
-    metrics.init_app(USERSERVICE)
     USERSERVICE.run()

@@ -23,6 +23,7 @@ from unittest.mock import patch, mock_open
 
 from sqlalchemy.exc import SQLAlchemyError
 import jwt
+import prometheus_client
 
 from userservice.userservice import create_app
 from userservice.tests.constants import (
@@ -43,6 +44,7 @@ class TestUserservice(unittest.TestCase):
 
     def setUp(self):
         """Setup Flask TestClient and mock userdatabase"""
+        prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
         # mock opening files
         with patch('userservice.userservice.open', mock_open(read_data='foo')):
             # mock env vars
