@@ -44,7 +44,6 @@ class TestUserservice(unittest.TestCase):
 
     def setUp(self):
         """Setup Flask TestClient and mock userdatabase"""
-        prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
         # mock opening files
         with patch('userservice.userservice.open', mock_open(read_data='foo')):
             # mock env vars
@@ -67,6 +66,8 @@ class TestUserservice(unittest.TestCase):
                     self.flask_app.config['TESTING'] = True
                     # create test client
                     self.test_app = self.flask_app.test_client()
+                    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
+        
 
     def test_version_endpoint_returns_200_status_code_correct_version(self):
         """test if correct version is returned"""

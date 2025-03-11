@@ -17,7 +17,6 @@ Tests for db module
 """
 
 import unittest
-import prometheus_client
 from unittest.mock import patch
 
 from sqlalchemy.exc import IntegrityError
@@ -37,7 +36,6 @@ class TestDb(unittest.TestCase):
         self.db = UserDb('sqlite:///:memory:')
         # create users table in mem
         self.db.users_table.create(self.db.engine)
-        prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
 
     def test_add_user_returns_none_no_exception(self):
         """test if a user can be added"""

@@ -55,7 +55,7 @@ def create_app():
     of the Userservice Flask App
     """
     app = Flask(__name__)
-  
+
     # Disabling unused-variable for lines with route decorated functions
     # as pylint thinks they are unused
     # pylint: disable=unused-variable
@@ -273,7 +273,7 @@ def create_app():
     except OperationalError:
         app.logger.critical("users_db database connection failed")
         sys.exit(1)
-    
+
     metrics.init_app(app)
 
     return app
