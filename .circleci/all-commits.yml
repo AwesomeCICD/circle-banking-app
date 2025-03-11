@@ -62,7 +62,7 @@ jobs:
 
   python-test-parallel:
     executor: python38
-    parallelism: 2 #match number of python services
+    parallelism: 5 #match number of python services
     steps:
       - checkout
       - run: mkdir test-reports
