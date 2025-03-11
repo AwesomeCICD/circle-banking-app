@@ -23,10 +23,6 @@ from unittest.mock import patch, mock_open
 
 from sqlalchemy.exc import SQLAlchemyError
 import jwt
-import prometheus_client
-from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
-#from prometheus_flask_exporter import PrometheusMetrics
-
 
 from userservice.userservice import create_app
 from userservice import extensions as myapp_extensions
@@ -65,8 +61,6 @@ class TestUserservice(unittest.TestCase):
                 with patch('userservice.userservice.UserDb') as mock_db:
                     self.mocked_db = mock_db
                     # get create flask app
-                    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-                    myapp_extensions.metrics = GunicornPrometheusMetrics.for_app_factory()
                     self.flask_app = create_app()
                     # set testing config
                     self.flask_app.config['TESTING'] = True

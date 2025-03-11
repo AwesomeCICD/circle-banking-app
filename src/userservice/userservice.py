@@ -272,8 +272,6 @@ def create_app():
         app.logger.critical("users_db database connection failed")
         sys.exit(1)
 
-    setup_extensions(app)
-
     return app
 
 if __name__ == "__main__":
