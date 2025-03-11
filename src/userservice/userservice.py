@@ -46,8 +46,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
-from .extensions import setup_extensions, metrics
-
 def create_app():
     """Flask application factory to create instances
     of the Userservice Flask App
