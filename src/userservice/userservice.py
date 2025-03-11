@@ -46,8 +46,10 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
-from prometheus_client import Counter
+from prometheus_flask_exporter import PrometheusMetrics
 import time
+
+
 
 def create_app():
     """Flask application factory to create instances
@@ -55,10 +57,8 @@ def create_app():
     """
     app = Flask(__name__)
 
-    USER_REQUEST_COUNT = Counter(
-        'biz_impact_conversion',
-        'User Conversion Count'
-    )
+    metrics = PrometheusMetrics(app)
+  
     # Disabling unused-variable for lines with route decorated functions
     # as pylint thinks they are unused
     # pylint: disable=unused-variable
@@ -78,6 +78,8 @@ def create_app():
         return 'ok', 200
 
     @app.route('/users', methods=['POST'])
+    @metrics.counter('new_users', 'New user conversion',
+                 labels={'status': lambda r: r.status_code})
     def create_user():
         """Create a user record.
 
@@ -143,7 +145,6 @@ def create_app():
         except SQLAlchemyError as err:
             app.logger.error("Error creating new user: %s", str(err))
             return 'failed to create user', 500
-        USER_REQUEST_COUNT.inc()
 
         return jsonify({}), 201
 
