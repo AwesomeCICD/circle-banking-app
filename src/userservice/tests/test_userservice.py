@@ -70,8 +70,8 @@ class TestUserservice(unittest.TestCase):
                     self.flask_app.config['TESTING'] = True
                     # create test client
                     self.test_app = self.flask_app.test_client()
-                    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-                    myapp_extensions.metrics = GunicornPrometheusMetrics.for_app_factory()
+        prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
+        myapp_extensions.metrics = GunicornPrometheusMetrics.for_app_factory()
     
 
     def test_version_endpoint_returns_200_status_code_correct_version(self):
