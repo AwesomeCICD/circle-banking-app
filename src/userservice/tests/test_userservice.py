@@ -65,14 +65,14 @@ class TestUserservice(unittest.TestCase):
                 with patch('userservice.userservice.UserDb') as mock_db:
                     self.mocked_db = mock_db
                     # get create flask app
+                    prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
+                    myapp_extensions.metrics = GunicornPrometheusMetrics.for_app_factory()
                     self.flask_app = create_app()
                     # set testing config
                     self.flask_app.config['TESTING'] = True
                     # create test client
                     self.test_app = self.flask_app.test_client()
-        prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-        myapp_extensions.metrics = GunicornPrometheusMetrics.for_app_factory()
-    
+        
 
     def test_version_endpoint_returns_200_status_code_correct_version(self):
         """test if correct version is returned"""
