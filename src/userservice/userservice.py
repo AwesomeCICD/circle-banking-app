@@ -49,7 +49,7 @@ from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from prometheus_flask_exporter import PrometheusMetrics
 import time
 
-
+metrics = PrometheusMetrics.for_app_factory()
 
 def create_app():
     """Flask application factory to create instances
@@ -57,7 +57,7 @@ def create_app():
     """
     app = Flask(__name__)
 
-    metrics = PrometheusMetrics(app)
+    metrics.init_app(app)
   
     # Disabling unused-variable for lines with route decorated functions
     # as pylint thinks they are unused
