@@ -25,7 +25,6 @@ from sqlalchemy.exc import SQLAlchemyError
 import jwt
 
 from userservice.userservice import create_app
-from userservice import extensions as myapp_extensions
 from userservice.tests.constants import (
     TIMESTAMP_FORMAT,
     EXAMPLE_USER_REQUEST,
