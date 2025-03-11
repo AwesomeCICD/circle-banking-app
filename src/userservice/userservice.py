@@ -71,8 +71,6 @@ def create_app():
         return 'ok', 200
 
     @app.route('/users', methods=['POST'])
-    @metrics.counter('new_users', 'New user conversion',
-                 labels={'status': lambda r: r.status_code})
     def create_user():
         """Create a user record.
 
