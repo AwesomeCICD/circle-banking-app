@@ -71,7 +71,7 @@ jobs:
           command: |
             # MODULES=("contacts" "userservice")
             # MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
-            MY_TESTS=$(find src -name "test_*.py" | circleci tests split --split-by=timing)
+            MY_TESTS=$(find src -name "test_*.py" | circleci tests split --split-by=timings)
             echo "Running modules ${MY_MODULES[@]}"
             for TEST in ${MY_TESTS[@]}; do
                 MOD=$(dirname "$TEST")  # Get module directory
