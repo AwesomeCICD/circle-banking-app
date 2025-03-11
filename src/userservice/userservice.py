@@ -276,11 +276,11 @@ def create_app():
         app.logger.critical("users_db database connection failed")
         sys.exit(1)
     
-    metrics.init_app(app)
     return app
 
 
 if __name__ == "__main__":
     # Create an instance of flask server when called directly
     USERSERVICE = create_app()
+    metrics.init_app(USERSERVICE)
     USERSERVICE.run()
