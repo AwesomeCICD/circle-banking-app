@@ -46,9 +46,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
-from prometheus_flask_exporter import PrometheusMetrics
-
-metrics = PrometheusMetrics.for_app_factory()
+from .extensions import setup_extensions, metrics
 
 def create_app():
     """Flask application factory to create instances
@@ -274,7 +272,7 @@ def create_app():
         app.logger.critical("users_db database connection failed")
         sys.exit(1)
 
-    metrics.init_app(app)
+    setup_extensions(app)
 
     return app
 
