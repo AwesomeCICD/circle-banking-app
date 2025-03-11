@@ -24,7 +24,8 @@ from unittest.mock import patch, mock_open
 from sqlalchemy.exc import SQLAlchemyError
 import jwt
 import prometheus_client
-from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
+#from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
+from prometheus_flask_exporter import PrometheusMetrics
 
 
 from userservice.userservice import create_app
@@ -70,7 +71,7 @@ class TestUserservice(unittest.TestCase):
                     # create test client
                     self.test_app = self.flask_app.test_client()
                     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
-                    myapp_extensions.metrics = GunicornInternalPrometheusMetrics.for_app_factory(group_by="endpoint")
+                    myapp_extensions.metrics = PrometheusMetrics.for_app_factory()
     
 
     def test_version_endpoint_returns_200_status_code_correct_version(self):
