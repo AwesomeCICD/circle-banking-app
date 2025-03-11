@@ -295,7 +295,7 @@ workflows:
           matrix:
             parameters:
               region: [emea, namer]
-          context: cera-vault-oidc
+          context: cera-vault-oidc-prod
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - deploy:
