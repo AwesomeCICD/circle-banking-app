@@ -1,10 +1,10 @@
-#from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
-from prometheus_flask_exporter import PrometheusMetrics
 """
 Extensions for app
 """
+from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
+#from prometheus_flask_exporter import PrometheusMetrics
 
-metrics = PrometheusMetrics.for_app_factory()
+metrics = GunicornPrometheusMetrics.for_app_factory()
 
 def setup_extensions(app):
     """
