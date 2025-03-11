@@ -24,7 +24,7 @@ from unittest.mock import patch, mock_open
 from sqlalchemy.exc import SQLAlchemyError
 import jwt
 import prometheus_client
-from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
+from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 #from prometheus_flask_exporter import PrometheusMetrics
 
 
