@@ -62,17 +62,19 @@ jobs:
 
   python-test-parallel:
     executor: python38
-    parallelism: 5 #match number of python services
+    parallelism: 5 #scaling parallelism higher than services and splitting tests by timing
     steps:
       - checkout
       - run: mkdir test-reports
       - run:
           name: Test Python Services
           command: |
-            MODULES=("contacts" "userservice")
-            MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
+            # MODULES=("contacts" "userservice")
+            # MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
+            MY_TESTS=$(find src -name "test_*.py" | circleci tests split --split-by=timing)
             echo "Running modules ${MY_MODULES[@]}"
-            for MOD in "${MY_MODULES[@]}"; do
+            for TEST in ${MY_TESTS[@]}; do
+                MOD=$(dirname "$TEST")  # Get module directory
                 pushd src/$MOD >/dev/null
                 python3 -m venv $HOME/venv-$MOD
                 source $HOME/venv-$MOD/bin/activate
