@@ -135,12 +135,17 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - attach_workspace:
-          at: output-namer  # Just use one region's output
+          at: output  # Just use one region's output
+      - run:
+          name: Install jq
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y jq
       - run:
           name: Find image tag for service
           command: |
             # Extract the full image tag for this service (from just one region)
-            jq -r '.builds[].tag' output-namer/tags.json | grep "<<parameters.service>>" > image_tag.txt
+            jq -r '.builds[].tag' output/tags.json | grep "<<parameters.service>>" > image_tag.txt
             IMAGE=$(cat image_tag.txt)
             echo "Will scan image: $IMAGE"
             echo "export IMAGE=\"$IMAGE\"" >> $BASH_ENV
