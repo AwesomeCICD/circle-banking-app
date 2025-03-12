@@ -2,6 +2,7 @@ version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
+  snyk: snyk/snyk@1.4.0
           
 executors:
   with-chrome:
@@ -120,6 +121,34 @@ jobs:
           path: test-reports
       - store_artifacts:
           path: test-reports
+  snyk-scan-image:
+    executor: base
+    parameters:
+      service:
+        type: string
+        description: "Service name to scan (e.g., frontend, ledgerwriter)"
+      region:
+        type: string
+        description: where we are deploying, a CERA cluster region
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - attach_workspace:
+          at: output-namer  # Just use one region's output
+      - run:
+          name: Find image tag for service
+          command: |
+            # Extract the full image tag for this service (from just one region)
+            jq -r '.builds[].tag' output-namer/tags.json | grep "<<parameters.service>>" > image_tag.txt
+            IMAGE=$(cat image_tag.txt)
+            echo "Will scan image: $IMAGE"
+            echo "export IMAGE=\"$IMAGE\"" >> $BASH_ENV
+      - snyk/scan:
+          docker-image-name: ${IMAGE}
+          severity-threshold: high
+          monitor-on-build: true
+          project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
 
 
 
@@ -366,14 +395,42 @@ workflows:
           context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
-      - deploy:
+          post-steps:
+            - persist_to_workspace:
+                root: output
+                paths: ['tags.json']
+                name: output-<<matrix.region>>  # Named workspace
+      - snyk-scan-image:
           matrix:
             parameters:
               region: [emea,namer]
+              service: 
+                - balancereader
+                - ledgerwriter
+                - transactionhistory
+                - contacts
+                - userservice
+                - frontend
+          name: Scan <<matrix.service>> [<<matrix.region>>] 
+          region: <<matrix.region>>
+          requires: ['Skaffold build & Push [<<matrix.region>>]']  # Only depend on one region's build
+      
+      - deploy:
+          matrix:
+            parameters:
+              region: [emea, namer]
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
-          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
+          requires:
+            - Scan balancereader [<<matrix.region>>]
+            - Scan ledgerwriter [<<matrix.region>>]
+            - Scan transactionhistory [<<matrix.region>>]
+            - Scan contacts [<<matrix.region>>]
+            - Scan userservice [<<matrix.region>>]
+            - Scan frontend [<<matrix.region>>]
+            - python-test
+            - java-test-and-code-cov
+          context: [compass-integration-bank-of-aion, cera-vault-oidc]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
