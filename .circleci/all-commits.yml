@@ -62,7 +62,7 @@ jobs:
 
   python-test-parallel:
     executor: python39
-    parallelism: 10
+    parallelism: 4
     steps:
       - checkout
       - run: mkdir test-reports
