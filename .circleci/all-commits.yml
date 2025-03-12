@@ -62,40 +62,33 @@ jobs:
 
   python-test-parallel:
     executor: python38
-    parallelism: 10  # Increased to 10
+    parallelism: 10
     steps:
       - checkout
       - run: mkdir test-reports
       - run:
           name: Test Python Services by timings
           command: |
-            # Install test dependencies for all modules first
-            for MOD in "contacts" "userservice"; do
-              python3 -m venv $HOME/venv-$MOD
-              source $HOME/venv-$MOD/bin/activate
-              pip install --upgrade pip
-              pip install -r src/$MOD/requirements.txt
-              pip install pytest
-              deactivate
-            done
+            # Create a file containing all test paths for splitting
+            > all_test_files.txt
             
-            # Collect all test files across all modules
-            ALL_TEST_FILES=""
             for MOD in "contacts" "userservice"; do
-              # Get test files for this module and prefix with module name
-              MODULE_TEST_FILES=$(find src/$MOD/tests -name "test_*.py" | sed "s|^|$MOD:|")
-              if [ -n "$ALL_TEST_FILES" ]; then
-                ALL_TEST_FILES="$ALL_TEST_FILES\n$MODULE_TEST_FILES"
-              else
-                ALL_TEST_FILES="$MODULE_TEST_FILES"
+              # First discover test files from within each module directory
+              pushd src/$MOD >/dev/null
+              # List all test files in the 'tests' directory
+              TEST_FILES=$(find tests -name "test_*.py" 2>/dev/null || echo "")
+              if [ -n "$TEST_FILES" ]; then
+                # Mark each test with its module for processing later
+                echo "$TEST_FILES" | sed "s|^|$MOD:|" >> ../../all_test_files.txt
               fi
+              popd >/dev/null
             done
             
-            # Split the files by timing
-            echo -e "$ALL_TEST_FILES" > all_test_files.txt
+            # Split test files based on timing data
             MY_TEST_FILES=$(cat all_test_files.txt | circleci tests split --split-by=timings)
+            echo "My test files: $MY_TEST_FILES"
             
-            # Run assigned tests
+            # Run the assigned test files
             for TEST_FILE_PATH in $MY_TEST_FILES; do
               # Extract module and file path
               MOD=$(echo $TEST_FILE_PATH | cut -d':' -f1)
@@ -103,14 +96,22 @@ jobs:
               
               echo "Running test file $FILE in module $MOD"
               pushd src/$MOD >/dev/null
-              source $HOME/venv-$MOD/bin/activate
               
-              # Get just the filename without path for reporting
-              FILE_NAME=$(basename $FILE)
-              TEST_NAME="${FILE_NAME%.py}"
+              # Create virtual environment if needed
+              if [ ! -d "$HOME/venv-$MOD" ]; then
+                python3 -m venv $HOME/venv-$MOD
+                source $HOME/venv-$MOD/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+              else
+                source $HOME/venv-$MOD/bin/activate
+              fi
+              
+              # Extract a safe filename for the test report
+              SAFE_FILE_NAME=$(echo $FILE | tr '/' '_')
               
               # Run the specific test file
-              python -m pytest $FILE -v -p no:warnings --junit-xml=../../test-reports/report-${MOD}-${TEST_NAME}-${CIRCLE_NODE_INDEX}.xml
+              python -m pytest $FILE -v -p no:warnings --junit-xml=../../test-reports/report-${MOD}-${SAFE_FILE_NAME}-${CIRCLE_NODE_INDEX}.xml
               
               deactivate
               popd >/dev/null
@@ -119,6 +120,7 @@ jobs:
           path: test-reports
       - store_artifacts:
           path: test-reports
+
 
 
   java-checkstyle:
