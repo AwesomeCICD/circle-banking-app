@@ -317,7 +317,7 @@ commands:
           name: Set Environment Variables from Vault
 
 workflows:
-  merge-or-commit:
+  all-commits:
     jobs:
       - java-checkstyle:
           context: [ compass-integration-bank-of-aion ]
