@@ -62,32 +62,64 @@ jobs:
 
   python-test-parallel:
     executor: python38
-    parallelism: 2 #match number of python services
+    parallelism: 10  # Increased to 10
     steps:
       - checkout
       - run: mkdir test-reports
       - run:
-          name: Test Python Services
+          name: Test Python Services by timings
           command: |
-            MODULES=("contacts" "userservice")
-            MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
-            echo "Running modules ${MY_MODULES[@]}"
-            for MOD in "${MY_MODULES[@]}"; do
-                pushd src/$MOD >/dev/null
-                python3 -m venv $HOME/venv-$MOD
-                source $HOME/venv-$MOD/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
-                python -m pytest tests --junit-xml=../../test-reports/report-${MOD}.xml -v -p no:warnings
-                deactivate
-                # return to previously saved path
-                popd >/dev/null
+            # Install test dependencies for all modules first
+            for MOD in "contacts" "userservice"; do
+              python3 -m venv $HOME/venv-$MOD
+              source $HOME/venv-$MOD/bin/activate
+              pip install --upgrade pip
+              pip install -r src/$MOD/requirements.txt
+              pip install pytest
+              deactivate
+            done
+            
+            # Collect all test files across all modules
+            ALL_TEST_FILES=""
+            for MOD in "contacts" "userservice"; do
+              # Get test files for this module and prefix with module name
+              MODULE_TEST_FILES=$(find src/$MOD/tests -name "test_*.py" | sed "s|^|$MOD:|")
+              if [ -n "$ALL_TEST_FILES" ]; then
+                ALL_TEST_FILES="$ALL_TEST_FILES\n$MODULE_TEST_FILES"
+              else
+                ALL_TEST_FILES="$MODULE_TEST_FILES"
+              fi
+            done
+            
+            # Split the files by timing
+            echo -e "$ALL_TEST_FILES" > all_test_files.txt
+            MY_TEST_FILES=$(cat all_test_files.txt | circleci tests split --split-by=timings)
+            
+            # Run assigned tests
+            for TEST_FILE_PATH in $MY_TEST_FILES; do
+              # Extract module and file path
+              MOD=$(echo $TEST_FILE_PATH | cut -d':' -f1)
+              FILE=$(echo $TEST_FILE_PATH | cut -d':' -f2)
+              
+              echo "Running test file $FILE in module $MOD"
+              pushd src/$MOD >/dev/null
+              source $HOME/venv-$MOD/bin/activate
+              
+              # Get just the filename without path for reporting
+              FILE_NAME=$(basename $FILE)
+              TEST_NAME="${FILE_NAME%.py}"
+              
+              # Run the specific test file
+              python -m pytest $FILE -v -p no:warnings --junit-xml=../../test-reports/report-${MOD}-${TEST_NAME}-${CIRCLE_NODE_INDEX}.xml
+              
+              deactivate
+              popd >/dev/null
             done
       - store_test_results:
           path: test-reports
       - store_artifacts:
           path: test-reports
+
 
   java-checkstyle:
     executor: jdk17
