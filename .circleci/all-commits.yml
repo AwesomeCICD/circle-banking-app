@@ -2,8 +2,7 @@ version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
-  jq: circleci/jq@3.0.2
-  snyk: snyk/snyk@2.2.0
+  snyk: snyk/snyk@1.4.0
           
 executors:
   with-chrome:
