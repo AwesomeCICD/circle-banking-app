@@ -281,9 +281,43 @@ jobs:
           path: ui-tests/cypress/videos
       - store_artifacts:
           path: ui-tests/cypress/screenshots    
-   
+
+commands:
+  load-credentials:
+    parameters:
+      region:
+        type: string
+        description: where we are deploying, a CERA cluster region
+    steps:
+      - run:
+          name: install vault agent (if not present)
+          command: |
+            vault -h && exit 0 || echo "Installing vault"
+            #only runs if vault command avbove failed
+            cd /tmp
+            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
+            unzip vault_1.12.2_linux_amd64.zip
+            sudo mv vault /usr/local/bin        
+            vault -h    
+      - run:
+          name: Load Credentials from Vault
+          command: |
+            echo "Environment (APP_ENV ): $APP_ENV"
+            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-fieldeng.com"
+            export VAULT_ROLE=cba-${APP_ENV}-deploy
+            echo $VAULT_ROLE
+            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
+            circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
+            cat .circleci/vault/agent.hcl
+            vault agent -config=.circleci/vault/agent.hcl
+      - run:
+          command: |
+            source .circleci/vault/setenv
+            #export for other steps
+          name: Set Environment Variables from Vault
+
 workflows:
-  main:
+  merge-or-commit:
     jobs:
       - java-checkstyle:
           context: [ compass-integration-bank-of-aion ]
@@ -335,39 +369,3 @@ workflows:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: production
                 environment: CERA-Cluster-namer-Prod
-
-
-commands:
-  load-credentials:
-    parameters:
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    steps:
-      - run:
-          name: install vault agent (if not present)
-          command: |
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h    
-      - run:
-          name: Load Credentials from Vault
-          command: |
-            echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-fieldeng.com"
-            export VAULT_ROLE=cba-${APP_ENV}-deploy
-            echo $VAULT_ROLE
-            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
-            circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
-            cat .circleci/vault/agent.hcl
-            vault agent -config=.circleci/vault/agent.hcl
-      - run:
-          command: |
-            source .circleci/vault/setenv
-            #export for other steps
-          name: Set Environment Variables from Vault
-# VS Code Extension Version: 1.5.1
