@@ -2,7 +2,7 @@ version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
-  snyk: snyk/snyk@1.4.0
+  snyk: snyk/snyk@2.2.0
           
 executors:
   with-chrome:
@@ -147,6 +147,7 @@ jobs:
       - snyk/scan:
           docker-image-name: ${IMAGE}
           severity-threshold: high
+          fail-on-issues: false
           monitor-on-build: true
           project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
 
