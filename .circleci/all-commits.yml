@@ -148,7 +148,7 @@ jobs:
           docker-image-name: ${IMAGE}
           severity-threshold: high
           fail-on-issues: false
-          monitor-on-build: true
+          monitor-on-build: false
           project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
 
 
