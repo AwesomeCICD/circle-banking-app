@@ -141,10 +141,10 @@ jobs:
           docker_layer_caching: true
       - attach_workspace:
           at: output  # Just use one region's output
-      - run:
-          name: Add npm global bin to PATH
-          command: echo 'export PATH="$(npm bin -g):$PATH"' >> $BASH_ENV && source $BASH_ENV
-     # - jq/install
+      #- run:
+      #    name: Add npm global bin to PATH
+      #    command: echo 'export PATH="$(npm bin -g):$PATH"' >> $BASH_ENV && source $BASH_ENV
+      - jq/install
       - run:
           name: Find image tag for service
           command: |
