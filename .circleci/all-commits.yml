@@ -144,12 +144,27 @@ jobs:
             IMAGE=$(cat image_tag.txt)
             echo "Will scan image: $IMAGE"
             echo "export IMAGE=\"$IMAGE\"" >> $BASH_ENV
+      - run:
+          name: Create directory for Snyk reports
+          command: mkdir -p /tmp/snyk-reports
       - snyk/scan:
           docker-image-name: ${IMAGE}
           severity-threshold: high
           fail-on-issues: false
           monitor-on-build: false
           project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
+          additional-arguments: --json-file-output=/tmp/snyk-reports/<<parameters.service>>-report.json
+      - run:
+          name: Install snyk-to-html and convert reports
+          command: |
+            npm install -g snyk-to-html
+            for report in /tmp/snyk-reports/*-report.json; do
+              base_name=$(basename "$report" .json)
+              snyk-to-html -i "$report" -o "/tmp/snyk-reports/${base_name}.html"
+            done
+      - store_artifacts:
+          path: /tmp/snyk-reports
+          destination: snyk-reports
 
 
 
