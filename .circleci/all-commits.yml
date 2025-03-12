@@ -9,10 +9,6 @@ executors:
     docker:
       - image: 'cypress/browsers:node-20.6.1-chrome-116.0.5845.187-1-ff-117.0-edge-116.0.1938.76-1'
 
-  for-snyk:
-    docker:
-      - image: fgribreau/jq.node
-
   base:
     docker:
       - image: cimg/deploy:2022.08
@@ -126,7 +122,7 @@ jobs:
       - store_artifacts:
           path: test-reports
   snyk-scan-image:
-    executor: for-snyk
+    executor: base
     parameters:
       service:
         type: string
@@ -139,11 +135,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - attach_workspace:
-          at: output  # Just use one region's output
-      #- run:
-      #    name: Add npm global bin to PATH
-      #    command: echo 'export PATH="$(npm bin -g):$PATH"' >> $BASH_ENV && source $BASH_ENV
-      - jq/install
+          at: output
       - run:
           name: Find image tag for service
           command: |
@@ -162,14 +154,6 @@ jobs:
           monitor-on-build: false
           project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
           additional-arguments: --json-file-output=/tmp/snyk-reports/<<parameters.service>>-report.json
-      - run:
-          name: Install snyk-to-html and convert reports
-          command: |
-            npm install -g snyk-to-html
-            for report in /tmp/snyk-reports/*-report.json; do
-              base_name=$(basename "$report" .json)
-              snyk-to-html -i "$report" -o "/tmp/snyk-reports/${base_name}.html"
-            done
       - store_artifacts:
           path: /tmp/snyk-reports
           destination: snyk-reports
