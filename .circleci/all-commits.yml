@@ -137,6 +137,9 @@ jobs:
       - attach_workspace:
           at: output  # Just use one region's output
       - run:
+          name: Add npm global bin to PATH
+          command: echo 'export PATH="$(npm bin -g):$PATH"' >> $BASH_ENV && source $BASH_ENV
+      - run:
           name: Install jq
           command: |
             npm install -g node-jq
