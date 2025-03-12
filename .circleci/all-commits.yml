@@ -2,6 +2,7 @@ version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.2
   maven: circleci/maven@1.4
+  jq: circleci/jq@3.0.2
   snyk: snyk/snyk@2.2.0
           
 executors:
@@ -139,10 +140,7 @@ jobs:
       - run:
           name: Add npm global bin to PATH
           command: echo 'export PATH="$(npm bin -g):$PATH"' >> $BASH_ENV && source $BASH_ENV
-      - run:
-          name: Install jq
-          command: |
-            npm install -g node-jq
+      - jq/install
       - run:
           name: Find image tag for service
           command: |
