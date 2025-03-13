@@ -339,7 +339,7 @@ workflows:
           #   - skaffold-build-push
           #   - python-test
           #   - java-test-and-code-cov
-          context: [ admins-only ]
+          context: platform-deploy-only
       # - deploy:
       #     matrix:
       #       parameters:
