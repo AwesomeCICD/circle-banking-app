@@ -153,7 +153,11 @@ jobs:
           fail-on-issues: false
           monitor-on-build: true
           project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
-          additional-arguments: --json-file-output=/tmp/snyk-reports/<<parameters.service>>-report.json
+      - run:
+          name: create_report_link
+          when: on_fail
+          command: |
+            echo '<a href="https://app.snyk.io/org/awesomecicd">Open Snyk Report</a>' > /tmp/snyk-reports/snyk.html
       - store_artifacts:
           path: /tmp/snyk-reports
           destination: snyk-reports
