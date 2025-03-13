@@ -21,6 +21,10 @@ executors:
   python39:
     docker:
       - image: cimg/python:3.9
+    
+  node:
+    docker:
+      - image: cimg/node:20.19
 
 
 jobs:
@@ -122,7 +126,7 @@ jobs:
       - store_artifacts:
           path: test-reports
   snyk-scan-image:
-    executor: base
+    executor: node
     parameters:
       service:
         type: string
@@ -154,6 +158,12 @@ jobs:
           monitor-on-build: true
           project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
           additional-arguments: --json-file-output=/tmp/snyk-reports/<<parameters.service>>-report.json
+      - run:
+          name: Generate HTML Report
+          when: always
+          command: |
+            sudo npm install snyk-to-html -g
+            snyk-to-html -i /tmp/snyk-reports/<<parameters.service>>-report.json -o /tmp/snyk-reports/<<parameters.service>>-report.html
       - store_artifacts:
           path: /tmp/snyk-reports
           destination: snyk-reports
