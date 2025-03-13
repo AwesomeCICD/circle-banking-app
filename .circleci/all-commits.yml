@@ -241,7 +241,7 @@ jobs:
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
             cat .circleci/release_tracking/virtual_service_${APP_ENV}.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/<<parameters.region>>/tags.json
       - run:
           name: Wait for deployment
           command: |
