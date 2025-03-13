@@ -339,6 +339,9 @@ workflows:
             - skaffold-build-push
             - python-test
             - java-test-and-code-cov
+            - python-test-parallel
+            - java-checkstyle
+            - python-checkstyle
           context: platform-deploy-only
       - deploy:
           matrix:
@@ -347,7 +350,7 @@ workflows:
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
           requires: [ Approval ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc, admins-only, cera-vault-oidc-prod ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc, admins-only ]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
