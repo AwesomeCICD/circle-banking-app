@@ -150,7 +150,7 @@ jobs:
       - snyk/scan:
           docker-image-name: ${IMAGE}
           severity-threshold: high
-          fail-on-issues: false
+          fail-on-issues: true
           monitor-on-build: false
           project: ${CIRCLE_PROJECT_REPONAME}/<<parameters.service>>
           additional-arguments: --json-file-output=/tmp/snyk-reports/<<parameters.service>>-report.json
