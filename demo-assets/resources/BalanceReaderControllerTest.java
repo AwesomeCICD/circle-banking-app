@@ -123,7 +123,8 @@ class BalanceReaderControllerTest {
 
         // Then
         assertNotNull(actualResult);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, actualResult.getStatusCode(), "This test is forced to fail!");
+        assertEquals(OK_CODE, actualResult.getBody());
+        assertEquals(HttpStatus.OK, actualResult.getStatusCode());
     }
 
     @Test
@@ -154,7 +155,7 @@ class BalanceReaderControllerTest {
 
         // Then
         assertNotNull(actualResult);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, actualResult.getStatusCode(), "This test is forced to fail!");
+        assertEquals(HttpStatus.OK, actualResult.getStatusCode());
     }
 
     @Test

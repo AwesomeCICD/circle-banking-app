@@ -117,7 +117,7 @@ class LedgerWriterControllerTest {
 
         // Then
         assertNotNull(actualResult);
-        assertEquals(VERSION, actualResult.getBody());
+        assertEquals("v999.9.9", actualResult.getBody(), "This test is forced to fail!"); // Wrong version
         assertEquals(HttpStatus.OK, actualResult.getStatusCode());
     }
 
@@ -175,9 +175,7 @@ class LedgerWriterControllerTest {
 
         // Then
         assertNotNull(actualResult);
-        assertEquals(ledgerWriterController.READINESS_CODE,
-                actualResult.getBody());
-        assertEquals(HttpStatus.CREATED, actualResult.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, actualResult.getStatusCode(), "This test is forced to fail!"); // Expected failure
     }
 
     @Test
