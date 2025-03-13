@@ -57,6 +57,6 @@ module.exports = {
   },
   e2e: {
     setupNodeEvents(on, config) {},
-    baseUrl: "https://dev.emea.circleci-labs.com",
+    baseUrl: "https://dev.emea.circleci-fieldeng.com",
   },
 }
