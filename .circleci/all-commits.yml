@@ -68,7 +68,7 @@ jobs:
           path: test-reports
 
   python-test-parallel:
-    executor: 9
+    executor: python39
     parallelism: 2 #match number of python services
     steps:
       - checkout
