@@ -30,7 +30,7 @@ We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https:
 | [loadgenerator](./src/loadgenerator)             | Python/Locust | Continuously sends requests imitating users to the frontend. Periodically creates new accounts and simulates transactions between them.      |
 
 
-## Quickstart (SE on CERA)
+## Quickstart (FE on CERA)
 
 
 ### Concepts
