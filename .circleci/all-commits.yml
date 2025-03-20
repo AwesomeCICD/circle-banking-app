@@ -306,31 +306,31 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
-      - e2e:
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: e2e [<<matrix.region>>]
-          requires: [ 'Deploy Dev [<<matrix.region>>]' ]
-          region: <<matrix.region>>
-      - deploy:
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: Deploy Production [<<matrix.region>>]
-          requires: 
-            - 'e2e [<<matrix.region>>]'
-          app-environment: prod
-          region: <<matrix.region>>
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
-          filters:
-            branches:
-              only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-namer-Prod
+      # - e2e:
+      #     matrix:
+      #       parameters:
+      #         region: [emea,namer]
+      #     name: e2e [<<matrix.region>>]
+      #     requires: [ 'Deploy Dev [<<matrix.region>>]' ]
+      #     region: <<matrix.region>>
+      # - deploy:
+      #     matrix:
+      #       parameters:
+      #         region: [emea,namer]
+      #     name: Deploy Production [<<matrix.region>>]
+      #     requires: 
+      #       - 'e2e [<<matrix.region>>]'
+      #     app-environment: prod
+      #     region: <<matrix.region>>
+      #     context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+      #     filters:
+      #       branches:
+      #         only: [ main ]
+      #     post-steps:
+      #       - compass/notify_deployment:
+      #           token_name: COMPASS_CCI_TOKEN
+      #           environment_type: production
+      #           environment: CERA-Cluster-namer-Prod
 
 commands:
   load-credentials:
