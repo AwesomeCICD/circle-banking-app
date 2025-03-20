@@ -49,7 +49,7 @@ We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https:
 
 1. **Deploy CCI Bank Corp to the cluster.**
 
-**Yes SE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
+**Yes FE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
 
 ```
 skaffold run --tag=build-local --default-repo=docker.nexus.cera.circleci-fieldeng.com
