@@ -30,9 +30,9 @@ flask==2.1.2
     # via -r requirements.in
 googleapis-common-protos==1.56.2
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.47.0
+grpcio==1.58.3
     # via opentelemetry-exporter-otlp-proto-grpc
-gunicorn==20.1.0
+gunicorn==23.0.0
     # via -r requirements.in
 idna==3.3
     # via requests
