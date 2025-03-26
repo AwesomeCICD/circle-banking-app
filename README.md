@@ -2,7 +2,7 @@
 
 **CCI Bank Corp** is a sample HTTP-based web app that simulates a bank's payment processing network, allowing users to create artificial bank accounts and complete transactions.
 
-We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https://github.com/GoogleCloudPlatform/bank-of-Aion/)
+We, CircleCI Field Engineering Team, forked it from [Google's Bank of Anthos project](https://github.com/GoogleCloudPlatform/bank-of-Aion/)
 , chosen for it's multi-language monorepo structure with various microservices.
 
 
