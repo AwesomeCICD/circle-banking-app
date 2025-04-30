@@ -346,6 +346,7 @@ workflows:
     - skaffold-build-push:
         context:
         - cera-vault-oidc
+        - cera-vault-oidc-prod
         matrix:
           parameters:
             region:
