@@ -7,7 +7,7 @@ logger = logging.getLogger('config')
 
 bad_context = "cera-vault-oidc-prod"
 dev_deploy_prefix = 'Deploy Dev'
-docker_push_preifx = 'skaffold-build-push'
+docker_push_preifx = 'Skaffold build & Push'
 main_workflow = "main"
 class ConfigChanger:
 

@@ -29,7 +29,7 @@ def main():
     happy_branch = f'demo-{settings.username}'
     sync_or_create_branch(happy_branch)
     logger.info('\nReady on My Demo Branch %s!!\n',happy_branch)
-   
+
     #Add config violation & pause
     input(">>> Hit enter to push Bad Context Access (prod context on feature build)")
     configHelper.load_config('.circleci/config.yml')
@@ -40,7 +40,7 @@ def main():
     input(">>> Hit enter to FIX Context Access, and spawn test failures and pass")
     remove_policy_failure()
     push_changes(happy_branch)
-
+  
     # Run a branch of fialing tests, no deploy
     fail_branch = f'demo-{settings.username}-fails'
     sync_or_create_branch(fail_branch)
