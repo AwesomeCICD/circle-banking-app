@@ -2,6 +2,14 @@
 
 Just run `./demo-assets/runDemo.py` and follow the prompts!
 
+### Python/Pip issues.
+
+I moved project to `uv` install `uv` and run:
+```
+uv venv
+uv sync
+```
+
 
 ## What Happens
 
