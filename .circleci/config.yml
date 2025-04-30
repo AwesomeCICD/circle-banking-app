@@ -344,20 +344,20 @@ workflows:
     - python-test
     - python-test-parallel
     - skaffold-build-push:
-        context: cera-vault-oidc
+        context:
+        - cera-vault-oidc
+        - cera-vault-oidc-prod
         matrix:
           parameters:
             region:
             - emea
             - namer
-        name: Skaffold build & Push [<<matrix.region>>]
+        name: skaffold-build-push
         region: <<matrix.region>>
     - deploy:
         context:
         - compass-integration-bank-of-aion
         - cera-vault-oidc
-        - cera-vault-oidc-prod
-        - cera-vault-oidc-prod
         matrix:
           parameters:
             region:
