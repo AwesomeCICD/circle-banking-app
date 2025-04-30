@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.transactionhistory;
+package com.circleci.samples.bankcorp.transactionhistory;
 
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.JWTVerificationException;

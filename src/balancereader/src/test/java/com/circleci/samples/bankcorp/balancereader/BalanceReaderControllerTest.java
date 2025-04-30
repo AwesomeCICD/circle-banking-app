@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.balancereader;
+package com.circleci.samples.bankcorp.balancereader;
 
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;

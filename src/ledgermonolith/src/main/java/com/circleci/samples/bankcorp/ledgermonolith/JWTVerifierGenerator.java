@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.ledgermonolith;
+package com.circleci.samples.bankcorp.ledgermonolith;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;

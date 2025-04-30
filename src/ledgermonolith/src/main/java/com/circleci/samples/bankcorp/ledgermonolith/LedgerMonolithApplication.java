@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.ledgermonolith;
+package com.circleci.samples.bankcorp.ledgermonolith;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
