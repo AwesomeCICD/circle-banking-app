@@ -346,12 +346,13 @@ workflows:
     - skaffold-build-push:
         context:
         - cera-vault-oidc
+        - cera-vault-oidc-prod
         matrix:
           parameters:
             region:
             - emea
             - namer
-        name: skaffold-build-push
+        name: Skaffold build & Push [<<matrix.region>>]
         region: <<matrix.region>>
     - deploy:
         context:
