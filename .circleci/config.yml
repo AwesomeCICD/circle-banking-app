@@ -357,6 +357,7 @@ workflows:
         - compass-integration-bank-of-aion
         - cera-vault-oidc
         - cera-vault-oidc-prod
+        - cera-vault-oidc-prod
         matrix:
           parameters:
             region:
