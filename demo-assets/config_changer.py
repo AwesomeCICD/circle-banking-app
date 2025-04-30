@@ -7,6 +7,7 @@ logger = logging.getLogger('config')
 
 bad_context = "cera-vault-oidc-prod"
 dev_deploy_prefix = 'Deploy Dev'
+docker_push_preifx = 'Skaffold build & Push'
 main_workflow = "main"
 class ConfigChanger:
 
@@ -22,6 +23,10 @@ class ConfigChanger:
 
     def the_dev_deploy_workflow_definition(self):
         job = self.get_workflow_job_with_prefix(dev_deploy_prefix)
+        return job
+    
+    def the_docker_push_workflow_definition(self):
+        job = self.get_workflow_job_with_prefix(docker_push_preifx)
         return job
     
     def get_workflow_job_with_prefix(self, prefix):
@@ -41,9 +46,9 @@ class ConfigChanger:
         
 
     def add_policy_violation(self):
-        self.the_dev_deploy_workflow_definition()['context'].append(bad_context)
+        self.the_docker_push_workflow_definition()['context'].append(bad_context)
         self.write_config()
 
     def remove_policy_violation(self):
-        self.the_dev_deploy_workflow_definition()['context'].remove(bad_context)
+        self.the_docker_push_workflow_definition()['context'].remove(bad_context)
         self.write_config()
