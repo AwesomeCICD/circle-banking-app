@@ -9,7 +9,7 @@ class UserInfo:
 
     fields = {
          "orgname":{"default":"AwesomeCICD","envvar":"GITHUB_ORG"},
-         "reponame":{"default":"Bank-of-aion","envvar":"GITHUB_REPO"},
+         "reponame":{"default":"circle-banking-app","envvar":"GITHUB_REPO"},
          "username":{"default":"","envvar":"GITHUB_USER"},
          "github_token":{"default":"","envvar":"GITHUB_API_TOKEN"},
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.ledgermonolith;
+package com.circleci.samples.bankcorp.ledgermonolith;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,13 +22,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.regex.Pattern;
 
-import static anthos.samples.bankofanthos.ledgermonolith.ExceptionMessages.
+import static com.circleci.samples.bankcorp.ledgermonolith.ExceptionMessages.
         EXCEPTION_MESSAGE_INVALID_NUMBER;
-import static anthos.samples.bankofanthos.ledgermonolith.ExceptionMessages.
+import static com.circleci.samples.bankcorp.ledgermonolith.ExceptionMessages.
         EXCEPTION_MESSAGE_NOT_AUTHENTICATED;
-import static anthos.samples.bankofanthos.ledgermonolith.ExceptionMessages.
+import static com.circleci.samples.bankcorp.ledgermonolith.ExceptionMessages.
         EXCEPTION_MESSAGE_SEND_TO_SELF;
-import static anthos.samples.bankofanthos.ledgermonolith.ExceptionMessages.
+import static com.circleci.samples.bankcorp.ledgermonolith.ExceptionMessages.
         EXCEPTION_MESSAGE_INVALID_AMOUNT;
 
 

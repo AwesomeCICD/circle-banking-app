@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.ledgermonolith;
+package com.circleci.samples.bankcorp.ledgermonolith;
 
 /**
  * Class for all exception messages used in ledgermonolith.

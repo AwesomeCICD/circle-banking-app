@@ -31,13 +31,13 @@ def main():
     logger.info('\nReady on My Demo Branch %s!!\n',happy_branch)
    
     #Add config violation & pause
-    input(">>> Hit enter to push policy failure")
+    input(">>> Hit enter to push Bad Context Access (prod context on feature build)")
     configHelper.load_config('.circleci/config.yml')
     commit_policy_failure()
     push_changes(happy_branch)
    
     #Add Config violation fix, spawn passing branch with dev deploy
-    input(">>> Hit enter to FIX policy failure, and spawn test failures and pass")
+    input(">>> Hit enter to FIX Context Access, and spawn test failures and pass")
     remove_policy_failure()
     push_changes(happy_branch)
 
