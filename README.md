@@ -2,7 +2,7 @@
 
 **CCI Bank Corp** is a sample HTTP-based web app that simulates a bank's payment processing network, allowing users to create artificial bank accounts and complete transactions.
 
-We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https://github.com/GoogleCloudPlatform/bank-of-Aion/)
+We, CircleCI Field Engineering Team, forked it from [Google's Bank of Anthos project](https://github.com/GoogleCloudPlatform/bank-of-Aion/)
 , chosen for it's multi-language monorepo structure with various microservices.
 
 
@@ -30,7 +30,7 @@ We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https:
 | [loadgenerator](./src/loadgenerator)             | Python/Locust | Continuously sends requests imitating users to the frontend. Periodically creates new accounts and simulates transactions between them.      |
 
 
-## Quickstart (SE on CERA)
+## Quickstart (FE on CERA)
 
 
 ### Concepts
@@ -49,7 +49,7 @@ We (CCI Field Eng. Team) forked it from [Google's Bank of Anthos project](https:
 
 1. **Deploy CCI Bank Corp to the cluster.**
 
-**Yes SE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
+**Yes FE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
 
 ```
 skaffold run --tag=build-local --default-repo=docker.nexus.cera.circleci-fieldeng.com
