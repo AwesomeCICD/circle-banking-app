@@ -333,7 +333,7 @@ workflows:
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - deploy:
-          serial-group: << pipeline.project.slug >>/deploy-dev-<<matrix.region>>
+          serial-group: cba/deploy-dev-<<matrix.region>>
           matrix:
             parameters:
               region: [emea,namer]
@@ -353,7 +353,7 @@ workflows:
           requires: [ 'Deploy Dev [<<matrix.region>>]' ]
           region: <<matrix.region>>
       - deploy:
-          serial-group: << pipeline.project.slug >>/deploy-production-<<matrix.region>>
+          serial-group: cba/deploy-production-<<matrix.region>>
           matrix:
             parameters:
               region: [emea,namer]
