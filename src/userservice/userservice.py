@@ -46,7 +46,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
-
 def create_app():
     """Flask application factory to create instances
     of the Userservice Flask App
@@ -268,8 +267,8 @@ def create_app():
     except OperationalError:
         app.logger.critical("users_db database connection failed")
         sys.exit(1)
-    return app
 
+    return app
 
 if __name__ == "__main__":
     # Create an instance of flask server when called directly
