@@ -46,12 +46,30 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
+from prometheus_client import make_wsgi_app, Counter, Histogram
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+import time
 
 def create_app():
     """Flask application factory to create instances
     of the Userservice Flask App
     """
     app = Flask(__name__)
+
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
+        '/metrics': make_wsgi_app()
+    })
+    REQUEST_COUNT = Counter(
+        'app_request_count',
+        'Application Request Count',
+        ['method', 'endpoint', 'http_status']
+    )
+    REQUEST_LATENCY = Histogram(
+        'app_request_latency_seconds',
+        'Application Request Latency',
+        ['method', 'endpoint']
+    )
+
 
     # Disabling unused-variable for lines with route decorated functions
     # as pylint thinks they are unused
@@ -138,6 +156,7 @@ def create_app():
             app.logger.error("Error creating new user: %s", str(err))
             return 'failed to create user', 500
 
+        REQUEST_COUNT.labels('POST', '/create_user', 201).inc()
         return jsonify({}), 201
 
     def __validate_new_user(req):
