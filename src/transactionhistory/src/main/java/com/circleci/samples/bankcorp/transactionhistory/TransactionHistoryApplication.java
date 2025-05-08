@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package anthos.samples.bankofanthos.transactionhistory;
+package com.circleci.samples.bankcorp.transactionhistory;
 
 import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.Level;

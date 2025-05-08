@@ -232,7 +232,7 @@ class BalanceReaderControllerTest {
         String secondId = System.getProperty("CIRCLE_WORKFLOW_WORKSPACE_ID", "B") ;
         // if running on CI
         if(System.getenv().containsKey("CIRCLE_WORKFLOW_ID")){
-            // upcate live values (will only match first runs!)
+            // update live values (will only match first runs!)
             firstId = System.getenv("CIRCLE_WORKFLOW_ID");
             secondId = System.getenv("CIRCLE_WORKFLOW_WORKSPACE_ID") ;
         }

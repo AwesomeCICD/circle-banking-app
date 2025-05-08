@@ -1,0 +1,20 @@
+{
+    "component": {
+        "id":"ari:cloud:compass:f70fc615-659b-4377-82ad-9468d843b4b5:component/c3368863-b2d9-4e16-88b6-4aa6087cc55c/92c372c6-4f3f-4d5c-a7c7-a7210f08cec9"
+    },
+    "deployment":{
+        "environment": {
+            "category": "Staging",
+            "displayName": "Demo Environment",
+            "id": "dev-123"
+        },
+        "state": "successful",
+        "eventName": "CBA Test Webhook",
+        "description": "Testing new webooks",
+        "eventUrl": "https://app.circleci.com/pipelines/github/AwesomeCICD/circle-banking-app/1674/workflows/jobs/9291"
+    },
+    "pipeline":{
+        "id": "1234-test",
+        "displayName": "CBA Main Pipeline"
+    }
+}

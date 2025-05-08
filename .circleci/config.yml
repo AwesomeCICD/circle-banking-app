@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.2
+  compass: atlassian-labs/compass@0.1.3
   maven: circleci/maven@1.4
           
 executors:
@@ -329,10 +329,11 @@ workflows:
           matrix:
             parameters:
               region: [emea, namer]
-          context: cera-vault-oidc
+          context: [cera-vault-oidc]
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
       - deploy:
+          serial-group: cba/deploy-dev-<<matrix.region>>
           matrix:
             parameters:
               region: [emea,namer]
@@ -352,6 +353,7 @@ workflows:
           requires: [ 'Deploy Dev [<<matrix.region>>]' ]
           region: <<matrix.region>>
       - deploy:
+          serial-group: cba/deploy-production-<<matrix.region>>
           matrix:
             parameters:
               region: [emea,namer]
