@@ -305,7 +305,7 @@ workflows:
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
           requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
