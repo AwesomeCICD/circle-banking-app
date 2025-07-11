@@ -1,138 +1,168 @@
 version: 2.1
+
 orbs:
   maven: circleci/maven@1.4
-          
+
 executors:
-  jdk17:
+  # Optimized for CPU-intensive Java builds
+  jdk17-large:
     docker:
-      - image: cimg/openjdk:17.0.3
+      - image: cimg/openjdk:17.0.7
     resource_class: xlarge
 
+  # Optimized for linting and simple tasks
+  jdk17-medium:
+    docker:
+      - image: cimg/openjdk:17.0.7
+    resource_class: large
+
+  # Optimized Python executor with pre-installed tools
   python38:
     docker:
       - image: cimg/python:3.8
-
+    resource_class: medium
 
 jobs:
+  # Fast linting jobs to fail fast
   python-checkstyle:
     executor: python38
     steps:
       - checkout
-      - run: pip install pylint
-      - run:
-          name: Lint Python
-          command: pylint --rcfile=./.pylintrc ./src/*/*.py
-
-  python-test:
-    executor: python38
-    steps:
-      - checkout
-      - run: mkdir test-reports
-      - run:
-          name: Test Python Services
-          command: |
-            for SERVICE in "contacts" "userservice"; do
-              echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
-              pushd src/$SERVICE
-                python3 -m venv $HOME/venv-$SERVICE
-                source $HOME/venv-$SERVICE/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
-                TEST_FILES=$(circleci tests glob "tests/test_*.py")
-                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
-                deactivate
-              # return to previously saved path
-              popd
-            done
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-
-  python-test-parallel:
-    executor: python38
-    parallelism: 2 #match number of python services
-    steps:
-      - checkout
-      - run: mkdir test-reports
-      - run:
-          name: Test Python Services
-          command: |
-            MODULES=("contacts" "userservice")
-            MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
-            echo "Running modules ${MY_MODULES[@]}"
-            for MOD in "${MY_MODULES[@]}"; do
-                pushd src/$MOD >/dev/null
-                python3 -m venv $HOME/venv-$MOD
-                source $HOME/venv-$MOD/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
-                python -m pytest tests --junit-xml=../../test-reports/report-${MOD}.xml -v -p no:warnings
-                deactivate
-                # return to previously saved path
-                popd >/dev/null
-            done
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-
-  java-checkstyle:
-    executor: jdk17
-    steps:
-      - checkout
-      - maven/with_cache:  
-          verify_dependencies: false       
-          steps: 
-          - run: ./mvnw checkstyle:check
-
-
-  java-test-and-code-cov:
-    executor: jdk17
-    steps:
-      - checkout
-      - run: mkdir test-reports
       - restore_cache:
           keys:
-            - v2-mvn-full-{{ .Branch }}
-            - v2-mvn-full-
-      - run: mvn dependency:go-offline
+            - v1-pylint-{{ checksum "requirements.txt" }}
+            - v1-pylint-
+      - run:
+          name: Install pylint
+          command: |
+            pip install --user pylint
       - save_cache:
-          key: v2-mvn-full-{{ .Branch }}
+          key: v1-pylint-{{ checksum "requirements.txt" }}
+          paths:
+            - ~/.local
+      - run:
+          name: Lint Python
+          command: ~/.local/bin/pylint --rcfile=./.pylintrc ./src/*/*.py
+
+  java-checkstyle:
+    executor: jdk17-medium
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v3-mvn-checkstyle-{{ checksum "pom.xml" }}
+            - v3-mvn-checkstyle-
+      - run: ./mvnw dependency:go-offline -q
+      - save_cache:
+          key: v3-mvn-checkstyle-{{ checksum "pom.xml" }}
           paths:
             - ~/.m2
       - run:
-          environment:
-            PARAM_IT_PATTERN: '**/*IT*.java'
-            PARAM_TEST_DIR: 'src/**/src/test/java'
-            PARAM_TEST_PATTERN: '**/*Test*.java'
-          name: Parellel and Selected Tests
+          name: Run Checkstyle
+          command: ./mvnw checkstyle:check -q
+
+  # Optimized Python tests with parallel execution and caching
+  python-test:
+    executor: python38
+    parallelism: 2
+    steps:
+      - checkout
+      - run: mkdir -p test-reports
+      - restore_cache:
+          keys:
+            - v2-python-deps-{{ .Branch }}-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
+            - v2-python-deps-{{ .Branch }}-
+            - v2-python-deps-
+      - run:
+          name: Test Python Services in Parallel
           command: |
-            echo -e "\033[31m\033[4mNotes on Test Splitting & Re-running failed tests only \033[0m
-                    \033[34mCaveat 1:\033[0m  CircleCI Test Splitting uses filename by default, but JUnit reports use class names.
-                    Therefore this uses naive translation of linux file paths to dot separated package names and strips the .java suffix.
-                    \033[34mCaveat 2:\033[0m  Because we "skip" tests on re-runs, Maven will fail by default without `-DfailIfNoTests=false`
-                    \033[34mDebugging:\033[0m This will place all files used to decide tests in .circleci/tests and export it as an artifact for inspection/debugging.
-                    "
+            MODULES=("contacts" "userservice")
+            MY_MODULES=$(printf '%s\n' "${MODULES[@]}" | circleci tests split)
+            echo "Running modules: ${MY_MODULES[@]}"
+            
+            for MOD in ${MY_MODULES[@]}; do
+                echo "Testing $MOD..."
+                cd src/$MOD
+                
+                # Create and activate virtual environment
+                python3 -m venv venv-$MOD
+                source venv-$MOD/bin/activate
+                
+                # Install dependencies with caching
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                
+                # Run tests with CircleCI test splitting
+                python -m pytest tests \
+                  --junit-xml=../../test-reports/report-${MOD}.xml \
+                  -v -p no:warnings \
+                  --maxfail=1
+                
+                deactivate
+                cd ../..
+            done
+      - save_cache:
+          key: v2-python-deps-{{ .Branch }}-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
+          paths:
+            - src/contacts/venv-contacts
+            - src/userservice/venv-userservice
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
+
+  # Optimized Java tests with better parallelism
+  java-test:
+    executor: jdk17-large
+    parallelism: 3
+    steps:
+      - checkout
+      - run: mkdir -p test-reports
+      - restore_cache:
+          keys:
+            - v3-mvn-deps-{{ .Branch }}-{{ checksum "pom.xml" }}
+            - v3-mvn-deps-{{ .Branch }}-
+            - v3-mvn-deps-
+      - run:
+          name: Download Dependencies
+          command: |
+            ./mvnw dependency:go-offline -B -q
+            ./mvnw dependency:resolve-sources -B -q
+      - save_cache:
+          key: v3-mvn-deps-{{ .Branch }}-{{ checksum "pom.xml" }}
+          paths:
+            - ~/.m2
+      - run:
+          name: Run Java Tests in Parallel
+          command: |
+            # Create test list for splitting
             mkdir -p .circleci/tests/
-            #convert file names to classnames
-            circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
-                sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
-                tr "/" "." > .circleci/tests/surefire_classnames
-            #pass classnames to CircleCI CLI as test wrapper
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
-      - run: 
-          name: aggregate all module tests
+            
+            # Find all test classes
+            find src -name "*Test.java" -o -name "*IT.java" | \
+                sed -e 's#^src/[^/]*/src/test/java/\(.*\)\.java#\1#' | \
+                tr "/" "." > .circleci/tests/all_tests
+            
+            # Split tests across parallel containers
+            TESTS=$(cat .circleci/tests/all_tests | circleci tests split --split-by=timings)
+            
+            if [ -n "$TESTS" ]; then
+                echo "Running tests: $TESTS"
+                TESTS_COMMA=$(echo $TESTS | tr ' ' ',')
+                ./mvnw test -B \
+                  -Dtest="$TESTS_COMMA" \
+                  -DfailIfNoTests=false \
+                  -Dmaven.test.failure.ignore=false \
+                  -T 2C
+            else
+                echo "No tests assigned to this container"
+            fi
+      - run:
+          name: Aggregate Test Results
           when: always
           command: |
-            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-            echo "checking $SERVICE..."
-            # save current working dir to memory and cd to src/$SERVICE
-            cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
-            # return to previously saved path
+            find . -name "surefire-reports" -type d | while read dir; do
+                cp "$dir"/*.xml test-reports/ 2>/dev/null || true
             done
       - store_test_results:
           path: test-reports
@@ -140,13 +170,20 @@ jobs:
           path: test-reports
       - store_artifacts:
           path: .circleci/tests/
-   
+
 workflows:
-  open-pr:
+  version: 2
+  build-and-test:
     jobs:
-      - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
-      - java-test-and-code-cov
+      # Fast linting jobs run first for quick feedback
       - python-checkstyle
-      - python-test
-      - python-test-parallel
+      - java-checkstyle
+      
+      # Test jobs run in parallel after linting passes
+      - python-test:
+          requires:
+            - python-checkstyle
+      - java-test:
+          requires:
+            - java-checkstyle
+          context: [ compass-integration-bank-of-aion ]

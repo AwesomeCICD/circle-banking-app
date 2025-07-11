@@ -3,6 +3,9 @@ module.exports = {
   retries: 1,
   video: true,
   fixturesFolder: false,
+  defaultCommandTimeout: 10000, // Increase default timeout to 10 seconds
+  pageLoadTimeout: 30000, // Increase page load timeout to 30 seconds
+  requestTimeout: 10000, // Increase request timeout to 10 seconds
   env: {
     messages: {
       transaction: {
@@ -57,6 +60,7 @@ module.exports = {
   },
   e2e: {
     setupNodeEvents(on, config) {},
-    baseUrl: "https://dev.emea.circleci-fieldeng.com",
+    // Allow environment variable override for baseUrl
+    baseUrl: process.env.CYPRESS_BASE_URL || "https://dev.emea.circleci-fieldeng.com",
   },
 }

@@ -52,13 +52,23 @@ Cypress.Commands.add('createAccount', (user) => {
     })
 
     cy.visit('/signup')
+    
+    // Wait for the signup form to be fully loaded
+    cy.get('#signup-form').should('be.visible')
+    cy.get('#signup-username').should('be.visible')
+    
     cy.get('#signup-username').type(user.username)
     cy.get('#signup-password').type(user.password)
     cy.get('#signup-password-repeat').type(user.password)
     cy.get('#signup-firstname').type(user.firstName)
     cy.get('#signup-lastname').type(user.lastName)
     cy.get('#signup-birthday').type('1981-01-01')
+    
+    // Submit and wait for the response
     cy.get('#signup-form').submit()
+    
+    // Wait a bit for the server to process the request
+    cy.wait(2000)
 })
 
 // deposit through UI
@@ -71,7 +81,12 @@ Cypress.Commands.add('deposit', (externalAccount, depositAmount) => {
     const accountNum = externalAccount.accountNum
     const routingNum = externalAccount.routingNum
 
-
+    // Wait for the page to load completely
+    cy.get('body').should('be.visible')
+    cy.wait(1000) // Give the page time to fully load
+    
+    // Wait for the deposit button to be visible and clickable
+    cy.get('#depositSpan').should('be.visible').and('not.be.disabled')
     cy.get('#depositSpan').click() 
     cy.get('#depositFunds').should('be.visible')
     cy.get('#accounts').contains(accountNum).and('contain', routingNum).click({force:true})

@@ -59,11 +59,20 @@ describe('Authenticated default user', function () {
         const externalAccount = defaultUser.externalAccounts[0]
         cy.loginRequest(username, password)
         cy.visit('/home')
+        
+        // Wait for the home page to fully load before attempting deposit
+        cy.get('#current-balance').should('be.visible')
+        cy.get('#depositSpan').should('be.visible')
+        
         cy.deposit(externalAccount, 10000)
     })
     beforeEach(function () {
         cy.loginRequest(username, password)
         cy.visit('/home')
+        
+        // Ensure the page is fully loaded before each test
+        cy.get('#current-balance').should('be.visible')
+        cy.get('#paymentSpan').should('be.visible')
     })
 
     it('sees transfer button', function () {

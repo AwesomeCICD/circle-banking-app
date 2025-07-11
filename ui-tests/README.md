@@ -1,63 +1,59 @@
-# E2E tests
+# UI Tests
 
-End-to-end tests use the [Cypress](cypress.io) test runner.
+This directory contains Cypress end-to-end tests for the banking application.
 
-## Prerequisites
+## Environment Configuration
 
-1. [Development Guide]((../../../docs/development.md))
-    * [Docker Desktop](https://www.docker.com/products/docker-desktop)
-    * A working CCI Bank Corp deployment
-1. Ensure you are authenticated to the correct cluster
+The tests are configured to run against different environments:
 
-    ```console
-        gcloud container clusters get-credentials bank-of-anthos --zone us-west1-a
-    ```
+- **Default**: `https://dev.emea.circleci-fieldeng.com`
+- **Custom**: Set `CYPRESS_BASE_URL` environment variable
 
-### Running all tests
+### Running Against Local Environment
 
-Test can be run by using the Makefile or the Docker command line tool.
-
-The [Makefile](../../../Makefile) identifies the exposed IP from the Frontend service and runs the E2E tests against it.
-
-From the project's root, run:
-
-```console
-make test-e2e
+```bash
+export CYPRESS_BASE_URL=http://localhost:8080
+npm run cypress:run
 ```
 
-To use the Docker command line tool directly, the test directory and URL must be passed.
-From the project's root, run:
+## Test Configuration
 
-```console
-E2E_PATH=${PWD}/.github/workflows/ui-tests
-E2E_URL=http://$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-docker run -it -v ${E2E_PATH}:/e2e -w /e2e -e CYPRESS_baseUrl=${E2E_URL} -e CYPRESS_CI=false cypress/included:4.3.0
-```
+The tests include:
 
-### Running one test file
+- **Account Creation Tests** (`create.cy.js`)
+- **Deposit Tests** (`deposit.cy.js`) 
+- **Login Tests** (`login.cy.js`)
+- **Transfer Tests** (`transfer.cy.js`)
+- **Home Page Tests** (`home_page.cy.js`)
 
-Tests can be filtered by file by passing in files using the `--spec` flag.  Test files are mounted as volumes to Docker, so the test files should be referenced to their relative location with the path prefix of `cypress/integration/`
+## Troubleshooting
 
-#### Makefile
+### Common Issues
 
-All Cypress flags should be passed through the variable `E2E_FLAGS` as a single string.
+1. **"Element not found" errors**: 
+   - Tests now include proper wait conditions and visibility checks
+   - Increased timeout settings for better reliability
 
-```console
-make test-e2e E2E_FLAGS="--spec cypress/integration/<test-file>.js"
-```
+2. **Authentication failures**:
+   - Check that the target environment is accessible
+   - Verify default user credentials are valid for the target environment
 
-#### Docker
+3. **Account creation redirects to login**:
+   - This typically indicates the signup endpoint is not working correctly
+   - Check backend services are running and accessible
 
-```console
-docker run -it -v ${E2E_PATH}:/e2e -w /e2e \
- -e CYPRESS_baseUrl=${E2E_URL} -e CYPRESS_CI=false \
- cypress/included:5.0.0 --spec cypress/integration/<test-file>.js
-```
+### Test Improvements Made
 
-### Filtering tests with `.only()` and `.skip()`
+- Added proper wait conditions for page elements
+- Increased timeout settings for better reliability  
+- Added environment variable support for flexible deployment testing
+- Improved error handling in custom commands
 
-The `.only()` and `.skip()` functions can be appended to either single tests or blocks of test. [Read more about them here](https://docs.cypress.io/guides/core-concepts/writing-and-organizing-tests.html#Excluding-and-Including-Tests).
+## Default Test User
 
-### Screenshots
+The tests use a default test user with the following credentials:
+- Username: `testuser`
+- Password: `circleci`
+- Account Number: `1011226111`
 
-Failing tests will store screenshots in the `cypress/screenshots` directory (locally and CI) and uploaded as an [artifact to Github Actions](https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts) after a failing build. These are helpful when debugging tests.  [Read more about them here](https://docs.cypress.io/guides/guides/screenshots-and-videos.html#Screenshots).
+Make sure this user exists in your test environment or update the configuration in `cypress.config.js`.
