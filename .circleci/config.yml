@@ -2,11 +2,11 @@ version: 2.1
 orbs:
   compass: atlassian-labs/compass@0.1.3
   maven: circleci/maven@1.4
-          
+
 executors:
   with-chrome:
     docker:
-      - image: 'cypress/browsers:node-20.6.1-chrome-116.0.5845.187-1-ff-117.0-edge-116.0.1938.76-1'
+      - image: "cypress/browsers:node-20.6.1-chrome-116.0.5845.187-1-ff-117.0-edge-116.0.1938.76-1"
 
   base:
     docker:
@@ -21,7 +21,6 @@ executors:
     docker:
       - image: cimg/python:3.8
 
-
 jobs:
   python-checkstyle:
     executor: python38
@@ -30,7 +29,9 @@ jobs:
       - run: pip install pylint
       - run:
           name: Lint Python
-          command: pylint --rcfile=./.pylintrc ./src/*/*.py
+          command: |
+            echo "Linting Python"
+            pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
     executor: python38
@@ -93,11 +94,10 @@ jobs:
     executor: jdk17
     steps:
       - checkout
-      - maven/with_cache:  
-          verify_dependencies: false       
-          steps: 
-          - run: ./mvnw checkstyle:check
-
+      - maven/with_cache:
+          verify_dependencies: false
+          steps:
+            - run: ./mvnw checkstyle:check
 
   java-test-and-code-cov:
     executor: jdk17
@@ -115,9 +115,9 @@ jobs:
             - ~/.m2
       - run:
           environment:
-            PARAM_IT_PATTERN: '**/*IT*.java'
-            PARAM_TEST_DIR: 'src/**/src/test/java'
-            PARAM_TEST_PATTERN: '**/*Test*.java'
+            PARAM_IT_PATTERN: "**/*IT*.java"
+            PARAM_TEST_DIR: "src/**/src/test/java"
+            PARAM_TEST_PATTERN: "**/*Test*.java"
           name: Parellel and Selected Tests
           command: |
             echo -e "\033[31m\033[4mNotes on Test Splitting & Re-running failed tests only \033[0m
@@ -132,8 +132,8 @@ jobs:
                 sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
             #pass classnames to CircleCI CLI as test wrapper
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
-      - run: 
+            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings
+      - run:
           name: aggregate all module tests
           when: always
           command: |
@@ -149,9 +149,6 @@ jobs:
           path: test-reports
       - store_artifacts:
           path: .circleci/tests/
-
-
-
 
   skaffold-build-push:
     parameters:
@@ -196,8 +193,7 @@ jobs:
             - ~/.skaffold/cache
       - persist_to_workspace:
           root: output
-          paths: [ 'tags.json' ]
- 
+          paths: ["tags.json"]
 
   deploy:
     executor: base
@@ -229,7 +225,7 @@ jobs:
           kubectl get serviceaccounts -n ${K8S_NAMESPACE}
       - attach_workspace:
           at: output
-      - run: 
+      - run:
           name: Deploy CCI Bank Corp Services
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
@@ -246,7 +242,7 @@ jobs:
           name: Wait for deployment
           command: |
             kubectl wait rollout -n ${K8S_NAMESPACE} frontend-rollout --for condition=Available=True --timeout=90s
-      - run: 
+      - run:
           name: Print Frontend URL
           command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
   e2e:
@@ -261,7 +257,7 @@ jobs:
         description: where we are deploying, a CERA cluster region
     steps:
       - checkout
-      - run: 
+      - run:
           name: Run Cypress Tests
           command: |
             URL="https://<<parameters.region>>.circleci-fieldeng.com"
@@ -280,7 +276,7 @@ jobs:
       - store_artifacts:
           path: ui-tests/cypress/videos
       - store_artifacts:
-          path: ui-tests/cypress/screenshots    
+          path: ui-tests/cypress/screenshots
 
 commands:
   load-credentials:
@@ -298,7 +294,7 @@ commands:
             wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
             unzip vault_1.12.2_linux_amd64.zip
             sudo mv vault /usr/local/bin        
-            vault -h    
+            vault -h
       - run:
           name: Load Credentials from Vault
           command: |
@@ -320,7 +316,7 @@ workflows:
   main:
     jobs:
       - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
+          context: [compass-integration-bank-of-aion]
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
@@ -336,11 +332,16 @@ workflows:
           serial-group: cba/deploy-dev-<<matrix.region>>
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [emea, namer]
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
-          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
+          requires:
+            [
+              "Skaffold build & Push [<<matrix.region>>]",
+              python-test,
+              java-test-and-code-cov,
+            ]
+          context: [compass-integration-bank-of-aion, cera-vault-oidc]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
@@ -348,24 +349,24 @@ workflows:
       - e2e:
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [emea, namer]
           name: e2e [<<matrix.region>>]
-          requires: [ 'Deploy Dev [<<matrix.region>>]' ]
+          requires: ["Deploy Dev [<<matrix.region>>]"]
           region: <<matrix.region>>
       - deploy:
           serial-group: cba/deploy-production-<<matrix.region>>
           matrix:
             parameters:
-              region: [emea,namer]
+              region: [emea, namer]
           name: Deploy Production [<<matrix.region>>]
-          requires: 
-            - 'e2e [<<matrix.region>>]'
+          requires:
+            - "e2e [<<matrix.region>>]"
           app-environment: prod
           region: <<matrix.region>>
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          context: [compass-integration-bank-of-aion, cera-vault-oidc-prod]
           filters:
             branches:
-              only: [ main ]
+              only: [main]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
