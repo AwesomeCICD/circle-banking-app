@@ -15,7 +15,6 @@
  */
 
 package anthos.samples.bankofanthos.balancereader;
-
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
@@ -92,8 +91,8 @@ class FlakyBalanceReaderTest {
         long elapsedTime = System.nanoTime() - startTime;
 
         // Flaky assertion based on execution time
-        // Only fail 30% of the time when threshold is exceeded
-        if (elapsedTime > 10_000_000 && random.nextDouble() < 0.3) { // 10ms in nanoseconds
+        // Fail 85% of the time when threshold is exceeded
+        if (elapsedTime > 5_000_000 && random.nextDouble() < 0.85) { // 5ms in nanoseconds
             fail("Balance retrieval took too long: " + elapsedTime + "ns");
         }
 
@@ -108,8 +107,8 @@ class FlakyBalanceReaderTest {
         when(jwt.getClaim(JWT_ACCOUNT_KEY)).thenReturn(claim);
         when(claim.asString()).thenReturn(AUTHED_ACCOUNT_NUM);
 
-        // Random failure - approximately 40% failure rate for better flaky test detection
-        if (random.nextDouble() < 0.40) {
+        // Random failure - approximately 90% failure rate for better flaky test detection
+        if (random.nextDouble() < 0.90) {
             when(cache.get(AUTHED_ACCOUNT_NUM)).thenThrow(new ExecutionException(new RuntimeException("Random cache failure")));
         } else {
             when(cache.get(AUTHED_ACCOUNT_NUM)).thenReturn(BALANCE);
@@ -148,7 +147,7 @@ class FlakyBalanceReaderTest {
                 if (response.getStatusCode() == HttpStatus.OK) {
                     successCount.incrementAndGet();
                     // Race condition check
-                    if (successCount.get() > 5 && failureCount.get() > 0) {
+                    if ((successCount.get() > 3 && failureCount.get() > 0) || random.nextDouble() < 0.8) {
                         errors.add("Race condition detected in concurrent access");
                     }
                 } else {
@@ -178,8 +177,8 @@ class FlakyBalanceReaderTest {
     void testTimeOfDayDependentBehavior() throws Exception {
         LocalTime currentTime = LocalTime.now();
         
-        // Test fails during "maintenance hours"
-        if (currentTime.getHour() >= 22 || currentTime.getHour() <= 6) {
+        // Test fails during "maintenance hours" or randomly 75% of the time
+        if (currentTime.getHour() >= 22 || currentTime.getHour() <= 6 || random.nextDouble() < 0.75) {
             fail("Balance service not available during maintenance hours: " + currentTime);
         }
 
@@ -194,9 +193,9 @@ class FlakyBalanceReaderTest {
         List<byte[]> memoryHogs = new ArrayList<>();
         
         try {
-            // Create memory pressure
-            for (int i = 0; i < random.nextInt(1000) + 500; i++) {
-                memoryHogs.add(new byte[random.nextInt(10000) + 1000]);
+            // Create memory pressure (more aggressive)
+            for (int i = 0; i < random.nextInt(2000) + 1000; i++) {
+                memoryHogs.add(new byte[random.nextInt(50000) + 10000]);
             }
 
             when(verifier.verify(TOKEN)).thenReturn(jwt);

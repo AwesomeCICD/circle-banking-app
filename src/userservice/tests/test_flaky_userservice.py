@@ -124,9 +124,9 @@ class TestFlakyUserservice(unittest.TestCase):
                 pass
             time.sleep(random.uniform(0.001, 0.005))
         
-        # This will be flaky based on system performance
+        # This will be flaky based on system performance (85% failure rate)
         avg_time = sum(validation_times) / len(validation_times) if validation_times else 0
-        if avg_time > 0.01:  # 10ms threshold
+        if avg_time > 0.003 or random.random() < 0.85:  # 3ms threshold or random 85% failure
             self.fail(f"JWT validation too slow: {avg_time:.4f}s")
 
     def test_password_hash_collision_probability(self):
@@ -142,9 +142,9 @@ class TestFlakyUserservice(unittest.TestCase):
             hash_result = hashlib.md5(hash_input).hexdigest()[:8]  # Truncated for higher collision chance
             hashes.add(hash_result)
         
-        # Artificially high collision rate for testing
+        # Artificially high collision rate for testing (80% failure rate)
         unique_hashes = len(hashes)
-        if unique_hashes < len(hashes) * 0.95:  # If collision rate > 5%
+        if unique_hashes < 1000 or random.random() < 0.8:  # Always fail with 80% chance
             self.fail(f"Too many hash collisions detected: {unique_hashes} unique hashes")
 
     def test_database_connection_pool_exhaustion(self):
@@ -164,8 +164,8 @@ class TestFlakyUserservice(unittest.TestCase):
                 # Random delay simulating query time
                 time.sleep(random.uniform(0.001, 0.01))
                 
-                # Simulate pool exhaustion
-                if len(connections) > 50:
+                # Simulate pool exhaustion (higher failure rate)
+                if len(connections) > 25 or random.random() < 0.75:
                     raise SQLAlchemyError("Connection pool exhausted")
                     
             except SQLAlchemyError as e:
@@ -194,8 +194,8 @@ class TestFlakyUserservice(unittest.TestCase):
                 response = self.test_app.get('/login', query_string=EXAMPLE_USER_REQUEST)
 
                 # Time-sensitive assertion that might fail with clock drift
-                # Introduce randomness - fail only 40% of the time when drift is large
-                if abs(clock_drift) > 2.0 and random.random() < 0.4:
+                # Introduce randomness - fail 85% of the time when drift is large
+                if abs(clock_drift) > 1.5 and random.random() < 0.85:
                     self.fail(f"Clock drift too large for secure login: {clock_drift:.2f}s")
                 
                 self.assertEqual(response.status_code, 200)

@@ -76,8 +76,8 @@ class TestFlakyContacts(unittest.TestCase):
         
         elapsed = time.time() - start_time
         
-        # This will be flaky based on system load
-        if elapsed > 0.001:  # 1ms threshold
+        # This will be flaky based on system load (80% failure rate)
+        if elapsed > 0.0005 and random.random() < 0.8:  # 0.5ms threshold with 80% failure
             self.fail(f"Operation took too long: {elapsed:.4f}s")
         
         example_contact = create_new_contact()
@@ -90,8 +90,8 @@ class TestFlakyContacts(unittest.TestCase):
 
     def test_random_failure_contact_validation(self):
         """Test that randomly fails based on probability"""
-        # This test will fail approximately 30% of the time
-        if random.random() < 0.3:
+        # This test will fail approximately 85% of the time
+        if random.random() < 0.85:
             self.fail("Random failure occurred during contact validation")
         
         example_contact = create_new_contact()
@@ -172,21 +172,21 @@ class TestFlakyContacts(unittest.TestCase):
             # Add artificial delays
             time.sleep(random.uniform(0.001, 0.01))
         
-        # This assertion will be flaky based on operation order
-        if results[0][0] != "create":
+        # This assertion will be flaky based on operation order (75% failure rate)
+        if results[0][0] != "create" or random.random() < 0.75:
             self.fail(f"Expected create operation first, got: {[r[0] for r in results]}")
 
     def test_external_dependency_timeout(self):
         """Test that simulates external dependency timeouts"""
-        # Simulate variable network delays
-        network_delay = random.uniform(0.1, 2.0)
+        # Simulate variable network delays (more likely to timeout)
+        network_delay = random.uniform(0.2, 1.5)
         
         def slow_network_call():
             time.sleep(network_delay)
             return {"status": "success"}
         
-        # Timeout threshold that will sometimes be exceeded
-        timeout = 1.0
+        # Timeout threshold that will often be exceeded (90% failure rate)
+        timeout = 0.4
         
         start_time = time.time()
         result = slow_network_call()
@@ -208,8 +208,8 @@ class TestFlakyContacts(unittest.TestCase):
         expected_transactions = int(balance / 0.1)
         
         # This comparison will sometimes fail due to floating-point precision
-        # Make it fail only about 30% of the time by adjusting tolerance
-        tolerance = 1e-10 if random.random() > 0.3 else 1e-15
+        # Make it fail about 80% of the time by adjusting tolerance
+        tolerance = 1e-10 if random.random() > 0.8 else 1e-15
         if abs(balance - (expected_transactions * 0.1)) > tolerance:
             self.fail(f"Floating-point precision error: {balance} != {expected_transactions * 0.1}")
 
@@ -218,7 +218,7 @@ class TestFlakyContacts(unittest.TestCase):
         file_handles = []
         try:
             # Try to open many file handles - might fail on systems with low limits
-            max_files = random.randint(100, 1000)
+            max_files = random.randint(500, 2000)  # Higher range for more failures
             for i in range(max_files):
                 # Using io.StringIO to avoid actual file system usage
                 import io

@@ -16,6 +16,12 @@
 
 package anthos.samples.bankofanthos.ledgerwriter;
 
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.interfaces.Claim;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.stackdriver.StackdriverConfig;
+import io.micrometer.stackdriver.StackdriverMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +29,7 @@ import org.mockito.Mock;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -46,14 +53,46 @@ class FlakyLedgerWriterTest {
     private TransactionRepository transactionRepository;
     @Mock
     private TransactionValidator transactionValidator;
+    @Mock
+    private JWTVerifier verifier;
+    @Mock
+    private DecodedJWT jwt;
+    @Mock
+    private Claim claim;
+    @Mock
+    private Clock clock;
 
     private LedgerWriterController ledgerWriterController;
     private static final Random random = new Random();
+    private static final String VERSION = "v0.1.0";
+    private static final String LOCAL_ROUTING_NUM = "123456789";
+    private static final String BALANCES_API_ADDR = "balancereader:8080";
 
     @BeforeEach
     void setUp() {
         initMocks(this);
-        ledgerWriterController = new LedgerWriterController(transactionRepository, transactionValidator);
+        StackdriverMeterRegistry meterRegistry = new StackdriverMeterRegistry(new StackdriverConfig() {
+            @Override
+            public boolean enabled() {
+                return false;
+            }
+
+            @Override
+            public String projectId() {
+                return "test";
+            }
+
+            @Override
+            @Nullable
+            public String get(String key) {
+                return null;
+            }
+        }, clock);
+        
+        ledgerWriterController = new LedgerWriterController(verifier,
+                meterRegistry,
+                transactionRepository, transactionValidator,
+                LOCAL_ROUTING_NUM, BALANCES_API_ADDR, VERSION);
     }
 
     @Test
@@ -80,8 +119,8 @@ class FlakyLedgerWriterTest {
         for (Transaction tx : transactions) {
             runningBalance = runningBalance.add(tx.getAmount());
             
-            // This check will be flaky based on transaction order
-            if (runningBalance.compareTo(BigDecimal.valueOf(10000)) > 0) {
+            // This check will be flaky based on transaction order (85% failure)
+            if ((runningBalance.compareTo(BigDecimal.valueOf(5000)) > 0) || random.nextDouble() < 0.85) {
                 fail("Transaction order caused balance overflow: " + runningBalance);
             }
         }
@@ -109,7 +148,7 @@ class FlakyLedgerWriterTest {
                 tx.setAmount(BigDecimal.valueOf(random.nextDouble() * 100));
 
                 // Simulate deadlock detection
-                if (random.nextDouble() < 0.15) { // 15% chance of deadlock
+                if (random.nextDouble() < 0.75) { // 75% chance of deadlock
                     deadlockCount.incrementAndGet();
                     throw new DataAccessResourceFailureException("Deadlock detected");
                 }
@@ -130,7 +169,7 @@ class FlakyLedgerWriterTest {
         executor.shutdown();
         executor.awaitTermination(10, TimeUnit.SECONDS);
 
-        if (deadlockCount.get() > 5) {
+        if (deadlockCount.get() > 2 || random.nextDouble() < 0.8) {
             fail("Too many deadlocks detected: " + deadlockCount.get());
         }
         
