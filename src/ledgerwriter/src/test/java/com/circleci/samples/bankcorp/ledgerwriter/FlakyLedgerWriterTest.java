@@ -19,7 +19,6 @@ package anthos.samples.bankofanthos.ledgerwriter;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import io.micrometer.core.instrument.Clock;
 import io.micrometer.stackdriver.StackdriverConfig;
 import io.micrometer.stackdriver.StackdriverMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,26 +26,26 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.dao.DataAccessResourceFailureException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
+import org.springframework.dao.DataIntegrityViolationException;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 /**
- * Flaky tests for LedgerWriter to demonstrate various flakiness patterns
+ * Flaky tests for LedgerWriter service to demonstrate CircleCI's flaky test detection
  */
+@DisplayName("Flaky tests for LedgerWriter")
 class FlakyLedgerWriterTest {
 
     @Mock
@@ -71,7 +70,7 @@ class FlakyLedgerWriterTest {
     @BeforeEach
     void setUp() {
         initMocks(this);
-        StackdriverMeterRegistry meterRegistry = new StackdriverMeterRegistry(new StackdriverConfig() {
+        StackdriverConfig stackdriverConfig = new StackdriverConfig() {
             @Override
             public boolean enabled() {
                 return false;
@@ -87,12 +86,16 @@ class FlakyLedgerWriterTest {
             public String get(String key) {
                 return null;
             }
-        }, clock);
-        
-        ledgerWriterController = new LedgerWriterController(verifier,
-                meterRegistry,
-                transactionRepository, transactionValidator,
-                LOCAL_ROUTING_NUM, BALANCES_API_ADDR, VERSION);
+        };
+        StackdriverMeterRegistry meterRegistry = StackdriverMeterRegistry.builder(stackdriverConfig).build();
+
+        ledgerWriterController = new LedgerWriterController(
+            verifier, meterRegistry, transactionRepository, transactionValidator,
+            LOCAL_ROUTING_NUM, "http://" + BALANCES_API_ADDR + "/balances", VERSION);
+
+        when(verifier.verify(any())).thenReturn(jwt);
+        when(jwt.getClaim(any())).thenReturn(claim);
+        when(claim.asString()).thenReturn("test-account");
     }
 
     @Test
@@ -100,14 +103,12 @@ class FlakyLedgerWriterTest {
     void testTransactionOrderDependentBehavior() {
         List<Transaction> transactions = new ArrayList<>();
         
-        // Create transactions with random ordering
+        // Create mocked transactions with random ordering
         for (int i = 0; i < random.nextInt(20) + 10; i++) {
-            Transaction tx = new Transaction();
-            tx.setTransactionId(UUID.randomUUID().toString());
-            tx.setFromAccountNum("1234567890");
-            tx.setToAccountNum("0987654321");
-            tx.setAmount(new BigDecimal(random.nextDouble() * 1000));
-            tx.setTimestamp(Instant.now().plusSeconds(random.nextInt(3600)));
+            Transaction tx = mock(Transaction.class);
+            when(tx.getFromAccountNum()).thenReturn("1234567890");
+            when(tx.getToAccountNum()).thenReturn("0987654321");
+            when(tx.getAmount()).thenReturn(random.nextInt(1000));
             transactions.add(tx);
         }
 
@@ -115,12 +116,12 @@ class FlakyLedgerWriterTest {
         Collections.shuffle(transactions);
 
         // Process transactions in random order
-        BigDecimal runningBalance = BigDecimal.ZERO;
+        int runningBalance = 0;
         for (Transaction tx : transactions) {
-            runningBalance = runningBalance.add(tx.getAmount());
+            runningBalance = runningBalance + tx.getAmount();
             
             // This check will be flaky based on transaction order (85% failure)
-            if ((runningBalance.compareTo(BigDecimal.valueOf(5000)) > 0) || random.nextDouble() < 0.85) {
+            if ((runningBalance > 5000) || random.nextDouble() < 0.85) {
                 fail("Transaction order caused balance overflow: " + runningBalance);
             }
         }
@@ -141,11 +142,10 @@ class FlakyLedgerWriterTest {
                 // Random delay to increase deadlock probability
                 Thread.sleep(random.nextInt(50));
                 
-                Transaction tx = new Transaction();
-                tx.setTransactionId(UUID.randomUUID().toString());
-                tx.setFromAccountNum(accountA);
-                tx.setToAccountNum(accountB);
-                tx.setAmount(BigDecimal.valueOf(random.nextDouble() * 100));
+                Transaction tx = mock(Transaction.class);
+                when(tx.getFromAccountNum()).thenReturn(accountA);
+                when(tx.getToAccountNum()).thenReturn(accountB);
+                when(tx.getAmount()).thenReturn(random.nextInt(100));
 
                 // Simulate deadlock detection
                 if (random.nextDouble() < 0.75) { // 75% chance of deadlock
@@ -182,24 +182,24 @@ class FlakyLedgerWriterTest {
     @DisplayName("Test with currency precision edge cases")
     void testCurrencyPrecisionEdgeCases() {
         // Test various precision scenarios that might fail
-        BigDecimal[] testAmounts = {
-            new BigDecimal("0.001"),    // Sub-cent precision
-            new BigDecimal("999999.999"), // Large amount with precision
-            new BigDecimal("1").divide(new BigDecimal("3"), 10, RoundingMode.HALF_UP), // Repeating decimal
-            new BigDecimal("0.1").add(new BigDecimal("0.2")), // Classic float precision issue
+        int[] testAmounts = {
+            1,       // 1 cent
+            999999,  // Large amount
+            333,     // Amount that divides unevenly
+            30,      // 0.1 + 0.2 = 0.3 in cents
         };
 
-        for (BigDecimal amount : testAmounts) {
-            Transaction tx = new Transaction();
-            tx.setTransactionId(UUID.randomUUID().toString());
-            tx.setFromAccountNum("1234567890");
-            tx.setToAccountNum("0987654321");
-            tx.setAmount(amount);
+        for (int amount : testAmounts) {
+            Transaction tx = mock(Transaction.class);
+            when(tx.getFromAccountNum()).thenReturn("1234567890");
+            when(tx.getToAccountNum()).thenReturn("0987654321");
+            when(tx.getAmount()).thenReturn(amount);
 
             // Precision validation that might be flaky
-            BigDecimal scaledAmount = amount.setScale(2, RoundingMode.HALF_UP);
-            if (!amount.equals(scaledAmount) && amount.scale() > 2) {
-                fail("Precision loss detected for amount: " + amount + " -> " + scaledAmount);
+            double dollarAmount = amount / 100.0;
+            double roundedAmount = Math.round(dollarAmount * 100) / 100.0;
+            if (Math.abs(dollarAmount - roundedAmount) > 0.001 && random.nextDouble() < 0.8) {
+                fail("Precision loss detected for amount: " + amount + " cents");
             }
         }
     }
@@ -219,260 +219,255 @@ class FlakyLedgerWriterTest {
         for (ZoneOffset zone : zones) {
             int hourOfDay = now.atOffset(zone).getHour();
             
-            // Business logic that depends on time zone
-            if (hourOfDay < 6 || hourOfDay > 22) {
+            // Business logic that depends on time zone (80% failure during off-hours)
+            if ((hourOfDay < 6 || hourOfDay > 22) && random.nextDouble() < 0.8) {
                 fail("Transactions not allowed during off-hours in timezone " + zone + " (hour: " + hourOfDay + ")");
             }
         }
 
-        Transaction tx = new Transaction();
-        tx.setTransactionId(UUID.randomUUID().toString());
-        tx.setFromAccountNum("1234567890");
-        tx.setToAccountNum("0987654321");
-        tx.setAmount(BigDecimal.valueOf(100.00));
-        tx.setTimestamp(now);
+        Transaction tx = mock(Transaction.class);
+        when(tx.getFromAccountNum()).thenReturn("1234567890");
+        when(tx.getToAccountNum()).thenReturn("0987654321");
+        when(tx.getAmount()).thenReturn(100);
 
-        when(transactionRepository.save(tx)).thenReturn(tx);
+        // Check if transaction is allowed based on local time
+        LocalTime localTime = LocalTime.now();
+        if (localTime.isBefore(LocalTime.of(9, 0)) || localTime.isAfter(LocalTime.of(17, 0))) {
+            fail("Transaction outside business hours: " + localTime);
+        }
     }
 
     @Test
     @DisplayName("Test with garbage collection interference")
     void testGarbageCollectionInterference() {
-        List<Object> memoryPressure = new ArrayList<>();
+        List<byte[]> memoryConsumer = new ArrayList<>();
         
         try {
-            // Create memory pressure to trigger GC
-            for (int i = 0; i < random.nextInt(10000) + 5000; i++) {
-                memoryPressure.add(new byte[random.nextInt(1000) + 100]);
+            // Consume memory to trigger GC (85% failure rate)
+            for (int i = 0; i < random.nextInt(100) + 50; i++) {
+                memoryConsumer.add(new byte[1024 * 1024]); // 1MB chunks
                 
-                // Occasionally trigger GC explicitly
-                if (i % 1000 == 0) {
-                    System.gc();
-                    
-                    // Measure time sensitive operations during GC
-                    long startTime = System.nanoTime();
-                    
-                    Transaction tx = new Transaction();
-                    tx.setTransactionId("tx_" + i);
-                    tx.setFromAccountNum("1234567890");
-                    tx.setToAccountNum("0987654321");
-                    tx.setAmount(BigDecimal.valueOf(i));
-                    
-                    long elapsedTime = System.nanoTime() - startTime;
-                    
-                    // This might fail during GC pauses
-                    if (elapsedTime > 50_000_000) { // 50ms threshold
-                        fail("Transaction processing too slow during GC: " + elapsedTime + "ns");
-                    }
+                if (random.nextDouble() < 0.85) {
+                    System.gc(); // Suggest garbage collection
+                    Thread.sleep(10);
                 }
+                
+                Transaction tx = mock(Transaction.class);
+                when(tx.getFromAccountNum()).thenReturn("ACC" + i);
+                when(tx.getToAccountNum()).thenReturn("ACC" + (i + 1));
+                when(tx.getAmount()).thenReturn(random.nextInt(100));
+                
+                when(transactionRepository.save(tx)).thenReturn(tx);
             }
+            
+            // Check if GC caused issues
+            Runtime runtime = Runtime.getRuntime();
+            long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+            long maxMemory = runtime.maxMemory();
+            
+            if (usedMemory > maxMemory * 0.8) {
+                fail("Memory pressure too high: " + (usedMemory * 100 / maxMemory) + "%");
+            }
+        } catch (InterruptedException e) {
+            fail("Test interrupted during memory allocation");
         } finally {
-            memoryPressure.clear();
+            memoryConsumer.clear();
         }
     }
 
     @Test
     @DisplayName("Test with connection pool exhaustion")
     void testConnectionPoolExhaustion() throws InterruptedException {
-        AtomicLong activeConnections = new AtomicLong(0);
-        final long MAX_CONNECTIONS = 20;
-        List<String> connectionErrors = Collections.synchronizedList(new ArrayList<>());
-
+        int poolSize = 10;
+        Semaphore connectionPool = new Semaphore(poolSize);
+        AtomicInteger failureCount = new AtomicInteger(0);
+        
         Runnable databaseOperation = () -> {
+            boolean acquired = false;
             try {
-                long currentConnections = activeConnections.incrementAndGet();
+                // Try to acquire connection with timeout
+                acquired = connectionPool.tryAcquire(50, TimeUnit.MILLISECONDS);
                 
-                if (currentConnections > MAX_CONNECTIONS) {
-                    connectionErrors.add("Connection pool exhausted: " + currentConnections + " active connections");
+                if (!acquired) {
+                    failureCount.incrementAndGet();
                     return;
                 }
-
-                // Simulate database work
-                Thread.sleep(random.nextInt(100) + 50);
                 
-                Transaction tx = new Transaction();
-                tx.setTransactionId(UUID.randomUUID().toString());
-                tx.setFromAccountNum("1234567890");
-                tx.setToAccountNum("0987654321");
-                tx.setAmount(BigDecimal.valueOf(random.nextDouble() * 100));
-
+                // Simulate database operation
+                Transaction tx = mock(Transaction.class);
+                when(tx.getFromAccountNum()).thenReturn("ACC" + random.nextInt(100));
+                when(tx.getToAccountNum()).thenReturn("ACC" + random.nextInt(100));
+                when(tx.getAmount()).thenReturn(random.nextInt(1000));
+                
+                Thread.sleep(random.nextInt(100)); // Simulate work
+                
                 when(transactionRepository.save(tx)).thenReturn(tx);
                 
-            } catch (Exception e) {
-                connectionErrors.add("Database connection error: " + e.getMessage());
+            } catch (InterruptedException e) {
+                failureCount.incrementAndGet();
             } finally {
-                activeConnections.decrementAndGet();
+                if (acquired) {
+                    connectionPool.release();
+                }
             }
         };
-
-        // Simulate high load
+        
+        // Create many concurrent operations to exhaust pool
         ExecutorService executor = Executors.newFixedThreadPool(50);
         for (int i = 0; i < 100; i++) {
             executor.submit(databaseOperation);
         }
         
         executor.shutdown();
-        executor.awaitTermination(15, TimeUnit.SECONDS);
-
-        if (!connectionErrors.isEmpty()) {
-            fail("Connection pool issues: " + connectionErrors.get(0));
+        executor.awaitTermination(5, TimeUnit.SECONDS);
+        
+        // Flaky assertion - 80% failure rate if connections were exhausted
+        if (failureCount.get() > 5 || random.nextDouble() < 0.8) {
+            fail("Connection pool exhausted: " + failureCount.get() + " failures");
         }
     }
 
     @Test
     @DisplayName("Test with duplicate transaction ID race condition")
     void testDuplicateTransactionIdRaceCondition() throws InterruptedException {
-        Set<String> usedIds = Collections.synchronizedSet(new HashSet<>());
-        List<String> duplicateErrors = Collections.synchronizedList(new ArrayList<>());
-        AtomicInteger transactionCounter = new AtomicInteger(0);
-
+        Map<String, Integer> transactionIds = new ConcurrentHashMap<>();
+        AtomicInteger duplicateCount = new AtomicInteger(0);
+        
         Runnable transactionCreator = () -> {
-            try {
-                // Simulate transaction ID generation with potential conflicts
-                int counter = transactionCounter.incrementAndGet();
-                String baseId = "tx_" + (counter / 10); // Intentionally create potential duplicates
+            for (int i = 0; i < 10; i++) {
+                String transactionId = "TXN_" + random.nextInt(100);
                 
-                // Add some randomness
-                String transactionId = baseId + "_" + random.nextInt(3);
-                
-                if (!usedIds.add(transactionId)) {
-                    duplicateErrors.add("Duplicate transaction ID detected: " + transactionId);
-                    return;
+                Integer previousCount = transactionIds.putIfAbsent(transactionId, 1);
+                if (previousCount != null) {
+                    duplicateCount.incrementAndGet();
+                    
+                    // Simulate duplicate transaction handling
+                    Transaction tx = mock(Transaction.class);
+                    when(tx.getRequestUuid()).thenReturn(transactionId);
+                    when(tx.getFromAccountNum()).thenReturn("ACC001");
+                    when(tx.getToAccountNum()).thenReturn("ACC002");
+                    when(tx.getAmount()).thenReturn(100);
+                    
+                    when(transactionRepository.save(tx))
+                        .thenThrow(new DataIntegrityViolationException("Duplicate transaction ID"));
                 }
-
-                Transaction tx = new Transaction();
-                tx.setTransactionId(transactionId);
-                tx.setFromAccountNum("1234567890");
-                tx.setToAccountNum("0987654321");
-                tx.setAmount(BigDecimal.valueOf(random.nextDouble() * 100));
-
-                when(transactionRepository.save(tx)).thenReturn(tx);
-                
-            } catch (Exception e) {
-                duplicateErrors.add("Transaction creation error: " + e.getMessage());
             }
         };
-
-        // Run many concurrent transaction creations
+        
+        // Run concurrent threads that might create duplicates
         ExecutorService executor = Executors.newFixedThreadPool(20);
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < 20; i++) {
             executor.submit(transactionCreator);
         }
         
         executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
-
-        if (!duplicateErrors.isEmpty()) {
-            fail("Duplicate transaction ID issues: " + duplicateErrors.get(0));
+        executor.awaitTermination(5, TimeUnit.SECONDS);
+        
+        // Flaky check - 85% failure if duplicates detected
+        if (duplicateCount.get() > 0 || random.nextDouble() < 0.85) {
+            fail("Duplicate transaction IDs detected: " + duplicateCount.get());
         }
     }
 
     @Test
     @DisplayName("Test with network partition simulation")
     void testNetworkPartitionBehavior() {
-        List<CompletableFuture<Boolean>> networkCalls = new ArrayList<>();
-        int partitionProbability = random.nextInt(30) + 10; // 10-40% partition chance
-
-        for (int i = 0; i < 10; i++) {
-            CompletableFuture<Boolean> networkCall = CompletableFuture.supplyAsync(() -> {
-                try {
-                    // Simulate network call with potential partition
-                    if (random.nextInt(100) < partitionProbability) {
-                        throw new RuntimeException("Network partition detected");
-                    }
-                    
-                    Thread.sleep(random.nextInt(100) + 50);
-                    return true;
-                } catch (Exception e) {
-                    return false;
-                }
-            });
-            networkCalls.add(networkCall);
-        }
-
-        // Wait for all network calls to complete
-        long successfulCalls = networkCalls.stream()
-                .mapToLong(future -> {
-                    try {
-                        return future.get(2, TimeUnit.SECONDS) ? 1 : 0;
-                    } catch (Exception e) {
-                        return 0;
-                    }
-                })
-                .sum();
-
-        double successRate = (double) successfulCalls / networkCalls.size();
+        // Simulate network delays and partitions
+        int[] networkDelays = {0, 100, 500, 1000, 5000}; // milliseconds
         
-        // Fail if success rate is too low
-        if (successRate < 0.7) { // Require 70% success rate
-            fail("Network partition caused too many failures: " + String.format("%.1f%%", successRate * 100) + " success rate");
+        for (int delay : networkDelays) {
+            try {
+                if (delay > 0) {
+                    Thread.sleep(delay);
+                }
+                
+                // Simulate network partition (75% failure for high delays)
+                if (delay > 1000 && random.nextDouble() < 0.75) {
+                    throw new DataAccessResourceFailureException("Network partition detected");
+                }
+                
+                // Try to save transaction
+                Transaction tx = mock(Transaction.class);
+                when(tx.getFromAccountNum()).thenReturn("1234567890");
+                when(tx.getToAccountNum()).thenReturn("0987654321");
+                when(tx.getAmount()).thenReturn(100);
+                
+                when(transactionRepository.save(tx)).thenReturn(tx);
+                
+                // Check if operation succeeded within timeout
+                if (delay > 2000) {
+                    fail("Operation timeout after " + delay + "ms");
+                }
+                
+            } catch (InterruptedException e) {
+                fail("Network operation interrupted");
+            } catch (DataAccessResourceFailureException e) {
+                fail("Network partition caused failure: " + e.getMessage());
+            }
         }
     }
 
     @Test
     @DisplayName("Test with leap year date handling")
     void testLeapYearDateHandling() {
-        // Test date handling around leap year edge cases
-        int[] leapYears = {2020, 2024, 2028};
-        int testYear = leapYears[random.nextInt(leapYears.length)];
+        // Test dates around leap year boundaries
+        LocalDate[] testDates = {
+            LocalDate.of(2020, 2, 29), // Leap year date
+            LocalDate.of(2021, 2, 28), // Non-leap year
+            LocalDate.of(2024, 2, 29), // Next leap year
+        };
         
-        // Test February 29th handling
-        try {
-            Instant leapDay = Instant.parse(testYear + "-02-29T12:00:00Z");
-            Instant dayAfter = leapDay.plusSeconds(24 * 3600);
+        for (LocalDate date : testDates) {
+            Transaction tx = mock(Transaction.class);
+            when(tx.getFromAccountNum()).thenReturn("1234567890");
+            when(tx.getToAccountNum()).thenReturn("0987654321");
+            when(tx.getAmount()).thenReturn(100);
             
-            Transaction tx = new Transaction();
-            tx.setTransactionId(UUID.randomUUID().toString());
-            tx.setFromAccountNum("1234567890");
-            tx.setToAccountNum("0987654321");
-            tx.setAmount(BigDecimal.valueOf(100.00));
-            tx.setTimestamp(leapDay);
-
-            // Date arithmetic that might fail in non-leap years
-            if (dayAfter.atOffset(ZoneOffset.UTC).getDayOfMonth() != 1) {
-                fail("Leap year date handling failed: " + leapDay + " + 1 day = " + dayAfter);
+            // Check if date is valid for transactions (80% failure for leap day)
+            if (date.getDayOfMonth() == 29 && date.getMonthValue() == 2) {
+                if (random.nextDouble() < 0.8) {
+                    fail("Special handling required for leap year date: " + date);
+                }
             }
-
-            when(transactionRepository.save(tx)).thenReturn(tx);
             
-        } catch (Exception e) {
-            fail("Leap year date processing failed: " + e.getMessage());
+            // Simulate date-based business logic
+            DayOfWeek dayOfWeek = date.getDayOfWeek();
+            if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+                fail("Transactions not allowed on weekends: " + date);
+            }
         }
     }
 
     @Test
     @DisplayName("Test with database constraint violation timing")
     void testDatabaseConstraintViolationTiming() {
-        List<Transaction> conflictingTransactions = new ArrayList<>();
-        
-        // Create potentially conflicting transactions
-        String sharedAccount = "shared_account_123";
-        BigDecimal totalWithdraws = BigDecimal.ZERO;
-        BigDecimal accountBalance = BigDecimal.valueOf(1000); // Simulate account balance
-        
-        for (int i = 0; i < random.nextInt(20) + 10; i++) {
-            Transaction tx = new Transaction();
-            tx.setTransactionId(UUID.randomUUID().toString());
-            tx.setFromAccountNum(sharedAccount);
-            tx.setToAccountNum("target_" + i);
+        // Test various constraint scenarios
+        for (int i = 0; i < 10; i++) {
+            Transaction tx = mock(Transaction.class);
+            when(tx.getFromAccountNum()).thenReturn("1234567890");
+            when(tx.getToAccountNum()).thenReturn("0987654321");
+            when(tx.getAmount()).thenReturn(100);
             
-            BigDecimal amount = BigDecimal.valueOf(random.nextDouble() * 200 + 50); // 50-250
-            tx.setAmount(amount);
-            totalWithdraws = totalWithdraws.add(amount);
-            
-            conflictingTransactions.add(tx);
-        }
-        
-        // Process transactions - might violate balance constraint
-        for (Transaction tx : conflictingTransactions) {
-            if (totalWithdraws.compareTo(accountBalance) > 0) {
-                fail("Insufficient funds constraint violation: withdrawing " + totalWithdraws + " from balance " + accountBalance);
-            }
-            
-            // Simulate decreasing balance
-            accountBalance = accountBalance.subtract(tx.getAmount());
-            if (accountBalance.compareTo(BigDecimal.ZERO) < 0) {
-                fail("Negative balance constraint violation: " + accountBalance);
+            // Randomly violate different constraints (85% total failure rate)
+            double randomValue = random.nextDouble();
+            if (randomValue < 0.3) {
+                // Foreign key violation
+                when(transactionRepository.save(tx))
+                    .thenThrow(new DataIntegrityViolationException("Foreign key constraint violation"));
+                fail("Foreign key constraint violated");
+            } else if (randomValue < 0.6) {
+                // Unique constraint violation  
+                when(transactionRepository.save(tx))
+                    .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+                fail("Unique constraint violated");
+            } else if (randomValue < 0.85) {
+                // Check constraint violation
+                when(transactionRepository.save(tx))
+                    .thenThrow(new DataIntegrityViolationException("Check constraint violation"));
+                fail("Check constraint violated");
+            } else {
+                // Success case
+                when(transactionRepository.save(tx)).thenReturn(tx);
             }
         }
     }
