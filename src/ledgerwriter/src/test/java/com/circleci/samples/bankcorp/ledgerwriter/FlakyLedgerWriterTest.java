@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -93,8 +93,8 @@ class FlakyLedgerWriterTest {
             verifier, meterRegistry, transactionRepository, transactionValidator,
             LOCAL_ROUTING_NUM, "http://" + BALANCES_API_ADDR + "/balances", VERSION);
 
-        when(verifier.verify(any())).thenReturn(jwt);
-        when(jwt.getClaim(any())).thenReturn(claim);
+        when(verifier.verify(anyString())).thenReturn(jwt);
+        when(jwt.getClaim(anyString())).thenReturn(claim);
         when(claim.asString()).thenReturn("test-account");
     }
 

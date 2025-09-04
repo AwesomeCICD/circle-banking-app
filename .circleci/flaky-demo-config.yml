@@ -1,0 +1,61 @@
+version: 2.1
+
+executors:
+  jdk17:
+    docker:
+      - image: cimg/openjdk:17.0.3
+    resource_class: medium  # Reduced from xlarge
+  
+  python38:
+    docker:
+      - image: cimg/python:3.8
+
+jobs:
+  python-flaky-tests:
+    executor: python38
+    steps:
+      - checkout
+      - run: mkdir test-reports
+      - run:
+          name: Run Flaky Tests Only
+          command: |
+            for SERVICE in "contacts" "userservice"; do
+              echo "Testing $SERVICE flaky tests..."
+              pushd src/$SERVICE
+                python3 -m venv $HOME/venv-$SERVICE
+                source $HOME/venv-$SERVICE/bin/activate
+                pip install -r requirements.txt
+                pip install pytest-rerunfailures
+                # Run ONLY the flaky test files
+                python -m pytest tests/test_flaky_*.py \
+                  --junit-xml=../../test-reports/flaky-${SERVICE}.xml \
+                  -v --reruns 2 --reruns-delay 1
+                deactivate
+              popd
+            done
+      - store_test_results:
+          path: test-reports
+
+  java-flaky-tests:
+    executor: jdk17
+    steps:
+      - checkout
+      - run: mkdir test-reports
+      - run:
+          name: Run Java Flaky Tests Only
+          command: |
+            # Run only flaky tests for each Java service
+            ./mvnw test -Dtest=FlakyBalanceReaderTest -pl src/balancereader -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=2
+            ./mvnw test -Dtest=FlakyLedgerWriterTest -pl src/ledgerwriter -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=2
+            
+            # Copy test results
+            cp src/balancereader/target/surefire-reports/*.xml test-reports/ 2>/dev/null || true
+            cp src/ledgerwriter/target/surefire-reports/*.xml test-reports/ 2>/dev/null || true
+      - store_test_results:
+          path: test-reports
+
+workflows:
+  flaky-test-demo:
+    jobs:
+      - python-flaky-tests
+      - java-flaky-tests
