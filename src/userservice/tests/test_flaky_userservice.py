@@ -178,23 +178,24 @@ class TestFlakyUserservice(unittest.TestCase):
     def test_user_login_with_system_clock_drift(self):
         """Test sensitive to system clock changes"""
         import datetime
-        
+
         # Get current time with some random offset
         current_time = time.time()
         clock_drift = random.uniform(-5, 5)  # +/- 5 seconds
         adjusted_time = current_time + clock_drift
-        
+
         # Mock time-sensitive operations
         with patch('time.time', return_value=adjusted_time):
             example_user = EXAMPLE_USER.copy()
             self.mocked_db.return_value.get_user.return_value = example_user
             self.flask_app.config['PRIVATE_KEY'] = EXAMPLE_PRIVATE_KEY
-            
+
             with patch('bcrypt.checkpw', return_value=True):
                 response = self.test_app.get('/login', query_string=EXAMPLE_USER_REQUEST)
-                
+
                 # Time-sensitive assertion that might fail with clock drift
-                if abs(clock_drift) > 2.0:  # 2 second tolerance
+                # Introduce randomness - fail only 40% of the time when drift is large
+                if abs(clock_drift) > 2.0 and random.random() < 0.4:
                     self.fail(f"Clock drift too large for secure login: {clock_drift:.2f}s")
                 
                 self.assertEqual(response.status_code, 200)

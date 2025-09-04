@@ -201,13 +201,16 @@ class TestFlakyContacts(unittest.TestCase):
         """Test that fails due to floating-point precision issues"""
         # Simulate financial calculations with floating-point arithmetic
         balance = 0.0
-        for _ in range(random.randint(50, 200)):
+        iterations = random.randint(50, 200)
+        for _ in range(iterations):
             balance += 0.1  # This will accumulate precision errors
         
         expected_transactions = int(balance / 0.1)
         
         # This comparison will sometimes fail due to floating-point precision
-        if abs(balance - (expected_transactions * 0.1)) > 1e-10:
+        # Make it fail only about 30% of the time by adjusting tolerance
+        tolerance = 1e-10 if random.random() > 0.3 else 1e-15
+        if abs(balance - (expected_transactions * 0.1)) > tolerance:
             self.fail(f"Floating-point precision error: {balance} != {expected_transactions * 0.1}")
 
     def test_system_resource_dependent(self):

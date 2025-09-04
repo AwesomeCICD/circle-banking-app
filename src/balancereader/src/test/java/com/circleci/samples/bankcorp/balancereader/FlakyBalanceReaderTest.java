@@ -92,7 +92,8 @@ class FlakyBalanceReaderTest {
         long elapsedTime = System.nanoTime() - startTime;
 
         // Flaky assertion based on execution time
-        if (elapsedTime > 10_000_000) { // 10ms in nanoseconds
+        // Only fail 30% of the time when threshold is exceeded
+        if (elapsedTime > 10_000_000 && random.nextDouble() < 0.3) { // 10ms in nanoseconds
             fail("Balance retrieval took too long: " + elapsedTime + "ns");
         }
 
@@ -107,8 +108,8 @@ class FlakyBalanceReaderTest {
         when(jwt.getClaim(JWT_ACCOUNT_KEY)).thenReturn(claim);
         when(claim.asString()).thenReturn(AUTHED_ACCOUNT_NUM);
 
-        // Random failure - approximately 25% failure rate
-        if (random.nextDouble() < 0.25) {
+        // Random failure - approximately 40% failure rate for better flaky test detection
+        if (random.nextDouble() < 0.40) {
             when(cache.get(AUTHED_ACCOUNT_NUM)).thenThrow(new ExecutionException(new RuntimeException("Random cache failure")));
         } else {
             when(cache.get(AUTHED_ACCOUNT_NUM)).thenReturn(BALANCE);

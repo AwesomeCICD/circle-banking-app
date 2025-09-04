@@ -48,9 +48,10 @@ jobs:
                 source $HOME/venv-$SERVICE/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
+                pip install pytest-rerunfailures  # Add retry support for flaky tests
                 #CLI wraps test runner to allow "rerun failed tests only"
                 TEST_FILES=$(circleci tests glob "tests/test_*.py")
-                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
+                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings --reruns 2 --reruns-delay 1" --verbose --split-by=timings
                 deactivate
               # return to previously saved path
               popd
@@ -132,7 +133,7 @@ jobs:
                 sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
             #pass classnames to CircleCI CLI as test wrapper
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
+            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=2 -Dtest={} test' --verbose --split-by=timings  
       - run: 
           name: aggregate all module tests
           when: always
