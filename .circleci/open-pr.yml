@@ -172,7 +172,6 @@ jobs:
           path: .circleci/tests/
 
 workflows:
-  version: 2
   build-and-test:
     jobs:
       # Fast linting jobs run first for quick feedback
