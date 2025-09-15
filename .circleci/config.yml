@@ -281,6 +281,64 @@ jobs:
           path: ui-tests/cypress/videos
       - store_artifacts:
           path: ui-tests/cypress/screenshots    
+<<<<<<< HEAD
+=======
+   
+workflows:
+  main:
+    jobs:
+      - java-checkstyle:
+          context: [ compass-integration-bank-of-aion ]
+      - java-test-and-code-cov
+      - python-checkstyle
+      - python-test
+      - python-test-parallel
+      - skaffold-build-push:
+          matrix:
+            parameters:
+              region: [emea, namer]
+          context: cera-vault-oidc
+          region: <<matrix.region>>
+          name: Skaffold build & Push [<<matrix.region>>]
+      - deploy:
+          matrix:
+            parameters:
+              region: [emea,namer]
+          name: Deploy Dev [<<matrix.region>>]
+          region: <<matrix.region>>
+          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc]
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
+                environment_type: development
+      - e2e:
+          matrix:
+            parameters:
+              region: [emea,namer]
+          name: e2e [<<matrix.region>>]
+          requires: [ 'Deploy Dev [<<matrix.region>>]' ]
+          region: <<matrix.region>>
+      - deploy:
+          matrix:
+            parameters:
+              region: [emea,namer]
+          name: Deploy Production [<<matrix.region>>]
+          requires: 
+            - 'e2e [<<matrix.region>>]'
+          app-environment: prod
+          region: <<matrix.region>>
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+          filters:
+            branches:
+              only: [ main ]
+          post-steps:
+            - compass/notify_deployment:
+                token_name: COMPASS_CCI_TOKEN
+                environment_type: production
+                environment: CERA-Cluster-namer-Prod
+
+>>>>>>> a043408 (Breaking policy)
 
 commands:
   load-credentials:
