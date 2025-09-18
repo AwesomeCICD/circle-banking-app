@@ -6,7 +6,7 @@ orbs:
 executors:
   with-chrome:
     docker:
-      - image: 'cypress/browsers:node-20.11.1-chrome-124.0.6367.91-1-ff-135.0-edge-124.0.2478.51-1'
+      - image: 'cypress/browsers:node-20.11.1-chrome-123.0.6312.58-1-ff-124.0-edge-122.0.2365.92-1'
 
   base:
     docker:
