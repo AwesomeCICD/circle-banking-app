@@ -26,10 +26,10 @@ describe('Login Page', function() {
 })
 
 describe('Pre-filled Credentials on Login Form', function() {
-  it('are expected strings'), function() {
+  it('are expected strings', function() {
     cy.get('#login-username').should('eq', username)
     cy.get('#login-password').should('eq', password)
-  }
+  })
 })
 
 describe('Default Credentials on Form Submission', function() {
@@ -68,6 +68,10 @@ describe('Default Credentials on Form Submission', function() {
   })
   
   it('does not see error message', function() {
+    // Wait for transaction table to load successfully first
+    cy.get('#transaction-table .table', { timeout: 10000 }).should('be.visible')
+    
+    // Then assert error message is not present
     cy.get('#transaction-table').children().should('not.have.class', 'card-table-header')
     cy.get('#transaction-table').children().should('not.contain', transactionMsgs.error)
   })
