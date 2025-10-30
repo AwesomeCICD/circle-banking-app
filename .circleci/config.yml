@@ -447,7 +447,7 @@ workflows:
           name: Deploy Dev [<<matrix.region>>]
           region: <<matrix.region>>
           requires: [ hold-for-approval ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod]
+          context: [ compass-integration-bank-of-aion, cera-vault-oidc]
           post-steps:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
