@@ -281,7 +281,7 @@ jobs:
             cd ui-tests
             npx cypress run \
             --config baseUrl=${URL} \
-            --browser firefox \
+            --browser chrome \
             --reporter junit \
             --reporter-options "mochaFile=results/my-test-output-[hash].xml"
       - store_test_results:
