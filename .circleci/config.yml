@@ -309,12 +309,13 @@ jobs:
             # Trigger Reflect test suite
             SUITE_ID="${REFLECT_SUITE_ID:-demo-suite}"
             
-            if [ ! -z "${REFLECT_API_KEY}" ]; then
+            # Use SEMGREP_APP_TOKEN which contains the SmartBear API key
+            if [ ! -z "${SEMGREP_APP_TOKEN}" ]; then
               echo "Triggering Reflect suite: ${SUITE_ID}"
               
               RESPONSE=$(curl -X POST \
                 "https://api.reflect.run/v1/suites/${SUITE_ID}/executions" \
-                -H "x-api-key: ${REFLECT_API_KEY}" \
+                -H "x-api-key: ${SEMGREP_APP_TOKEN}" \
                 -H "Content-Type: application/json" \
                 -d '{}' \
                 -s)
@@ -324,12 +325,14 @@ jobs:
               # Extract execution ID if needed for polling
               EXECUTION_ID=$(echo $RESPONSE | jq -r '.executionId' || echo "")
               
-              if [ ! -z "$EXECUTION_ID" ]; then
+              if [ ! -z "$EXECUTION_ID" ] && [ "$EXECUTION_ID" != "null" ]; then
                 echo "Execution started with ID: ${EXECUTION_ID}"
                 echo "Monitor at: https://app.reflect.run/executions/${EXECUTION_ID}"
+              else
+                echo "Failed to start execution. Please check your API key and suite ID."
               fi
             else
-              echo "REFLECT_API_KEY not configured, skipping Reflect tests"
+              echo "SEMGREP_APP_TOKEN not configured, skipping Reflect tests"
             fi
 
   # Semgrep Security Scanning
