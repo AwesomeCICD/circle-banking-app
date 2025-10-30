@@ -197,7 +197,7 @@ jobs:
           ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
           echo "Jib ready"
           mkdir output
-          skaffold build --build-concurrency=1 --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --file-output=output/tags.json
+          skaffold build --build-concurrency=1 --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --file-output=output/tags-<<parameters.region>>.json
           ls /tmp/
       - save_cache:
           key: v1-skaffold-{{ .Branch }}
@@ -205,7 +205,7 @@ jobs:
             - ~/.skaffold/cache
       - persist_to_workspace:
           root: output
-          paths: [ 'tags.json' ]
+          paths: [ 'tags-<<parameters.region>>.json' ]
  
 
   deploy:
@@ -250,7 +250,7 @@ jobs:
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
             cat .circleci/release_tracking/virtual_service_${APP_ENV}.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags-<<parameters.region>>.json
       - run:
           name: Wait for deployment
           command: |
