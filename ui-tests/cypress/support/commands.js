@@ -62,10 +62,17 @@ Cypress.Commands.add('createAccount', (user) => {
 
     // Wait for navigation to complete after form submission
     // The URL will change to either /home (success) or stay on /signup (validation error)
-    cy.url().should((url) => {
+    cy.url({ timeout: 10000 }).should((url) => {
         expect(url).to.satisfy((urlString) => {
             return urlString.includes('/home') || urlString.includes('/signup')
         })
+    })
+
+    // If successfully navigated to home, wait for page to be fully loaded
+    cy.url().then((url) => {
+        if (url.includes('/home')) {
+            cy.get('#current-balance', { timeout: 10000 }).should('be.visible')
+        }
     })
 })
 
