@@ -141,8 +141,9 @@ Cypress.Commands.add('transferToNewContact', (recipient, paymentAmount) => {
     Cypress.log({
         name: 'transferToNewContact',
         message: `${recipient}` | `${paymentAmount}`
-    }) 
-    cy.get('#paymentSpan').click() 
+    })
+    cy.get('#paymentSpan').click()
+    cy.get('#sendPayment').should('be.visible')
     cy.get('#payment-accounts').select("add")
     cy.get('#contact_account_num').clear().type(recipient.accountNum)
     cy.get('#contact_label').clear().type(recipient.contactLabel)

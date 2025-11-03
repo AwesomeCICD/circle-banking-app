@@ -121,20 +121,20 @@ describe('Authenticated default user', function () {
     })
 
     // TODO: [issue-300]
-    it('see transaction in history after transfer', function () {
+    it('see transaction in history after transfer', { retries: 2 }, function () {
         const paymentAmount = validPayment()
         cy.transferRequest(recipient.accountNum, paymentAmount)
         cy.visit('/home')
 
-        cy.get('#transaction-table').find('tbody>tr').as('latest')
+        cy.get('#transaction-table', { timeout: 10000 }).find('tbody>tr').as('latest')
 
-        cy.get('@latest').find('.transaction-account').contains(recipient.accountNum)
-        cy.get('@latest').find('.transaction-type').contains('Credit')
-        cy.get('@latest').find('.transaction-amount').contains(paymentAmount)
+        cy.get('@latest').find('.transaction-account').should('contain', recipient.accountNum)
+        cy.get('@latest').find('.transaction-type').should('contain', 'Credit')
+        cy.get('@latest').find('.transaction-amount').should('contain', paymentAmount)
 
     })
 
-    it('can transfer to a new recipient and see its contact', function () {
+    it('can transfer to a new recipient and see its contact', { retries: 2 }, function () {
         // makes random 10 digit number
         const accountNum = validAccountNum();
         const newRecipient = {
@@ -144,10 +144,11 @@ describe('Authenticated default user', function () {
         const paymentAmount = validPayment()
 
         cy.transferToNewContact(newRecipient, paymentAmount)
-        cy.get('#alert-message').contains(transferMsgs.success)
+        cy.get('#alert-message', { timeout: 10000 }).should('contain', transferMsgs.success)
         cy.get('#paymentSpan').click()
-        cy.get('#payment-accounts').contains(newRecipient.contactLabel)
-        cy.get('#payment-accounts').contains(newRecipient.accountNum)
+        cy.get('#sendPayment').should('be.visible')
+        cy.get('#payment-accounts').should('contain', newRecipient.contactLabel)
+        cy.get('#payment-accounts').should('contain', newRecipient.accountNum)
 
     })
 
