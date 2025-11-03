@@ -102,7 +102,8 @@ Cypress.Commands.add('transfer', (recipient, paymentAmount) => {
         name: 'transfer',
         message: `${recipient}` | `${paymentAmount}`
     })
-    cy.get('#paymentSpan').click() 
+    cy.get('#paymentSpan').click()
+    cy.get('#sendPayment').should('be.visible')
     cy.get('#payment-accounts').select(recipient.accountNum)
     cy.get('#payment-amount').clear().type(paymentAmount)
     cy.get('#payment-form').submit()

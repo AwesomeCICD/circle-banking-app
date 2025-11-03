@@ -187,8 +187,9 @@ describe('Transfer is unsuccessful with invalid data', function () {
     it('cannot be less than zero', function () {
         const negativePayment = `-${validPayment()}`
         cy.transfer(recipient, negativePayment)
-        cy.get('.invalid-feedback').should('be.visible')
-        cy.get('.invalid-feedback').contains(invalidFeedback.payment)
+        cy.get('.invalid-feedback', { timeout: 10000 })
+            .should('be.visible')
+            .and('contain', invalidFeedback.payment)
     })
 
     it('cannot reference invalid account', function () {
