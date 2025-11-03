@@ -59,6 +59,14 @@ Cypress.Commands.add('createAccount', (user) => {
     cy.get('#signup-lastname').type(user.lastName)
     cy.get('#signup-birthday').type('1981-01-01')
     cy.get('#signup-form').submit()
+
+    // Wait for navigation to complete after form submission
+    // The URL will change to either /home (success) or stay on /signup (validation error)
+    cy.url().should((url) => {
+        expect(url).to.satisfy((urlString) => {
+            return urlString.includes('/home') || urlString.includes('/signup')
+        })
+    })
 })
 
 // deposit through UI

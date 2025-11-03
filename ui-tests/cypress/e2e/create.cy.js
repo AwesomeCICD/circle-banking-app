@@ -93,6 +93,8 @@ describe('User can create account', function() {
     })
 
     it('redirected to home', function() {
+        // Ensure page is fully loaded before checking URL
+        cy.get('#current-balance').should('be.visible')
         cy.url().should('include', '/home')
     })
 
