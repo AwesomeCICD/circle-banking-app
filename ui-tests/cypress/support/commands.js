@@ -59,6 +59,10 @@ Cypress.Commands.add('createAccount', (user) => {
     cy.get('#signup-lastname').type(user.lastName)
     cy.get('#signup-birthday').type('1981-01-01')
     cy.get('#signup-form').submit()
+    // Wait for redirect to complete
+    cy.url().should('include', '/home', { timeout: 10000 })
+    // Wait for home page to load
+    cy.get('#current-balance', { timeout: 10000 }).should('be.visible')
 })
 
 // deposit through UI
