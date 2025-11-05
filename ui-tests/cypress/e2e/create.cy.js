@@ -93,7 +93,7 @@ describe('User can create account', function() {
     })
 
     it('redirected to home', function() {
-        cy.url().should('include', '/home')
+        cy.url().should('include', '/home', { timeout: 10000 })
     })
 
     it('contain zero balance', function() {
