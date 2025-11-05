@@ -38,7 +38,7 @@ describe('Signup is unsuccessful with 16 character username', function() {
             lastName: 'Nook',
             password: 'bells'
         }
-        cy.createAccount(user)
+        cy.createAccount(user, { waitForNavigation: false })
     })
 
     it('stay on signup page', function() {
@@ -59,7 +59,7 @@ describe('Signup is unsuccessful with non-alphanumeric username', function() {
             lastName: 'Nook',
             password: 'bells'
         }
-        cy.createAccount(user)
+        cy.createAccount(user, { waitForNavigation: false })
     })
 
     it('stay on signup page', function() {

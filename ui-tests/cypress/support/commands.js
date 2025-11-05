@@ -45,7 +45,7 @@ Cypress.Commands.add('loginRequest', (username, password) => {
       })
 })
 
-Cypress.Commands.add('createAccount', (user) => {
+Cypress.Commands.add('createAccount', (user, options = {}) => {
     Cypress.log({
         name: 'createAccount',
         message: user,
@@ -60,8 +60,10 @@ Cypress.Commands.add('createAccount', (user) => {
     cy.get('#signup-birthday').type('1981-01-01')
     cy.get('#signup-form').submit()
 
-    // Wait for navigation to complete
-    cy.url().should('not.include', '/signup', { timeout: 10000 })
+    // Wait for navigation to complete only if not explicitly disabled
+    if (options.waitForNavigation !== false) {
+        cy.url().should('not.include', '/signup', { timeout: 10000 })
+    }
 })
 
 // deposit through UI
