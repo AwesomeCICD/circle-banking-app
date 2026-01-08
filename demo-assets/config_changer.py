@@ -7,7 +7,7 @@ logger = logging.getLogger('config')
 
 bad_context = "cera-vault-oidc-prod"
 dev_deploy_prefix = 'Deploy Dev'
-docker_push_preifx = 'Skaffold build & Push'
+docker_push_prefix = 'Skaffold build & Push'
 main_workflow = "main"
 class ConfigChanger:
 
@@ -26,7 +26,7 @@ class ConfigChanger:
         return job
     
     def the_docker_push_workflow_definition(self):
-        job = self.get_workflow_job_with_prefix(docker_push_preifx)
+        job = self.get_workflow_job_with_prefix(docker_push_prefix)
         return job
     
     def get_workflow_job_with_prefix(self, prefix):

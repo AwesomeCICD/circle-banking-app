@@ -595,7 +595,7 @@ def create_app():
         response = requests.get(url=f"{metaserver}/meta-data/placement",
                                 headers={"X-aws-ec2-metadata-token": token}, timeout=5)
         app.logger.warning(
-            f"AWS Meta API forplacement returned code: {response.status_code}")
+            f"AWS Meta API for placement returned code: {response.status_code}")
         app.logger.warning(response.text)
 
         response = requests.get(
@@ -617,7 +617,7 @@ def create_app():
     except (RequestException, HTTPError) as err:
         app.logger.warning(f"Unable to retrieve info from AWS: {err}")
 
-    # k8s tag names conflict withthe way metadata would expose it.
+    # k8s tag names conflict with the way metadata would expose it.
     # So we have a few layers to try to get cluster name
     # 1 ask environment, least likely
     cluster_name = os.getenv('CLUSTER_NAME', 'unknown')
