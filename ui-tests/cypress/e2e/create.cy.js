@@ -79,17 +79,18 @@ describe('User can create account', function() {
     const firstName = 'Tom'
     const lastName = 'Nook'
     const expectedBalance = '$0.00'
+    let testUser
 
     beforeEach(function() {
         const id = uuid()
-        const user = {
+        testUser = {
             username: `user_${id}`,
             firstName: firstName,
             lastName: `${lastName}-${id}`,
             password: password
         }
 
-        cy.createAccount(user)
+        cy.createAccount(testUser)
     })
 
     it('redirected to home', function() {
@@ -101,7 +102,7 @@ describe('User can create account', function() {
     })
 
     it('sees correct username', function() {
-        cy.get('#accountDropdown').contains(`${firstName} ${lastName}`)
+        cy.get('#accountDropdown').contains(`${testUser.firstName} ${testUser.lastName}`)
     })
 
     it('sees empty transaction history message', function() {
