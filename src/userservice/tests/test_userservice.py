@@ -65,6 +65,7 @@ class TestUserservice(unittest.TestCase):
                     self.flask_app.config['TESTING'] = True
                     # create test client
                     self.test_app = self.flask_app.test_client()
+        
 
     def test_version_endpoint_returns_200_status_code_correct_version(self):
         """test if correct version is returned"""
