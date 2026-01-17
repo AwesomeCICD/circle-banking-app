@@ -143,7 +143,7 @@ pluggy==1.0.0
     # via
     #   -r requirements.in
     #   pytest
-protobuf==3.20.1
+protobuf==4.25.8
     # via
     #   -r requirements.in
     #   google-api-core
@@ -208,7 +208,7 @@ typing-extensions==4.2.0
     # via
     #   importlib-metadata
     #   opentelemetry-sdk
-urllib3==1.26.9
+urllib3==2.5.0
     # via
     #   -r requirements.in
     #   requests
