@@ -77,15 +77,17 @@ describe('User can create account', function() {
     const uuid = () => Cypress._.random(0, 1e6)
     const password = 'bells'
     const firstName = 'Tom'
-    const lastName = 'Nook'
     const expectedBalance = '$0.00'
+
+    let lastName
 
     beforeEach(function() {
         const id = uuid()
+        lastName = `Nook-${id}`
         const user = {
             username: `user_${id}`,
             firstName: firstName,
-            lastName: `${lastName}-${id}`,
+            lastName: lastName,
             password: password
         }
 
