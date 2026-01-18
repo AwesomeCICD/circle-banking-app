@@ -150,7 +150,7 @@
                 <version>3.4.3</version>
                 <configuration>
                     <from>
-                        <image>openjdk:17</image>
+                        <image>eclipse-temurin:17-jre</image>
                     </from>
                 </configuration>
             </plugin>
