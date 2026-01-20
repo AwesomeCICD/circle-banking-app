@@ -26,7 +26,7 @@ describe('Login Page', function() {
 })
 
 describe('Pre-filled Credentials on Login Form', function() {
-  it('are expected strings'), function() {
+  it('are expected strings', function() {
     cy.get('#login-username').should('eq', username)
     cy.get('#login-password').should('eq', password)
   }
