@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START gke_dev_kubernetes_manifests_config_configmap_environment_config]
+# [START dev_kubernetes_manifests_config_configmap_environment_config]
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -20,9 +20,9 @@ metadata:
 data:
   LOCAL_ROUTING_NUM: "883745000"
   PUB_KEY_PATH: "/tmp/.ssh/publickey"
-# [END gke_dev_kubernetes_manifests_config_configmap_environment_config]
+# [END dev_kubernetes_manifests_config_configmap_environment_config]
 ---
-# [START gke_dev_kubernetes_manifests_config_configmap_service_api_config]
+# [START dev_kubernetes_manifests_config_configmap_service_api_config]
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -33,9 +33,9 @@ data:
   HISTORY_API_ADDR: "transactionhistory:8080"
   CONTACTS_API_ADDR: "contacts:8080"
   USERSERVICE_API_ADDR: "userservice:8080"
-# [END gke_dev_kubernetes_manifests_config_configmap_service_api_config]
+# [END dev_kubernetes_manifests_config_configmap_service_api_config]
 ---
-# [START gke_dev_kubernetes_manifests_config_configmap_demo_data_config]
+# [START dev_kubernetes_manifests_config_configmap_demo_data_config]
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -43,33 +43,5 @@ metadata:
 data:
   USE_DEMO_DATA: "True"
   DEMO_LOGIN_USERNAME: "testuser"
-  # All demo user accounts are hardcoded to use the login password 'circleci'
   DEMO_LOGIN_PASSWORD: "circleci"
-# [END gke_dev_kubernetes_manifests_config_configmap_demo_data_config]
----
-# [START eks_dev_allow_agent_in_mynsmaepsace]
-apiVersion: v1
-kind: Service
-metadata:
-  name: jaeger-agent
-spec:
-  type: ExternalName
-  externalName: jaeger-demo-agent.default.svc.cluster.local
-  ports:
-  - port: 6831
-# [END gke_dev_kubernetes_manifests_frontend_service_frontend]
----
-# [START eks_dev_allow_agent_in_mynsmaepsace]
-apiVersion: v1
-kind: Service
-metadata:
-  name: jaeger-collector
-spec:
-  type: ExternalName
-  externalName: jaeger-demo-collector.default.svc.cluster.local
-  ports:
-  - port: 4317
-    name: otel
-  - port: 14250
-    name: jaeger
-# [END gke_dev_kubernetes_manifests_frontend_service_frontend]
+# [END dev_kubernetes_manifests_config_configmap_demo_data_config]

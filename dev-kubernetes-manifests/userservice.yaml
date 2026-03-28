@@ -61,12 +61,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: OTEL_PROPAGATORS
-          value: tracecontext,baggage,b3
-        - name: OTEL_TRACES_EXPORTER
-          value: otlp
-        - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: 'http://jaeger-demo-collector.default.svc.cluster.local:4317'
         - name: VERSION
           value: "dev"
         - name: PORT
@@ -85,8 +79,8 @@ spec:
         envFrom:
         - configMapRef:
             name: environment-config
-        - configMapRef:
-            name: accounts-db-config
+        - secretRef:
+            name: accounts-db-secret
         readinessProbe:
           httpGet:
             path: /ready

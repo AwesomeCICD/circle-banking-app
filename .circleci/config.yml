@@ -1,8 +1,38 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.3
   maven: circleci/maven@1.4
-          
+  aws-cli: circleci/aws-cli@5.3
+
+parameters:
+  ecr_registry:
+    type: string
+    default: ""
+    description: "ECR registry URI (e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com)"
+  eks_cluster_name:
+    type: string
+    default: ""
+    description: "EKS cluster name to deploy to"
+  aws_region:
+    type: string
+    default: "us-east-1"
+    description: "AWS region of the EKS cluster and ECR registry"
+  k8s_namespace:
+    type: string
+    default: "cba"
+    description: "Kubernetes namespace to deploy into"
+  app_environment:
+    type: string
+    default: "dev"
+    description: "Application environment (dev or prod)"
+  aws_role_arn:
+    type: string
+    default: ""
+    description: "AWS IAM Role ARN to assume via OIDC"
+  e2e_base_url:
+    type: string
+    default: ""
+    description: "Base URL for E2E tests (if empty, derived from ALB after deploy)"
+
 executors:
   with-chrome:
     docker:
@@ -10,7 +40,7 @@ executors:
 
   base:
     docker:
-      - image: cimg/deploy:2022.08
+      - image: cimg/deploy:2024.03
 
   jdk17:
     docker:
@@ -42,17 +72,14 @@ jobs:
           command: |
             for SERVICE in "contacts" "userservice"; do
               echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
               pushd src/$SERVICE
                 python3 -m venv $HOME/venv-$SERVICE
                 source $HOME/venv-$SERVICE/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
                 TEST_FILES=$(circleci tests glob "tests/test_*.py")
                 echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
                 deactivate
-              # return to previously saved path
               popd
             done
       - store_test_results:
@@ -62,7 +89,7 @@ jobs:
 
   python-test-parallel:
     executor: python38
-    parallelism: 2 #match number of python services
+    parallelism: 2
     steps:
       - checkout
       - run: mkdir test-reports
@@ -78,10 +105,8 @@ jobs:
                 source $HOME/venv-$MOD/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
                 python -m pytest tests --junit-xml=../../test-reports/report-${MOD}.xml -v -p no:warnings
                 deactivate
-                # return to previously saved path
                 popd >/dev/null
             done
       - store_test_results:
@@ -93,11 +118,10 @@ jobs:
     executor: jdk17
     steps:
       - checkout
-      - maven/with_cache:  
-          verify_dependencies: false       
-          steps: 
+      - maven/with_cache:
+          verify_dependencies: false
+          steps:
           - run: ./mvnw checkstyle:check
-
 
   java-test-and-code-cov:
     executor: jdk17
@@ -118,30 +142,20 @@ jobs:
             PARAM_IT_PATTERN: '**/*IT*.java'
             PARAM_TEST_DIR: 'src/**/src/test/java'
             PARAM_TEST_PATTERN: '**/*Test*.java'
-          name: Parellel and Selected Tests
+          name: Parallel and Selected Tests
           command: |
-            echo -e "\033[31m\033[4mNotes on Test Splitting & Re-running failed tests only \033[0m
-                    \033[34mCaveat 1:\033[0m  CircleCI Test Splitting uses filename by default, but JUnit reports use class names.
-                    Therefore this uses naive translation of linux file paths to dot separated package names and strips the .java suffix.
-                    \033[34mCaveat 2:\033[0m  Because we "skip" tests on re-runs, Maven will fail by default without `-DfailIfNoTests=false`
-                    \033[34mDebugging:\033[0m This will place all files used to decide tests in .circleci/tests and export it as an artifact for inspection/debugging.
-                    "
             mkdir -p .circleci/tests/
-            #convert file names to classnames
             circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
                 sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
-            #pass classnames to CircleCI CLI as test wrapper
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
-      - run: 
-          name: aggregate all module tests
+            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings
+      - run:
+          name: Aggregate all module tests
           when: always
           command: |
             for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
             echo "checking $SERVICE..."
-            # save current working dir to memory and cd to src/$SERVICE
             cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
-            # return to previously saved path
             done
       - store_test_results:
           path: test-reports
@@ -150,28 +164,18 @@ jobs:
       - store_artifacts:
           path: .circleci/tests/
 
-
-
-
   skaffold-build-push:
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
     executor: jdk17
-    environment:
-      APP_ENV: dev
     steps:
       - checkout
-      - run: |
-          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-          sudo install skaffold /usr/local/bin/
-      - load-credentials:
-          region: <<parameters.region>>
+      - aws-cli/setup:
+          region: << pipeline.parameters.aws_region >>
+          role_arn: << pipeline.parameters.aws_role_arn >>
+      - run:
+          name: Install Skaffold
+          command: |
+            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+            sudo install skaffold /usr/local/bin/
       - setup_remote_docker:
           docker_layer_caching: true
       - restore_cache:
@@ -182,14 +186,15 @@ jobs:
           keys:
             - v1-skaffold-{{ .Branch }}
             - v1-skaffold-
-      - run: |
-          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-fieldeng.com
-          # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-          ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-          echo "Jib ready"
-          mkdir output
-          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --file-output=output/tags.json
-          ls /tmp/
+      - run:
+          name: Login to ECR and build images
+          command: |
+            aws ecr get-login-password --region << pipeline.parameters.aws_region >> | \
+              docker login --username AWS --password-stdin << pipeline.parameters.ecr_registry >>
+            ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
+            echo "Jib ready"
+            mkdir output
+            skaffold build --build-concurrency=4 --default-repo=<< pipeline.parameters.ecr_registry >> --file-output=output/tags.json
       - save_cache:
           key: v1-skaffold-{{ .Branch }}
           paths:
@@ -197,76 +202,66 @@ jobs:
       - persist_to_workspace:
           root: output
           paths: [ 'tags.json' ]
- 
 
   deploy:
     executor: base
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
     environment:
-      APP_ENV: <<parameters.app-environment>>
-      CERA_REGION: <<parameters.region>>
+      APP_ENV: << pipeline.parameters.app_environment >>
     steps:
       - checkout
-      - load-credentials:
-          region: <<parameters.region>>
-      # all k8s info (cluster, ns, etc) came from vault.
-      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
-      - run: |
-          sudo apt update && sudo apt install kubectl -y
-          echo ${K8S_CERT} | base64 -d > ca.crt
-          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-          kubectl config use-context default
-          kubectl get serviceaccounts -n ${K8S_NAMESPACE}
+      - aws-cli/setup:
+          region: << pipeline.parameters.aws_region >>
+          role_arn: << pipeline.parameters.aws_role_arn >>
+      - run:
+          name: Configure kubectl for EKS
+          command: |
+            aws eks update-kubeconfig \
+              --name << pipeline.parameters.eks_cluster_name >> \
+              --region << pipeline.parameters.aws_region >>
+            kubectl get serviceaccounts -n << pipeline.parameters.k8s_namespace >>
       - attach_workspace:
           at: output
-      - run: 
+      - run:
           name: Deploy CCI Bank Corp Services
           command: |
             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
             sudo install skaffold /usr/local/bin/
-            export APP_VERSION="0.1.<<pipeline.number>>"
-            export CIRCLE_PIPELINE_ID=<<pipeline.id>>
-            #only kuztomizing frontend for D&R demo
+            export APP_VERSION="0.1.<< pipeline.number >>"
+            export CIRCLE_PIPELINE_ID=<< pipeline.id >>
             cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
             cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
-            cat .circleci/release_tracking/virtual_service_${APP_ENV}.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service.yaml
             kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+            skaffold deploy \
+              --default-repo=<< pipeline.parameters.ecr_registry >> \
+              --namespace=<< pipeline.parameters.k8s_namespace >> \
+              --build-artifacts=output/tags.json
       - run:
           name: Wait for deployment
           command: |
-            kubectl wait rollout -n ${K8S_NAMESPACE} frontend-rollout --for condition=Available=True --timeout=90s
-      - run: 
+            kubectl rollout status deployment/frontend \
+              -n << pipeline.parameters.k8s_namespace >> \
+              --timeout=120s
+      - run:
           name: Print Frontend URL
-          command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
+          command: |
+            echo "--- Frontend Service ---"
+            kubectl get service frontend -n << pipeline.parameters.k8s_namespace >>
+            echo ""
+            echo "--- Ingress (ALB endpoint) ---"
+            kubectl get ingress frontend-ingress -n << pipeline.parameters.k8s_namespace >> -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "No ingress found"
+
   e2e:
     executor: with-chrome
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
     steps:
       - checkout
-      - run: 
+      - run:
           name: Run Cypress Tests
           command: |
-            URL="https://<<parameters.region>>.circleci-fieldeng.com"
-            if [ "<<parameters.app-environment>>" != "prod" ]; then
-              URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-fieldeng.com"
+            URL="<< pipeline.parameters.e2e_base_url >>"
+            if [ -z "${URL}" ]; then
+              echo "No e2e_base_url parameter set. Skipping E2E tests."
+              echo "Set the e2e_base_url pipeline parameter to the ALB hostname to run tests."
+              exit 0
             fi
             echo "Testing against ${URL}"
             cd ui-tests
@@ -281,93 +276,26 @@ jobs:
           path: ui-tests/cypress/videos
       - store_artifacts:
           path: ui-tests/cypress/screenshots
-          
-commands:
-  load-credentials:
-    parameters:
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    steps:
-      - run:
-          name: install vault agent (if not present)
-          command: |
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h    
-      - run:
-          name: Load Credentials from Vault
-          command: |
-            echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-fieldeng.com"
-            export VAULT_ROLE=cba-${APP_ENV}-deploy
-            echo $VAULT_ROLE
-            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
-            circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
-            cat .circleci/vault/agent.hcl
-            vault agent -config=.circleci/vault/agent.hcl
-      - run:
-          command: |
-            source .circleci/vault/setenv
-            #export for other steps
-          name: Set Environment Variables from Vault
 
 workflows:
-  main:
+  build-test-deploy:
     jobs:
-      - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
+      - java-checkstyle
       - java-test-and-code-cov
       - python-checkstyle
       - python-test
       - python-test-parallel
       - skaffold-build-push:
-          matrix:
-            parameters:
-              region: [emea, namer]
-          context: [cera-vault-oidc]
-          region: <<matrix.region>>
-          name: Skaffold build & Push [<<matrix.region>>]
+          context: [aws-oidc]
+          requires: []
       - deploy:
-          serial-group: cba/deploy-dev-<<matrix.region>>
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: Deploy Dev [<<matrix.region>>]
-          region: <<matrix.region>>
-          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
+          name: Deploy
+          context: [aws-oidc]
+          requires:
+            - skaffold-build-push
+            - python-test
+            - java-test-and-code-cov
       - e2e:
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: e2e [<<matrix.region>>]
-          requires: [ 'Deploy Dev [<<matrix.region>>]' ]
-          region: <<matrix.region>>
-      - deploy:
-          serial-group: cba/deploy-production-<<matrix.region>>
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: Deploy Production [<<matrix.region>>]
-          requires: 
-            - 'e2e [<<matrix.region>>]'
-          app-environment: prod
-          region: <<matrix.region>>
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
-          filters:
-            branches:
-              only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-namer-Prod
+          name: E2E Tests
+          requires:
+            - Deploy

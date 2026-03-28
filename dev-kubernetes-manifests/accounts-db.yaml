@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START gke_dev_kubernetes_manifests_accounts_db_statefulset_accounts_db]
+# [START dev_kubernetes_manifests_accounts_db_statefulset_accounts_db]
 kind: StatefulSet
 apiVersion: apps/v1
 metadata:
@@ -40,8 +40,8 @@ spec:
         envFrom:
           - configMapRef:
               name: environment-config
-          - configMapRef:
-              name: accounts-db-config
+          - secretRef:
+              name: accounts-db-secret
           - configMapRef:
               name: demo-data-config
         ports:
@@ -61,9 +61,9 @@ spec:
       volumes:
       - name: postgresdb
         emptyDir: {}
-# [END gke_dev_kubernetes_manifests_accounts_db_statefulset_accounts_db]
+# [END dev_kubernetes_manifests_accounts_db_statefulset_accounts_db]
 ---
-# [START gke_dev_kubernetes_manifests_accounts_db_service_accounts_db]
+# [START dev_kubernetes_manifests_accounts_db_service_accounts_db]
 apiVersion: v1
 kind: Service
 metadata:
@@ -80,18 +80,18 @@ spec:
   selector:
     app: accounts-db
     tier: db
-# [END gke_dev_kubernetes_manifests_accounts_db_service_accounts_db]
+# [END dev_kubernetes_manifests_accounts_db_service_accounts_db]
 ---
-# [START gke_dev_kubernetes_manifests_accounts_db_configmap_accounts_db_config]
+# Default dev secret -- override per-cluster via Kustomize overlays or ExternalSecrets
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: accounts-db-config
+  name: accounts-db-secret
   labels:
     app: accounts-db
-data:
+type: Opaque
+stringData:
   POSTGRES_DB: accounts-db
   POSTGRES_USER: accounts-admin
   POSTGRES_PASSWORD: accounts-pwd
   ACCOUNTS_DB_URI: postgresql://accounts-admin:accounts-pwd@accounts-db:5432/accounts-db
-# [END gke_dev_kubernetes_manifests_accounts_db_configmap_accounts_db_config]

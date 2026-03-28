@@ -26,8 +26,6 @@ spec:
     metadata:
       labels:
         app: loadgenerator
-      annotations:
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5

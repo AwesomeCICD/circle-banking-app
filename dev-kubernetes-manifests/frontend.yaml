@@ -1,49 +1,18 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+# [START dev_kubernetes_manifests_frontend_deployment_frontend]
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: frontend-rollout
-  annotations:
-    circleci.com/scale-version-enabled: "true"
-    circleci.com/restart-version-enabled: "true"
-    circleci.com/restore-version-enabled: "true"
+  name: frontend
 spec:
   replicas: 1
-  progressDeadlineSeconds: 90
-  rollbackWindow:
-    revisions: 3
   selector:
     matchLabels:
-      app: frontend #martches deployment notrollout name
+      app: frontend
   strategy:
-    canary:
-      canaryService: frontend-canary  # required
-      stableService: frontend  # required
-      trafficRouting:
-        managedRoutes:
-          - name: frontend-header-route-1
-        istio:
-          virtualService:
-            name: frontend-virtual-service  # required
-            #routes:
-            #- primary            # optional if there is a single route in VirtualService, required otherwise
-      steps:
-      - setHeaderRoute:
-          # Name of the route that will be created by argo rollouts this must also be configured
-          # in spec.strategy.canary.trafficRouting.managedRoutes
-          name: "frontend-header-route-1"
-          # The matching rules for the header route, if this is missing it acts as a removal of the route.
-          match:
-              # headerName The name of the header to apply the match rules to.
-            - headerName: "x-demo-version"
-              # headerValue must contain exactly one field of exact, regex, or prefix. Not all traffic routers support 
-              # all types
-              headerValue:
-                # Exact will only match if the header value is exactly the same
-                exact: "canary"
-      - setWeight: 50
-      - pause:
-          duration: 20s
-      - setWeight: 100
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -83,12 +52,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: OTEL_PROPAGATORS
-          value: tracecontext,baggage,b3
-        - name: OTEL_TRACES_EXPORTER
-          value: otlp
-        - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: 'http://jaeger-collector:4317'
         - name: VERSION
           value: "dev"
         - name: PORT
@@ -99,18 +62,12 @@ spec:
           value: "false"
         - name: SCHEME
           value: "https"
-         # Valid levels are debug, info, warning, error, critical. If no valid level is set, gunicorn will default to info.
         - name: LOG_LEVEL
           value: "info"
-        # Set to "true" to enable the CymbalBank logo + title
         - name: CIRCLECI_LOGO
           value: "true"
-        # Customize the bank name used in the header. Defaults to 'CCI Bank Corp' - when CIRCLECI_LOGO is true, uses 'CymbalBank'
         - name: BANK_NAME
           value: "CCI Bank Corp"
-        # Customize the cluster name if it cannot be retrieved from the metadata server
-        #- name: CLUSTER_NAME
-        #  value: "my-cluster"
         - name: DEFAULT_USERNAME
           valueFrom:
             configMapKeyRef:
@@ -121,12 +78,6 @@ spec:
             configMapKeyRef:
               name: demo-data-config
               key: DEMO_LOGIN_PASSWORD
-        # Customize the metadata server hostname to query for metadata
-        #- name: METADATA_SERVER
-        #  value: "my-metadata-server"
-        # Customize the pod zone if it cannot be retrieved from the metadata server
-        #- name: POD_ZONE
-        #  value: "my-zone"
         envFrom:
         - configMapRef:
             name: environment-config
@@ -168,9 +119,9 @@ spec:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
-# [END gke_dev_kubernetes_manifests_frontend_deployment_frontend]
+# [END dev_kubernetes_manifests_frontend_deployment_frontend]
 ---
-# [START gke_dev_kubernetes_manifests_frontend_service_frontend]
+# [START dev_kubernetes_manifests_frontend_service_frontend]
 apiVersion: v1
 kind: Service
 metadata:
@@ -183,39 +134,4 @@ spec:
   - name: http
     port: 80
     targetPort: 8080
-# [END gke_dev_kubernetes_manifests_frontend_service_frontend]
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend-canary
-spec:
-  type: ClusterIP
-  selector:
-    app: frontend
-  ports:
-  - name: http
-    port: 80
-    targetPort: 8080
----
-kind: VirtualService
-apiVersion: networking.istio.io/v1alpha3
-metadata:
-  name: frontend-virtual-service
-spec:
-  hosts:
-    - "this gets replaced by Kustomize"
-  gateways:
-    - this-gets-replaces-by-kustomize
-  http:
-    - route:
-      - weight: 100
-        destination:
-          host: frontend
-          port:
-            number: 80
-      - weight: 0
-        destination:
-          host: frontend-canary
-          port:
-            number: 80
+# [END dev_kubernetes_manifests_frontend_service_frontend]

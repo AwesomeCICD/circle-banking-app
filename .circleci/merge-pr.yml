@@ -144,8 +144,7 @@ jobs:
 workflows:
   cleanup-on-merge-pr:
     jobs:
-      - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
+      - java-checkstyle
       - java-test-and-code-cov
       - python-checkstyle
       - python-test

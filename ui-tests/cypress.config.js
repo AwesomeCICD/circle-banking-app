@@ -57,6 +57,6 @@ module.exports = {
   },
   e2e: {
     setupNodeEvents(on, config) {},
-    baseUrl: "https://dev.emea.circleci-fieldeng.com",
+    baseUrl: process.env.CYPRESS_BASE_URL || "http://localhost:8080",
   },
 }
