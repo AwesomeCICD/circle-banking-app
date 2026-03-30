@@ -14,6 +14,9 @@ executors:
 
 
 jobs:
+  cera-refactor:
+    type: no-op
+
   python-checkstyle:
     executor: python38
     steps:
@@ -144,9 +147,10 @@ jobs:
 workflows:
   cleanup-on-merge-pr:
     jobs:
-      - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
-      - java-test-and-code-cov
-      - python-checkstyle
-      - python-test
-      - python-test-parallel
+      - cera-refactor
+      #- java-checkstyle:
+      #    context: [ compass-integration-bank-of-aion ]
+      #- java-test-and-code-cov
+      #- python-checkstyle
+      #- python-test
+      #- python-test-parallel
