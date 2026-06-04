@@ -1,17 +1,16 @@
 version: 2.1
 orbs:
-  compass: atlassian-labs/compass@0.1.3
   maven: circleci/maven@1.4
-          
+
+parameters:
+  force-failure:
+    type: boolean
+    default: false
+    description: >
+      Demo toggle. When true, integration-check fails on purpose so we can walk
+      the build-failure debugging story (logs, SSH, MCP). Default false = green.
+
 executors:
-  with-chrome:
-    docker:
-      - image: 'cypress/browsers:node-22.14.0-chrome-133.0.6943.126-1-ff-135.0.1-edge-133.0.3065.82-1'
-
-  base:
-    docker:
-      - image: cimg/deploy:2022.08
-
   jdk17:
     docker:
       - image: cimg/openjdk:17.0.3
@@ -21,6 +20,9 @@ executors:
     docker:
       - image: cimg/python:3.8
 
+  docker-builder:
+    docker:
+      - image: cimg/base:current
 
 jobs:
   python-checkstyle:
@@ -32,17 +34,22 @@ jobs:
           name: Lint Python
           command: pylint --rcfile=./.pylintrc ./src/*/*.py
 
+  # Python unit tests with pip download caching — turns a cold dependency
+  # install into a warm one on rerun. Build-time lever #1 for the Python side.
   python-test:
     executor: python38
     steps:
       - checkout
       - run: mkdir test-reports
+      - restore_cache:
+          keys:
+            - v1-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
+            - v1-pip-
       - run:
           name: Test Python Services
           command: |
             for SERVICE in "contacts" "userservice"; do
               echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
               pushd src/$SERVICE
                 python3 -m venv $HOME/venv-$SERVICE
                 source $HOME/venv-$SERVICE/bin/activate
@@ -52,14 +59,19 @@ jobs:
                 TEST_FILES=$(circleci tests glob "tests/test_*.py")
                 echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
                 deactivate
-              # return to previously saved path
               popd
             done
+      - save_cache:
+          key: v1-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
+          paths:
+            - ~/.cache/pip
       - store_test_results:
           path: test-reports
       - store_artifacts:
           path: test-reports
 
+  # Same suite fanned across 2 containers via test splitting — the
+  # parallelization answer for Propel's slow legacy tests.
   python-test-parallel:
     executor: python38
     parallelism: 2 #match number of python services
@@ -81,7 +93,6 @@ jobs:
                 #CLI wraps test runner to allow "rerun failed tests only"
                 python -m pytest tests --junit-xml=../../test-reports/report-${MOD}.xml -v -p no:warnings
                 deactivate
-                # return to previously saved path
                 popd >/dev/null
             done
       - store_test_results:
@@ -93,12 +104,14 @@ jobs:
     executor: jdk17
     steps:
       - checkout
-      - maven/with_cache:  
-          verify_dependencies: false       
-          steps: 
+      - maven/with_cache:
+          verify_dependencies: false
+          steps:
           - run: ./mvnw checkstyle:check
 
-
+  # Java tests with ~/.m2 caching + timing-based test splitting. The cache is
+  # the headline build-time lever (the 40-min legacy build story); splitting +
+  # rerun-failed-only is the smarter-testing beat.
   java-test-and-code-cov:
     executor: jdk17
     steps:
@@ -132,16 +145,14 @@ jobs:
                 sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
                 tr "/" "." > .circleci/tests/surefire_classnames
             #pass classnames to CircleCI CLI as test wrapper
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
-      - run: 
+            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings
+      - run:
           name: aggregate all module tests
           when: always
           command: |
             for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
             echo "checking $SERVICE..."
-            # save current working dir to memory and cd to src/$SERVICE
             cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
-            # return to previously saved path
             done
       - store_test_results:
           path: test-reports
@@ -150,171 +161,110 @@ jobs:
       - store_artifacts:
           path: .circleci/tests/
 
-
-
-
-  skaffold-build-push:
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    executor: jdk17
-    environment:
-      APP_ENV: dev
+  # ---- Docker image build: control vs Docker Layer Caching ----
+  # Both build the frontend image (python:3.10-slim + pip deps); the pip-install
+  # layer is the expensive one. Build-only, no push, so nothing external can
+  # break mid-demo. First run both are cold; RE-RUN the workflow and watch the
+  # DLC job collapse while the control stays flat (the benchmark numbers, live).
+  build-image-nocache:
+    executor: docker-builder
     steps:
       - checkout
-      - run: |
-          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-          sudo install skaffold /usr/local/bin/
-      - load-credentials:
-          region: <<parameters.region>>
+      - setup_remote_docker
+      - run:
+          name: Build frontend image (control, no layer cache)
+          command: |
+            START=$(date +%s)
+            docker build -t banking-frontend:${CIRCLE_SHA1} src/frontend
+            echo "Build (no cache) took $(( $(date +%s) - START ))s"
+
+  build-image-dlc:
+    executor: docker-builder
+    steps:
+      - checkout
       - setup_remote_docker:
           docker_layer_caching: true
+      - run:
+          name: Build frontend image (Docker Layer Caching)
+          command: |
+            START=$(date +%s)
+            docker build -t banking-frontend:${CIRCLE_SHA1} src/frontend
+            echo "Build (DLC) took $(( $(date +%s) - START ))s"
+
+  # ---- Build once, reuse downstream ----
+  # package-service compiles a real Spring Boot jar once and persists it to the
+  # workspace. reuse-service attaches it and proves (sha256) the SAME artifact
+  # is reused — no recompile. Maps to Propel's interdependent legacy builds.
+  package-service:
+    executor: jdk17
+    steps:
+      - checkout
       - restore_cache:
           keys:
             - v2-mvn-full-{{ .Branch }}
             - v2-mvn-full-
-      - restore_cache:
-          keys:
-            - v1-skaffold-{{ .Branch }}
-            - v1-skaffold-
-      - run: |
-          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-fieldeng.com
-          # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-          ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-          echo "Jib ready"
-          mkdir output
-          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --file-output=output/tags.json
-          ls /tmp/
-      - save_cache:
-          key: v1-skaffold-{{ .Branch }}
-          paths:
-            - ~/.skaffold/cache
+      - run:
+          name: Package ledgerwriter (compile once)
+          command: |
+            ./mvnw -B -pl src/ledgerwriter -am package -DskipTests
+            mkdir -p workspace
+            JAR=$(ls src/ledgerwriter/target/*.jar | head -1)
+            cp "${JAR}" workspace/ledgerwriter.jar
+            sha256sum workspace/ledgerwriter.jar | awk '{print $1}' > workspace/ledgerwriter.jar.sha256
+            echo "Built $(basename "${JAR}") -> workspace/ledgerwriter.jar"
+            cat workspace/ledgerwriter.jar.sha256
       - persist_to_workspace:
-          root: output
-          paths: [ 'tags.json' ]
- 
+          root: workspace
+          paths:
+            - ledgerwriter.jar
+            - ledgerwriter.jar.sha256
+      - store_artifacts:
+          path: workspace/ledgerwriter.jar
 
-  deploy:
-    executor: base
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    environment:
-      APP_ENV: <<parameters.app-environment>>
-      CERA_REGION: <<parameters.region>>
+  reuse-service:
+    executor: docker-builder
     steps:
-      - checkout
-      - load-credentials:
-          region: <<parameters.region>>
-      # all k8s info (cluster, ns, etc) came from vault.
-      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
-      - run: |
-          sudo apt update && sudo apt install kubectl -y
-          echo ${K8S_CERT} | base64 -d > ca.crt
-          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-          kubectl config use-context default
-          kubectl get serviceaccounts -n ${K8S_NAMESPACE}
       - attach_workspace:
-          at: output
-      - run: 
-          name: Deploy CCI Bank Corp Services
-          command: |
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-            sudo install skaffold /usr/local/bin/
-            export APP_VERSION="0.1.<<pipeline.number>>"
-            export CIRCLE_PIPELINE_ID=<<pipeline.id>>
-            #only kuztomizing frontend for D&R demo
-            cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
-            cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
-            cat .circleci/release_tracking/virtual_service_${APP_ENV}.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service.yaml
-            kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
+          at: /tmp/ws
       - run:
-          name: Wait for deployment
+          name: Reuse the compiled jar (no rebuild)
           command: |
-            kubectl wait rollout -n ${K8S_NAMESPACE} frontend-rollout --for condition=Available=True --timeout=90s
-      - run: 
-          name: Print Frontend URL
-          command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
-  e2e:
-    executor: with-chrome
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
+            EXPECTED=$(cat /tmp/ws/ledgerwriter.jar.sha256)
+            ACTUAL=$(sha256sum /tmp/ws/ledgerwriter.jar | awk '{print $1}')
+            echo "expected sha256: ${EXPECTED}"
+            echo "actual   sha256: ${ACTUAL}"
+            if [ "${EXPECTED}" != "${ACTUAL}" ]; then
+              echo "FAIL: artifact changed since package-service — a rebuild happened" >&2
+              exit 1
+            fi
+            echo "OK: identical jar reused from package-service — no recompile"
+
+  # ---- Build-failure debugging demo ----
+  # Default GREEN. Trigger the pipeline with force-failure=true to make this job
+  # fail on purpose, then walk the debug story: failing step -> logs -> SSH ->
+  # get_build_failure_logs via the CircleCI MCP inside the IDE.
+  integration-check:
+    executor: docker-builder
     steps:
       - checkout
-      - run: 
-          name: Run Cypress Tests
+      - run:
+          name: Integration checks
           command: |
-            URL="https://<<parameters.region>>.circleci-fieldeng.com"
-            if [ "<<parameters.app-environment>>" != "prod" ]; then
-              URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-fieldeng.com"
+            if [ "<< pipeline.parameters.force-failure >>" = "true" ]; then
+              echo "Running integration checks against ledger services..."
+              echo "  contacts           ... ok"
+              echo "  userservice        ... ok"
+              echo "  transactionhistory ... ok"
+              echo "  ledgerwriter       ... FAILED"
+              echo ""
+              echo "TransactionValidationTest.testInsufficientFunds:142"
+              echo "  expected an overdraft to be DECLINED, but the transaction was APPROVED"
+              echo "  java.lang.AssertionError: expected:<DECLINED> but was:<APPROVED>"
+              echo ""
+              echo "Integration checks FAILED (1 of 4 services)"
+              exit 1
             fi
-            echo "Testing against ${URL}"
-            cd ui-tests
-            npx cypress run \
-            --config baseUrl=${URL} \
-            --browser firefox \
-            --reporter junit \
-            --reporter-options "mochaFile=results/my-test-output-[hash].xml"
-      - store_test_results:
-          path: ui-tests/results
-      - store_artifacts:
-          path: ui-tests/cypress/videos
-      - store_artifacts:
-          path: ui-tests/cypress/screenshots
-          
-commands:
-  load-credentials:
-    parameters:
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    steps:
-      - run:
-          name: install vault agent (if not present)
-          command: |
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h    
-      - run:
-          name: Load Credentials from Vault
-          command: |
-            echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-fieldeng.com"
-            export VAULT_ROLE=cba-${APP_ENV}-deploy
-            echo $VAULT_ROLE
-            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
-            circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
-            cat .circleci/vault/agent.hcl
-            vault agent -config=.circleci/vault/agent.hcl
-      - run:
-          command: |
-            source .circleci/vault/setenv
-            #export for other steps
-          name: Set Environment Variables from Vault
+            echo "All integration checks passed"
 
 workflows:
   main:
@@ -325,3 +275,10 @@ workflows:
       - python-checkstyle
       - python-test
       - python-test-parallel
+      - build-image-nocache
+      - build-image-dlc
+      - package-service
+      - reuse-service:
+          requires:
+            - package-service
+      - integration-check
