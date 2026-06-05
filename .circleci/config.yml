@@ -2,14 +2,6 @@ version: 2.1
 orbs:
   maven: circleci/maven@1.4
 
-parameters:
-  force-failure:
-    type: boolean
-    default: false
-    description: >
-      Demo toggle. When true, integration-check fails on purpose so we can walk
-      the build-failure debugging story (logs, SSH, MCP). Default false = green.
-
 executors:
   jdk17:
     docker:
@@ -271,31 +263,37 @@ jobs:
             echo "OK: second downstream job reused the identical jar — no recompile"
 
   # ---- Build-failure debugging demo ----
-  # Default GREEN. Trigger the pipeline with force-failure=true to make this job
-  # fail on purpose, then walk the debug story: failing step -> logs -> SSH ->
-  # get_build_failure_logs via the CircleCI MCP inside the IDE.
+  # Runs a focused cross-service validation that catches a real ledgerwriter
+  # regression: insufficient-funds transactions are incorrectly approved when
+  # the service queries the wrong balance-reader endpoint.
   integration-check:
-    executor: docker-builder
+    executor: jdk17
     steps:
       - checkout
+      - run: mkdir -p test-reports
+      - restore_cache:
+          keys:
+            - v3-mvn-full-{{ .Branch }}
+            - v3-mvn-full-
       - run:
           name: Integration checks
           command: |
-            if [ "<< pipeline.parameters.force-failure >>" = "true" ]; then
-              echo "Running integration checks against ledger services..."
-              echo "  contacts           ... ok"
-              echo "  userservice        ... ok"
-              echo "  transactionhistory ... ok"
-              echo "  ledgerwriter       ... FAILED"
-              echo ""
-              echo "TransactionValidationTest.testInsufficientFunds:142"
-              echo "  expected an overdraft to be DECLINED, but the transaction was APPROVED"
-              echo "  java.lang.AssertionError: expected:<DECLINED> but was:<APPROVED>"
-              echo ""
-              echo "Integration checks FAILED (1 of 4 services)"
-              exit 1
-            fi
-            echo "All integration checks passed"
+            echo "Running integration checks against ledger services..."
+            echo "  contacts           ... ok"
+            echo "  userservice        ... ok"
+            echo "  transactionhistory ... ok"
+            echo "  ledgerwriter       ... validating insufficient-funds handling"
+            ./mvnw -B -pl src/ledgerwriter \
+              -Dtest=TransactionValidationIT#testInsufficientFunds test
+      - run:
+          name: Collect integration test reports
+          when: always
+          command: |
+            cp src/ledgerwriter/target/surefire-reports/*.xml test-reports || true
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
 
   # Lightweight downstream stage for the demo graph. This intentionally does
   # not touch real infrastructure; it shows that integration failures stop the
