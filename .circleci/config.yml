@@ -297,6 +297,31 @@ jobs:
             fi
             echo "All integration checks passed"
 
+  # Lightweight downstream stage for the demo graph. This intentionally does
+  # not touch real infrastructure; it shows that integration failures stop the
+  # delivery path before anything reaches a preview environment.
+  deploy-preview:
+    executor: docker-builder
+    steps:
+      - run:
+          name: Deploy preview environment
+          command: |
+            echo "Deploying CCI Bank preview environment..."
+            echo "namespace: cba-dev"
+            echo "image tag: ${CIRCLE_SHA1}"
+            echo "Preview deploy complete"
+
+  post-deploy-smoke-test:
+    executor: docker-builder
+    steps:
+      - run:
+          name: Post-deploy smoke test
+          command: |
+            echo "Checking frontend health endpoint..."
+            echo "Checking ledgerwriter transaction validation..."
+            echo "Checking userservice auth endpoint..."
+            echo "Smoke tests passed"
+
 workflows:
   main:
     jobs:
@@ -315,4 +340,19 @@ workflows:
       - reuse-service-2:
           requires:
             - package-service
-      - integration-check
+      - integration-check:
+          requires:
+            - java-checkstyle
+            - java-test-and-code-cov
+            - python-checkstyle
+            - python-test-parallel
+            - build-image-nocache
+            - build-image-dlc
+            - reuse-service
+            - reuse-service-2
+      - deploy-preview:
+          requires:
+            - integration-check
+      - post-deploy-smoke-test:
+          requires:
+            - deploy-preview
