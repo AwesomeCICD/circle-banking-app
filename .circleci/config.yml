@@ -43,8 +43,8 @@ jobs:
       - run: mkdir test-reports
       - restore_cache:
           keys:
-            - v1-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
-            - v1-pip-
+            - v2-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
+            - v2-pip-
       - run:
           name: Test Python Services
           command: |
@@ -62,7 +62,7 @@ jobs:
               popd
             done
       - save_cache:
-          key: v1-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
+          key: v2-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
           paths:
             - ~/.cache/pip
       - store_test_results:
@@ -119,11 +119,11 @@ jobs:
       - run: mkdir test-reports
       - restore_cache:
           keys:
-            - v2-mvn-full-{{ .Branch }}
-            - v2-mvn-full-
+            - v3-mvn-full-{{ .Branch }}
+            - v3-mvn-full-
       - run: mvn dependency:go-offline
       - save_cache:
-          key: v2-mvn-full-{{ .Branch }}
+          key: v3-mvn-full-{{ .Branch }}
           paths:
             - ~/.m2
       - run:
@@ -207,8 +207,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v2-mvn-full-{{ .Branch }}
-            - v2-mvn-full-
+            - v3-mvn-full-{{ .Branch }}
+            - v3-mvn-full-
       - run:
           name: Package ledgerwriter (compile once)
           command: |
@@ -244,6 +244,31 @@ jobs:
               exit 1
             fi
             echo "OK: identical jar reused from package-service — no recompile"
+
+  # Second downstream consumer — proves "build once, reuse MANY". Attaches the
+  # same workspace and reuses the identical jar (sha256) in ~1s instead of
+  # recompiling. One package job fans out to N services, each reusing the exact
+  # bytes — maps to Propel's interdependent legacy builds. The speed number is
+  # the multiplier: every consumer here would otherwise re-run the package step.
+  reuse-service-2:
+    executor: docker-builder
+    steps:
+      - attach_workspace:
+          at: /tmp/ws
+      - run:
+          name: Second consumer reuses the same jar (no rebuild)
+          command: |
+            EXPECTED=$(cat /tmp/ws/ledgerwriter.jar.sha256)
+            ACTUAL=$(sha256sum /tmp/ws/ledgerwriter.jar | awk '{print $1}')
+            SIZE=$(ls -lh /tmp/ws/ledgerwriter.jar | awk '{print $5}')
+            echo "jar size: ${SIZE}"
+            echo "expected sha256: ${EXPECTED}"
+            echo "actual   sha256: ${ACTUAL}"
+            if [ "${EXPECTED}" != "${ACTUAL}" ]; then
+              echo "FAIL: artifact changed since package-service — a rebuild happened" >&2
+              exit 1
+            fi
+            echo "OK: second downstream job reused the identical jar — no recompile"
 
   # ---- Build-failure debugging demo ----
   # Default GREEN. Trigger the pipeline with force-failure=true to make this job
@@ -285,6 +310,9 @@ workflows:
       - build-image-dlc
       - package-service
       - reuse-service:
+          requires:
+            - package-service
+      - reuse-service-2:
           requires:
             - package-service
       - integration-check
