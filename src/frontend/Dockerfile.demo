@@ -1,0 +1,34 @@
+# Demo-only image for the build-image-nocache / build-image-dlc jobs. It is
+# deliberately heavier than the app's real Dockerfile (which is untouched) so
+# Docker Layer Caching has a genuinely slow layer to collapse:
+#   - a real apt toolchain layer, and
+#   - Postgres (psycopg2) + uWSGI built FROM SOURCE (no wheels).
+# A cold build spends ~1.5-2 min in that dependency layer; DLC reuses it whole
+# on a warm run, so the build drops to seconds. Realistic for a Postgres-backed
+# banking service, not a manufactured `sleep`.
+FROM python:3.10
+
+WORKDIR /app
+
+# System libraries a Postgres-backed service needs; the source builds below link
+# against these. This apt layer is itself slow and fully cacheable.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# The expensive, cacheable dependency layer. psycopg2 and uWSGI have no wheels
+# pinned here, so pip compiles them from source on a cold build. --no-cache-dir
+# keeps pip from short-circuiting the work, so the cold timing is honest; DLC
+# still caches the resulting image layer and skips the RUN entirely when warm.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+        psycopg2==2.9.9 \
+        uWSGI==2.0.23
+
+# Application code. Only this layer changes on a normal commit; everything above
+# stays cached.
+COPY . .
+
+CMD ["python", "-c", "print('propel-bank demo image')"]
