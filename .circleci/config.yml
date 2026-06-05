@@ -166,8 +166,12 @@ jobs:
   # an apt toolchain layer + source-compiled Postgres/uWSGI deps. That slow
   # dependency layer is what DLC caches. Build-only, no push, so nothing
   # external can break mid-demo. Pre-warm once before the demo, then a fresh run
-  # shows the DLC job collapse (~10s) next to the cold control (~100s+) in the
-  # same workflow.
+  # shows the DLC job collapse next to the cold control in the same workflow.
+  #
+  # DOCKER_BUILDKIT=0 forces the classic builder on purpose: DLC persists the
+  # daemon's layer store (/var/lib/docker), which the classic builder uses, so
+  # cache hits are reliable. BuildKit keeps its cache elsewhere that DLC does
+  # not persist, so BuildKit builds come back cold every run (measured).
   build-image-nocache:
     executor: docker-builder
     steps:
@@ -177,7 +181,7 @@ jobs:
           name: Build frontend image (control, no layer cache)
           command: |
             START=$(date +%s)
-            docker build -f src/frontend/Dockerfile.demo -t banking-frontend:${CIRCLE_SHA1} src/frontend
+            DOCKER_BUILDKIT=0 docker build -f src/frontend/Dockerfile.demo -t banking-frontend:${CIRCLE_SHA1} src/frontend
             echo "Build (no cache) took $(( $(date +%s) - START ))s"
 
   build-image-dlc:
@@ -190,7 +194,7 @@ jobs:
           name: Build frontend image (Docker Layer Caching)
           command: |
             START=$(date +%s)
-            docker build -f src/frontend/Dockerfile.demo -t banking-frontend:${CIRCLE_SHA1} src/frontend
+            DOCKER_BUILDKIT=0 docker build -f src/frontend/Dockerfile.demo -t banking-frontend:${CIRCLE_SHA1} src/frontend
             echo "Build (DLC) took $(( $(date +%s) - START ))s"
 
   # ---- Build once, reuse downstream ----
