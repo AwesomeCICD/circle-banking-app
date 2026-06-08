@@ -181,10 +181,7 @@ jobs:
             curl -sSL -o /tmp/kustomize.tgz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
             tar -xzf /tmp/kustomize.tgz -C /tmp
             sudo mv /tmp/kustomize /usr/local/bin/
-            WORKDIR=$(mktemp -d)
-            cp -r kubernetes-manifests/overlays/<< parameters.overlay >> "${WORKDIR}/overlay"
-            cp -r kubernetes-manifests/base "${WORKDIR}/base"
-            cd "${WORKDIR}/overlay"
+            cd kubernetes-manifests/overlays/<< parameters.overlay >>
             kustomize edit set image \
               bankcorp/frontend=${REG}/bankcorp/frontend:${TAG} \
               bankcorp/userservice=${REG}/bankcorp/userservice:${TAG} \
