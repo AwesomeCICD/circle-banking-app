@@ -18,6 +18,7 @@ class ContactsDb:
         self.table = boto3.resource("dynamodb").Table(self.table_name)
 
     def add_contact(self, contact):
+        """Write a new contact to DynamoDB."""
         item = {
             "userId": contact["username"],
             "contactId": f"{contact['account_num']}#{contact['routing_num']}",
@@ -30,6 +31,7 @@ class ContactsDb:
         self.table.put_item(Item=item)
 
     def get_contacts(self, username):
+        """Return all contacts for the given user."""
         self.logger.debug("Query contacts for %s", username)
         resp = self.table.query(
             KeyConditionExpression=Key("userId").eq(username),

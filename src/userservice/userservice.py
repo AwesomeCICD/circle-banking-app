@@ -20,14 +20,12 @@ import atexit
 from datetime import datetime, timedelta
 import logging
 import os
-import sys
 import re
 
 import bcrypt
 import jwt
 from flask import Flask, jsonify, request
 import bleach
-from botocore.exceptions import ClientError
 from botocore.exceptions import ClientError
 from db import UserDb
 

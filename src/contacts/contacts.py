@@ -21,7 +21,6 @@ import atexit
 import logging
 import os
 import re
-import sys
 
 import jwt
 from flask import Flask, jsonify, request

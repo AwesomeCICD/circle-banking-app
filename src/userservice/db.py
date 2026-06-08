@@ -19,6 +19,7 @@ class UserDb:
         self.table = boto3.resource("dynamodb").Table(self.table_name)
 
     def add_user(self, user):
+        """Create a new user; fails if userId already exists."""
         passhash = user["passhash"]
         if isinstance(passhash, bytes):
             passhash = passhash.decode("utf-8")
@@ -28,7 +29,9 @@ class UserDb:
             "passhash": passhash,
             "firstname": user["firstname"],
             "lastname": user["lastname"],
-            "birthday": user["birthday"].isoformat() if hasattr(user["birthday"], "isoformat") else str(user["birthday"]),
+            "birthday": (user["birthday"].isoformat()
+                         if hasattr(user["birthday"], "isoformat")
+                         else str(user["birthday"])),
             "timezone": user["timezone"],
             "address": user["address"],
             "state": user["state"],
@@ -39,6 +42,7 @@ class UserDb:
         self.table.put_item(Item=item, ConditionExpression="attribute_not_exists(userId)")
 
     def generate_accountid(self):
+        """Generate a unique 10-digit account ID."""
         self.logger.debug("Generating an account ID")
         while True:
             accountid = str(random.randint(10**9, 10**10 - 1))
@@ -47,6 +51,7 @@ class UserDb:
                 return accountid
 
     def get_user(self, username):
+        """Look up a user by username via the GSI."""
         self.logger.debug("Query user %s", username)
         resp = self.table.query(
             IndexName="username-index",
@@ -60,7 +65,9 @@ class UserDb:
         return {
             "accountid": item["userId"],
             "username": item["username"],
-            "passhash": item["passhash"].encode() if isinstance(item["passhash"], str) else item["passhash"],
+            "passhash": (item["passhash"].encode()
+                         if isinstance(item["passhash"], str)
+                         else item["passhash"]),
             "firstname": item["firstname"],
             "lastname": item["lastname"],
             "birthday": item["birthday"],

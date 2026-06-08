@@ -134,9 +134,13 @@ jobs:
       - checkout
       - aws-setup
       - run:
+          name: Terraform plan
           working_directory: terraform
           command: |
-            terraform init -input=false
+            terraform init -input=false \
+              -backend-config="bucket=bankcorp-tfstate-992382483259" \
+              -backend-config="dynamodb_table=bankcorp-tfstate-lock" \
+              -backend-config="region=<< pipeline.parameters.aws_region >>"
             terraform plan -input=false -out=tfplan
 
   terraform-apply:
@@ -152,9 +156,13 @@ jobs:
             fi
       - aws-setup
       - run:
+          name: Terraform apply
           working_directory: terraform
           command: |
-            terraform init -input=false
+            terraform init -input=false \
+              -backend-config="bucket=bankcorp-tfstate-992382483259" \
+              -backend-config="dynamodb_table=bankcorp-tfstate-lock" \
+              -backend-config="region=<< pipeline.parameters.aws_region >>"
             terraform apply -input=false -auto-approve
       - run:
           name: Seed DynamoDB demo data
@@ -333,7 +341,7 @@ workflows:
       - deploy-app:
           name: Deploy Production
           overlay: prod
-          requires: [e2e-test]
+          requires: [circle-banking-app.deploy-ecr, e2e-test]
           filters:
             branches:
-              only: main
+              only: cera-refactor
