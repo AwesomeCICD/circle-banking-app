@@ -27,13 +27,13 @@ patches:
     patch: |
       - op: replace
         path: /spec/rules/0/host
-        value: app.bankapp.example.com
+        value: app.fieldeng-sphereci.com
       - op: replace
         path: /spec/rules/1/host
-        value: grafana.bankapp.example.com
+        value: grafana.fieldeng-sphereci.com
       - op: replace
         path: /spec/rules/2/host
-        value: hubble.bankapp.example.com
+        value: hubble.fieldeng-sphereci.com
 
 replicas:
   - name: frontend

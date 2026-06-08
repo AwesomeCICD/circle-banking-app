@@ -18,7 +18,7 @@ parameters:
     default: "bankcorp"
   domain:
     type: string
-    default: "bankapp.example.com"
+    default: "fieldeng-sphereci.com"
   app_environment:
     type: string
     default: "dev"
@@ -30,7 +30,7 @@ parameters:
     default: "arn:aws:iam::992382483259:role/fe-runner-cluster-app-dynamodb"
   acm_cert_arn:
     type: string
-    default: ""
+    default: "arn:aws:acm:us-east-1:992382483259:certificate/acf46071-40c3-4801-8124-634fca907378"
 
 executors:
   with-chrome:
