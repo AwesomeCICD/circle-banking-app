@@ -253,15 +253,20 @@ jobs:
             cd ui-tests
             npx cypress run --config baseUrl="${URL}" --browser firefox
 
-# `bankcorp-deploy-suite` runs under a single org-wide `serial-group` lock:
-#   tf-apply → parallel ECR builds (7) → deploy-dev → deploy-o11y
-# Apply must precede builds so Terraform-created ECR repos exist before push.
-# Inner-job `name` aliases must stay distinct across all groups in this file.
+# `deploy-ecr` serializes the full infra + build + deploy path under a
+# single org-wide lock. Plan and apply both touch Terraform state, so
+# both belong inside the group. ECR builds fan out in parallel after
+# apply creates the repos, then deploy-dev rolls out all images.
+# Inner-job `name` aliases must stay distinct across all groups.
 job-groups:
-  bankcorp-deploy-suite:
+  deploy-ecr:
     jobs:
+      - terraform-plan:
+          name: tf-plan
       - terraform-apply:
           name: tf-apply
+          requires:
+            - tf-plan
       - build-push-ecr:
           name: ecr-frontend
           service: frontend
@@ -320,14 +325,11 @@ workflows:
       - go-test
       - python-checkstyle
       - python-test
-      - terraform-plan:
+      - deploy-ecr:
+          name: circle-banking-app.deploy-ecr
+          serial-group: << pipeline.project.slug >>/deploy-ecr
           requires: [go-test, python-test]
-      - bankcorp-deploy-suite:
-          name: bankcorp-deploy
-          serial-group: << pipeline.project.slug >>/bankcorp-deploy-suite
-          requires: [go-test, python-test, terraform-plan]
-      - e2e-test:
-          requires: [bankcorp-deploy]
+      - e2e-test
       - deploy-app:
           name: Deploy Production
           overlay: prod
