@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: bankcorp
+
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - config.yaml
+  - ingress.yaml
+  - frontend.yaml
+  - userservice.yaml
+  - contacts.yaml
+  - balancereader.yaml
+  - ledgerwriter.yaml
+  - transactionhistory.yaml
+  - loadgenerator.yaml
+  - observability-services.yaml
+
+images:
+  - name: bankcorp/frontend
+    newName: bankcorp/frontend
+    newTag: latest
+  - name: bankcorp/userservice
+    newName: bankcorp/userservice
+    newTag: latest
+  - name: bankcorp/contacts
+    newName: bankcorp/contacts
+    newTag: latest
+  - name: bankcorp/balancereader
+    newName: bankcorp/balancereader
+    newTag: latest
+  - name: bankcorp/ledgerwriter
+    newName: bankcorp/ledgerwriter
+    newTag: latest
+  - name: bankcorp/transactionhistory
+    newName: bankcorp/transactionhistory
+    newTag: latest
+  - name: bankcorp/loadgenerator
+    newName: bankcorp/loadgenerator
+    newTag: latest

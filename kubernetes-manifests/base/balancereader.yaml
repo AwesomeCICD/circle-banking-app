@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: balancereader
+  namespace: bankcorp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: balancereader
+  template:
+    metadata:
+      labels:
+        app: balancereader
+    spec:
+      serviceAccountName: bankcorp-app
+      containers:
+      - name: balancereader
+        image: bankcorp/balancereader:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: environment-config
+        env:
+        - name: VERSION
+          value: "0.1.0"
+        - name: PORT
+          value: "8080"
+        volumeMounts:
+        - name: jwt-keys
+          mountPath: /tmp/.ssh
+          readOnly: true
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      volumes:
+      - name: jwt-keys
+        secret:
+          secretName: jwt-keys
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: balancereader
+  namespace: bankcorp
+spec:
+  selector:
+    app: balancereader
+  ports:
+  - port: 8080
+    targetPort: 8080

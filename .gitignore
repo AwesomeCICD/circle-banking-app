@@ -160,7 +160,14 @@ wi-kubernetes-manifests/
 src/ledgermonolith/istio/send-to-vm/
 src/ledgermonolith/istio/istio-1.*
 
-# Cypress
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/tfplan
+
 .github/workflows/ui-tests/cypress/screenshots
 
 # Ingress for Anthos service account key

@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars — do not commit.
+
+aws_region            = "us-east-1"
+existing_cluster_name = "fe-runner-cluster"
+environment           = "dev"
+domain_name           = "bankapp.example.com"
+circleci_org_id       = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+k8s_namespace         = "bankcorp"
+
+install_alb_controller = true
+install_cilium         = false
+
+terraform_state_bucket     = "bankcorp-tfstate-<account-id>"
+terraform_state_lock_table = "bankcorp-tfstate-lock"
+
+alb_dns_name = ""
+alb_zone_id  = ""

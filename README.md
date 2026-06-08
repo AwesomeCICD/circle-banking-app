@@ -1,112 +1,73 @@
-# CCI Bank Corp
+# CCI Bank Corp — AWS Demo Application
 
-**CCI Bank Corp** is a sample HTTP-based web app that simulates a bank's payment processing network, allowing users to create artificial bank accounts and complete transactions.
+Polyglot microservices banking demo for CircleCI + Amazon EKS. Python frontend/services, Go ledger services, DynamoDB, ALB ingress, Grafana observability.
 
-We, CircleCI Field Engineering Team, forked it from [Google's Bank of Anthos project](https://github.com/GoogleCloudPlatform/bank-of-Aion/)
-, chosen for it's multi-language monorepo structure with various microservices.
+**Target cluster:** `fe-runner-cluster` (us-east-1)
 
+## Architecture
 
-## Screenshots
+See [docs/proposed-architecture.md](docs/proposed-architecture.md) for diagrams.
 
-| Sign in                                                                                                        | Home                                                                                                    |
-| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [![Login](./docs/login.png)](./docs/login.png) | [![User Transactions](./docs/transactions.png)](./docs/transactions.png) |
+| Endpoint | Purpose |
+|----------|---------|
+| `app.dev.{domain}` | Banking UI |
+| `grafana.dev.{domain}` | Traces + metrics dashboards |
+| `hubble.dev.{domain}` | Network flow visualization (if Cilium/Hubble installed) |
 
-
-## Service architecture
-
-![Architecture Diagram](./docs/architecture.png)
-
-| Service                                          | Language      | Description                                                                                                                                  |
-| ------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| [frontend](./src/frontend)                       | Python        | Exposes an HTTP server to serve the website. Contains login page, signup page, and home page.                                                |
-| [ledger-writer](./src/ledgerwriter)              | Java          | Accepts and validates incoming transactions before writing them to the ledger.                                                               |
-| [balance-reader](./src/balancereader)            | Java          | Provides efficient readable cache of user balances, as read from `ledger-db`.                                                                |
-| [transaction-history](./src/transactionhistory)  | Java          | Provides efficient readable cache of past transactions, as read from `ledger-db`.                                                            |
-| [ledger-db](./src/ledger-db)                     | PostgreSQL | Ledger of all transactions. Option to pre-populate with transactions for demo users.                                                         |
-| [user-service](./src/userservice)                | Python        | Manages user accounts and authentication. Signs JWTs used for authentication by other services.                                              |
-| [contacts](./src/contacts)                       | Python        | Stores list of other accounts associated with a user. Used for drop down in "Send Payment" and "Deposit" forms. |
-| [accounts-db](./src/accounts-db)                 | PostgreSQL | Database for user accounts and associated data. Option to pre-populate with demo users.                                                      |
-| [loadgenerator](./src/loadgenerator)             | Python/Locust | Continuously sends requests imitating users to the frontend. Periodically creates new accounts and simulates transactions between them.      |
-
-
-## Quickstart (FE on CERA)
-
-
-### Concepts
- The credentials are comprised of a CA certificate and a secret token, pulled from CERA vault (Hashicorp). (See reference-architecture).  Those are provided to Dev team as a CCI Context for each environment via OIDC claims in vault.
-
- The application must define what role & `VAULT_ADDRESS` to connect to, which with set the appropriate environment's secrets.
-
- Available Roles (in any CERA Region)
- - cba-prod
- - cba-dev
-
- The appropriate deployment jobs access a `K8_TOKEN` and `K8_CERT` that is used to define connection along with the URL, CLUSTER_NAME, and NAMESPACE
-
-
-
-
-1. **Deploy CCI Bank Corp to the cluster.**
-
-**Yes FE team, we use Skaffold here, see config.yml and [`developmentmd`](docs/development.md) for more**
+## Repo layout
 
 ```
-skaffold run --tag=build-local --default-repo=docker.nexus.cera.circleci-fieldeng.com
+terraform/                 # AWS: DynamoDB, ECR, IAM, Route53, ACM, ALB controller
+kubernetes-manifests/      # Kustomize base + dev/prod overlays
+src/                       # 7 services (3 Go, 3 Python, 1 load generator)
+scripts/                   # DynamoDB seed, observability Helm install
+.circleci/config.yml       # CI/CD: test → docker push → deploy
 ```
 
-5. **Wait for the Pods to be ready.**
+**Skaffold removed** — CircleCI builds with `docker build/push` and deploys with `kubectl apply` + Kustomize. Easier to explain in customer demos.
 
-```
-kubectl get pods
-```
+## Quick start (local)
 
-After a few minutes, you should see the Pods in a `Running` state:
+```bash
+# Go services
+cd src/balancereader && go test ./...
 
-```
-NAME                                  READY   STATUS    RESTARTS   AGE
-accounts-db-6f589464bc-6r7b7          1/1     Running   0          99s
-balancereader-797bf6d7c5-8xvp6        1/1     Running   0          99s
-contacts-769c4fb556-25pg2             1/1     Running   0          98s
-frontend-7c96b54f6b-zkdbz             1/1     Running   0          98s
-ledger-db-5b78474d4f-p6xcb            1/1     Running   0          98s
-ledgerwriter-84bf44b95d-65mqf         1/1     Running   0          97s
-loadgenerator-559667b6ff-4zsvb        1/1     Running   0          97s
-transactionhistory-5569754896-z94cn   1/1     Running   0          97s
-userservice-78dc876bff-pdhtl          1/1     Running   0          96s
+# Python services
+cd src/userservice && pip install -r requirements.txt && pytest tests
 ```
 
-6. **Access the web frontend in a browser** using the frontend's external IP.
+## Deploy prerequisites
 
-```
-kubectl get service frontend | awk '{print $4}'
-```
+1. EKS cluster `fe-runner-cluster` with AWS Load Balancer Controller
+2. CircleCI OIDC context `aws-oidc-dev` with `AWS_ROLE_ARN`, `AWS_APP_ROLE_ARN`, `ACM_CERT_ARN`
+3. Terraform state bucket + `terraform.tfvars` (copy from `terraform/terraform.tfvars.example`)
+4. JWT keys in Secrets Manager (`bankcorp/jwt-private-key`, `bankcorp/jwt-public-key`)
 
-Visit `https://EXTERNAL_IP` to access your instance of CCI Bank Corp.
+## Pipeline flow
 
-## Additional deployment options
+1. **Lint & test** — Go + Python
+2. **build-and-push** — 7 images to ECR (`docker build`, no Skaffold)
+3. **terraform-plan/apply** — AWS resources (main branch for apply)
+4. **deploy-app** — `kubectl apply` via Kustomize to `fe-runner-cluster`
+5. **deploy-observability** — Helm: kube-prometheus-stack + Tempo
+6. **e2e-test** — Cypress against `app.dev.{domain}`
 
-- **Workload Identity**: [See these instructions.](./docs/workload-identity.md)
-- **Istio**: Apply `istio-manifests/` to your cluster to access the frontend through the IngressGateway.
-- **Java Monolith (VM)**: We provide a version of this app where the three Java microservices are coupled together into one monolithic service, which you can deploy inside a VM (eg. Google Compute Engine). See the [ledgermonolith](./src/ledgermonolith) directory.
+## Configuration
 
-## Troubleshooting
+CircleCI pipeline parameters in `.circleci/config.yml`:
 
-See the [troubleshooting guide](./docs/troubleshooting.md) for resolving common problems.
+| Parameter | Default |
+|-----------|---------|
+| `eks_cluster_name` | `fe-runner-cluster` |
+| `aws_region` | `us-east-1` |
+| `k8s_namespace` | `bankcorp` |
+| `domain` | `bankapp.example.com` |
 
-## Development
+## Demo login
 
-See the [development guide](./docs/development.md) to learn how to run and develop this app locally.
+After seeding (`scripts/seed-dynamodb.py` runs post-terraform-apply):
 
+- Username: `testuser`
+- Password: `circleci`
 
-## Deploy & Release Integration
-
-Argo Rollouts is enabled, for these clusters.
-
-Frontend `Deployment` was replaced with a `Rollout` including steps.
-
-Status: you can use `kubectl argo rollouts get rollout frontend-rollout -n cba-dev -w` to see status.
-
-All components tag app name and version. (Version Label is applied by skaffold `-l` flag directly.)
-
-`kustomize.yaml` is used to apply build specific data (id, pipeline, etc) as annotations to Frontend only currently.
+Implementation guide for agents: [CLAUDE.md](CLAUDE.md)

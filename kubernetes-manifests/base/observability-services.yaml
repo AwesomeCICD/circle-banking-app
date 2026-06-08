@@ -1,0 +1,25 @@
+# Grafana and Hubble UI services — backends for the shared ALB ingress.
+# Deploy the full observability stack via the deploy-observability CircleCI job (Helm).
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: bankcorp
+spec:
+  selector:
+    app.kubernetes.io/name: grafana
+  ports:
+  - port: 80
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hubble-ui
+  namespace: bankcorp
+spec:
+  selector:
+    k8s-app: hubble-ui
+  ports:
+  - port: 80
+    targetPort: 8081

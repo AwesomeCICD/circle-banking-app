@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgenerator
+  namespace: bankcorp
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: loadgenerator
+  template:
+    metadata:
+      labels:
+        app: loadgenerator
+    spec:
+      serviceAccountName: bankcorp-app
+      containers:
+      - name: loadgenerator
+        image: bankcorp/loadgenerator:latest
+        env:
+        - name: FRONTEND_ADDR
+          value: "frontend:80"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 384Mi

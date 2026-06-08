@@ -26,7 +26,7 @@ import sys
 import jwt
 from flask import Flask, jsonify, request
 import bleach
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from botocore.exceptions import ClientError
 from db import ContactsDb
 
 from opentelemetry import trace
@@ -92,7 +92,7 @@ def create_app():
         except (PermissionError, jwt.exceptions.InvalidTokenError) as err:
             app.logger.error("Error retrieving contacts list: %s", str(err))
             return "authentication denied", 401
-        except SQLAlchemyError as err:
+        except ClientError as err:
             app.logger.error("Error retrieving contacts list: %s", str(err))
             return "failed to retrieve contacts list", 500
 
@@ -150,7 +150,7 @@ def create_app():
         except ValueError as err:
             app.logger.error("Error adding contact: %s", str(err))
             return str(err), 409
-        except SQLAlchemyError as err:
+        except ClientError as err:
             app.logger.error("Error adding contact: %s", str(err))
             return "failed to add contact", 500
 
@@ -233,12 +233,7 @@ def create_app():
     app.config["LOCAL_ROUTING"] = os.environ.get("LOCAL_ROUTING_NUM")
     app.config["PUBLIC_KEY"] = open(os.environ.get("PUB_KEY_PATH"), "r").read()
 
-    # Configure database connection
-    try:
-        contacts_db = ContactsDb(os.environ.get("ACCOUNTS_DB_URI"), app.logger)
-    except OperationalError:
-        app.logger.critical("database connection failed")
-        sys.exit(1)
+    contacts_db = ContactsDb(app.logger)
     return app
 
 
