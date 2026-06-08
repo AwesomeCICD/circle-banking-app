@@ -9,6 +9,6 @@ terraform {
   backend "s3" {
     key            = "bankcorp/terraform.tfstate"
     encrypt        = true
-    use_lockfile   = false
+    dynamodb_table = ""
   }
 }

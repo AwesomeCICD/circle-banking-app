@@ -139,8 +139,7 @@ jobs:
           command: |
             terraform init -input=false \
               -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
-              -backend-config="region=<< pipeline.parameters.aws_region >>" \
-              -backend-config="use_lockfile=false"
+              -backend-config="region=<< pipeline.parameters.aws_region >>"
             terraform plan -input=false -lock=false -out=tfplan
 
   terraform-apply:
@@ -161,8 +160,7 @@ jobs:
           command: |
             terraform init -input=false \
               -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
-              -backend-config="region=<< pipeline.parameters.aws_region >>" \
-              -backend-config="use_lockfile=false"
+              -backend-config="region=<< pipeline.parameters.aws_region >>"
             terraform apply -input=false -auto-approve -lock=false
       - run:
           name: Seed DynamoDB demo data
