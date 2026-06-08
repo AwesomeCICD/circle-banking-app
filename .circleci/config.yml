@@ -108,28 +108,25 @@ jobs:
               popd
             done
 
-  build-and-push:
+  build-push-ecr:
     executor: aws
+    parameters:
+      service:
+        type: string
     steps:
       - checkout
       - aws-setup
       - setup_remote_docker
       - run:
-          name: Build and push images to ECR
+          name: Build & push << parameters.service >> → ECR
           command: |
             aws ecr get-login-password --region << pipeline.parameters.aws_region >> \
               | docker login --username AWS --password-stdin << pipeline.parameters.ecr_registry >>
             TAG="${CIRCLE_SHA1:0:7}"
-            for svc in frontend userservice contacts balancereader ledgerwriter transactionhistory loadgenerator; do
-              IMAGE="<< pipeline.parameters.ecr_registry >>/${svc}:${TAG}"
-              echo "Building ${IMAGE}"
-              docker build -t "${IMAGE}" "src/${svc}"
-              docker push "${IMAGE}"
-            done
-            echo "${TAG}" > /tmp/image-tag.txt
-      - persist_to_workspace:
-          root: /tmp
-          paths: [image-tag.txt]
+            IMAGE="<< pipeline.parameters.ecr_registry >>/bankcorp/<< parameters.service >>:${TAG}"
+            echo "Building ${IMAGE}"
+            docker build -t "${IMAGE}" "src/<< parameters.service >>"
+            docker push "${IMAGE}"
 
   terraform-plan:
     executor: terraform
@@ -176,8 +173,6 @@ jobs:
     steps:
       - checkout
       - aws-setup
-      - attach_workspace:
-          at: /tmp
       - run:
           name: Configure kubectl
           command: |
@@ -197,18 +192,18 @@ jobs:
       - run:
           name: Deploy with Kustomize
           command: |
-            TAG=$(cat /tmp/image-tag.txt)
+            TAG="${CIRCLE_SHA1:0:7}"
             REG="<< pipeline.parameters.ecr_registry >>"
             WORKDIR=$(mktemp -d)
             cp -r kubernetes-manifests/overlays/<< parameters.overlay >> "${WORKDIR}/overlay"
             cd "${WORKDIR}/overlay"
-            kustomize edit set image bankcorp/frontend=${REG}/frontend:${TAG}
-            kustomize edit set image bankcorp/userservice=${REG}/userservice:${TAG}
-            kustomize edit set image bankcorp/contacts=${REG}/contacts:${TAG}
-            kustomize edit set image bankcorp/balancereader=${REG}/balancereader:${TAG}
-            kustomize edit set image bankcorp/ledgerwriter=${REG}/ledgerwriter:${TAG}
-            kustomize edit set image bankcorp/transactionhistory=${REG}/transactionhistory:${TAG}
-            kustomize edit set image bankcorp/loadgenerator=${REG}/loadgenerator:${TAG}
+            kustomize edit set image bankcorp/frontend=${REG}/bankcorp/frontend:${TAG}
+            kustomize edit set image bankcorp/userservice=${REG}/bankcorp/userservice:${TAG}
+            kustomize edit set image bankcorp/contacts=${REG}/bankcorp/contacts:${TAG}
+            kustomize edit set image bankcorp/balancereader=${REG}/bankcorp/balancereader:${TAG}
+            kustomize edit set image bankcorp/ledgerwriter=${REG}/bankcorp/ledgerwriter:${TAG}
+            kustomize edit set image bankcorp/transactionhistory=${REG}/bankcorp/transactionhistory:${TAG}
+            kustomize edit set image bankcorp/loadgenerator=${REG}/bankcorp/loadgenerator:${TAG}
             MANIFEST=$(kustomize build .)
             APP_ROLE="<< pipeline.parameters.app_role_arn >>"
             ACM_ARN="<< pipeline.parameters.acm_cert_arn >>"
@@ -258,21 +253,61 @@ jobs:
             cd ui-tests
             npx cypress run --config baseUrl="${URL}" --browser firefox
 
-# `bankcorp-deploy-suite` bundles terraform apply + app deploy + observability
-# under a single org-wide `serial-group` lock so concurrent pipelines queue
-# cleanly instead of racing on the Terraform state lock or the same EKS
-# cluster. Inner-job `name` aliases must stay distinct across all groups
-# in this file.
+# `bankcorp-deploy-suite` runs under a single org-wide `serial-group` lock:
+#   tf-apply → parallel ECR builds (7) → deploy-dev → deploy-o11y
+# Apply must precede builds so Terraform-created ECR repos exist before push.
+# Inner-job `name` aliases must stay distinct across all groups in this file.
 job-groups:
   bankcorp-deploy-suite:
     jobs:
       - terraform-apply:
           name: tf-apply
+      - build-push-ecr:
+          name: ecr-frontend
+          service: frontend
+          requires:
+            - tf-apply
+      - build-push-ecr:
+          name: ecr-userservice
+          service: userservice
+          requires:
+            - tf-apply
+      - build-push-ecr:
+          name: ecr-contacts
+          service: contacts
+          requires:
+            - tf-apply
+      - build-push-ecr:
+          name: ecr-balancereader
+          service: balancereader
+          requires:
+            - tf-apply
+      - build-push-ecr:
+          name: ecr-ledgerwriter
+          service: ledgerwriter
+          requires:
+            - tf-apply
+      - build-push-ecr:
+          name: ecr-transactionhistory
+          service: transactionhistory
+          requires:
+            - tf-apply
+      - build-push-ecr:
+          name: ecr-loadgenerator
+          service: loadgenerator
+          requires:
+            - tf-apply
       - deploy-app:
           name: deploy-dev
           overlay: dev
           requires:
-            - tf-apply
+            - ecr-frontend
+            - ecr-userservice
+            - ecr-contacts
+            - ecr-balancereader
+            - ecr-ledgerwriter
+            - ecr-transactionhistory
+            - ecr-loadgenerator
       - deploy-observability:
           name: deploy-o11y
           requires:
@@ -285,14 +320,12 @@ workflows:
       - go-test
       - python-checkstyle
       - python-test
-      - build-and-push:
-          requires: [go-test, python-test]
       - terraform-plan:
-          requires: [build-and-push]
+          requires: [go-test, python-test]
       - bankcorp-deploy-suite:
           name: bankcorp-deploy
           serial-group: << pipeline.project.slug >>/bankcorp-deploy-suite
-          requires: [build-and-push, terraform-plan]
+          requires: [go-test, python-test, terraform-plan]
       - e2e-test:
           requires: [bankcorp-deploy]
       - deploy-app:
