@@ -1,16 +1,6 @@
-# Copy to terraform.tfvars — do not commit.
+# Copy to terraform.tfvars (gitignored). All vars have defaults — uncomment to override.
 
-aws_region            = "us-east-1"
-existing_cluster_name = "fe-runner-cluster"
-environment           = "dev"
-domain_name           = "bankapp.example.com"
-k8s_namespace         = "bankcorp"
-
-install_alb_controller = true
-install_cilium         = false
-
-terraform_state_bucket     = "bankcorp-tfstate-<account-id>"
-terraform_state_lock_table = "bankcorp-tfstate-lock"
-
-alb_dns_name = ""
-alb_zone_id  = ""
+# aws_region            = "us-east-1"
+# existing_cluster_name = "fe-runner-cluster"
+# environment           = "dev"
+# k8s_namespace         = "bankcorp"
