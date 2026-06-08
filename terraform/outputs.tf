@@ -43,10 +43,6 @@ output "iam_role_tempo_s3" {
   value       = aws_iam_role.tempo_s3.arn
 }
 
-output "iam_role_circleci" {
-  description = "IAM role ARN for CircleCI OIDC"
-  value       = aws_iam_role.circleci.arn
-}
 
 output "acm_certificate_arn" {
   description = "ACM wildcard certificate ARN"

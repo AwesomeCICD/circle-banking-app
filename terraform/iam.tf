@@ -126,69 +126,8 @@ resource "aws_iam_role_policy" "tempo_s3" {
 }
 
 # ---------------------------------------------------------------------------
-# CircleCI OIDC — CI/CD pipeline authentication
-# No static AWS credentials stored in CircleCI; the pipeline exchanges an
-# OIDC token for short-lived AWS credentials via AssumeRoleWithWebIdentity.
+# CircleCI OIDC — NOT managed here.
+# The OIDC provider and CI role (fieldeng_aws_ci_oidc_oauth_role) are
+# pre-provisioned by fe-eks-cluster. This repo's pipeline references
+# that role directly via the aws_ci_role_arn pipeline parameter.
 # ---------------------------------------------------------------------------
-resource "aws_iam_openid_connect_provider" "circleci" {
-  url             = "https://oidc.circleci.com/org/${var.circleci_org_id}"
-  client_id_list  = [var.circleci_org_id]
-  thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da2b0ab7280"]
-}
-
-data "aws_iam_policy_document" "circleci_trust" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.circleci.arn]
-    }
-
-    condition {
-      test     = "StringLike"
-      variable = "oidc.circleci.com/org/${var.circleci_org_id}:sub"
-      values   = ["org/${var.circleci_org_id}/project/*/user/*"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "circleci_policy" {
-  statement {
-    sid    = "ECRPush"
-    effect = "Allow"
-    actions = [
-      "ecr:GetAuthorizationToken",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:PutImage",
-      "ecr:InitiateLayerUpload",
-      "ecr:UploadLayerPart",
-      "ecr:CompleteLayerUpload",
-      "ecr:DescribeRepositories",
-      "ecr:BatchGetImage",
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "EKSDeploy"
-    effect = "Allow"
-    actions = [
-      "eks:DescribeCluster",
-      "eks:ListClusters",
-    ]
-    resources = [data.aws_eks_cluster.main.arn]
-  }
-}
-
-resource "aws_iam_role" "circleci" {
-  name               = "${local.cluster_name}-circleci"
-  assume_role_policy = data.aws_iam_policy_document.circleci_trust.json
-}
-
-resource "aws_iam_role_policy" "circleci" {
-  name   = "ecr-push-eks-deploy"
-  role   = aws_iam_role.circleci.id
-  policy = data.aws_iam_policy_document.circleci_policy.json
-}

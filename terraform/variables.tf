@@ -25,6 +25,7 @@ variable "aws_region" {
 variable "domain_name" {
   description = "Base domain name for the application (e.g. bankapp.example.com). A wildcard ACM cert is issued for *.{domain_name}."
   type        = string
+  default     = "bankapp.example.com"
 }
 
 variable "environment" {
@@ -38,10 +39,6 @@ variable "environment" {
   }
 }
 
-variable "circleci_org_id" {
-  description = "CircleCI organization ID (UUID). Used to scope the OIDC trust relationship for CI/CD."
-  type        = string
-}
 
 variable "k8s_namespace" {
   description = "Kubernetes namespace where bankcorp application services are deployed."
@@ -52,11 +49,13 @@ variable "k8s_namespace" {
 variable "terraform_state_bucket" {
   description = "S3 bucket name that holds Terraform remote state. Created outside of this module (bootstrap)."
   type        = string
+  default     = "fieldeng-cera-bucket-992382483259-us-east-1-an"
 }
 
 variable "terraform_state_lock_table" {
-  description = "DynamoDB table name used for Terraform state locking. Created outside of this module (bootstrap)."
+  description = "DynamoDB table name used for Terraform state locking. Not used — serial-group handles concurrency."
   type        = string
+  default     = ""
 }
 
 variable "alb_dns_name" {
