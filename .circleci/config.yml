@@ -138,7 +138,7 @@ jobs:
           working_directory: terraform
           command: |
             terraform init -input=false \
-              -backend-config="bucket=bankcorp-tfstate-992382483259" \
+              -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
               -backend-config="dynamodb_table=bankcorp-tfstate-lock" \
               -backend-config="region=<< pipeline.parameters.aws_region >>"
             terraform plan -input=false -out=tfplan
@@ -160,7 +160,7 @@ jobs:
           working_directory: terraform
           command: |
             terraform init -input=false \
-              -backend-config="bucket=bankcorp-tfstate-992382483259" \
+              -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
               -backend-config="dynamodb_table=bankcorp-tfstate-lock" \
               -backend-config="region=<< pipeline.parameters.aws_region >>"
             terraform apply -input=false -auto-approve
