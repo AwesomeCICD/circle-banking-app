@@ -11,16 +11,16 @@ patches:
     patch: |
       - op: replace
         path: /data/DYNAMODB_USERS_TABLE
-        value: bankcorp-users-prod
+        value: circle-banking-app-users-prod
       - op: replace
         path: /data/DYNAMODB_CONTACTS_TABLE
-        value: bankcorp-contacts-prod
+        value: circle-banking-app-contacts-prod
       - op: replace
         path: /data/DYNAMODB_TRANSACTIONS_TABLE
-        value: bankcorp-transactions-prod
+        value: circle-banking-app-transactions-prod
       - op: replace
         path: /data/DYNAMODB_BALANCES_TABLE
-        value: bankcorp-balances-prod
+        value: circle-banking-app-balances-prod
   - target:
       kind: Ingress
       name: main-ingress

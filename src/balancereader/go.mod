@@ -1,4 +1,4 @@
-module github.com/circleci/bankcorp/balancereader
+module github.com/circleci/circle-banking-app/balancereader
 
 go 1.22
 

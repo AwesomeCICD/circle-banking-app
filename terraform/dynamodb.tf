@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "users" {
-  name         = "bankcorp-users-${var.environment}"
+  name         = "circle-banking-app-users-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "userId"
 
@@ -21,7 +21,7 @@ resource "aws_dynamodb_table" "users" {
 }
 
 resource "aws_dynamodb_table" "contacts" {
-  name         = "bankcorp-contacts-${var.environment}"
+  name         = "circle-banking-app-contacts-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "userId"
   range_key    = "contactId"
@@ -38,7 +38,7 @@ resource "aws_dynamodb_table" "contacts" {
 }
 
 resource "aws_dynamodb_table" "transactions" {
-  name         = "bankcorp-transactions-${var.environment}"
+  name         = "circle-banking-app-transactions-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "accountId"
   range_key    = "timestampTxnId"
@@ -55,7 +55,7 @@ resource "aws_dynamodb_table" "transactions" {
 }
 
 resource "aws_dynamodb_table" "balances" {
-  name         = "bankcorp-balances-${var.environment}"
+  name         = "circle-banking-app-balances-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "accountId"
 

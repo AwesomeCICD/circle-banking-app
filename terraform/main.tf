@@ -22,7 +22,7 @@ locals {
   cluster_name = var.existing_cluster_name
 
   common_tags = {
-    Project     = "bankcorp"
+    Project     = "circle-banking-app"
     Environment = var.environment
     ManagedBy   = "terraform"
   }

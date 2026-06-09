@@ -13,7 +13,7 @@ locals {
 resource "aws_ecr_repository" "services" {
   for_each = local.ecr_repos
 
-  name                 = "bankcorp/${each.key}"
+  name                 = "circle-banking-app/${each.key}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {

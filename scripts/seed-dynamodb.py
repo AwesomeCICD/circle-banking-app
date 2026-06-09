@@ -23,9 +23,9 @@ PASSWORD = b"circleci"
 
 def main():
     ddb = boto3.resource("dynamodb", region_name=REGION)
-    users = ddb.Table(f"bankcorp-users-{ENV}")
-    contacts = ddb.Table(f"bankcorp-contacts-{ENV}")
-    balances = ddb.Table(f"bankcorp-balances-{ENV}")
+    users = ddb.Table(f"circle-banking-app-users-{ENV}")
+    contacts = ddb.Table(f"circle-banking-app-contacts-{ENV}")
+    balances = ddb.Table(f"circle-banking-app-balances-{ENV}")
 
     pw_hash = bcrypt.hashpw(PASSWORD, bcrypt.gensalt()).decode()
 

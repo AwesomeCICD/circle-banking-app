@@ -57,7 +57,7 @@ Create `terraform/` directory with all `.tf` files.
 | `route53.tf` | Hosted zone for `bankapp.example.com`, 3 alias records -> ALB |
 | `acm.tf` | Wildcard cert `*.bankapp.example.com` with Route 53 DNS validation |
 | `s3.tf` | `tempo-traces-{env}` bucket (lifecycle: 30-day retention), `frontend-assets-{env}` bucket |
-| `secrets-manager.tf` | `bankcorp/jwt-private-key`, `bankcorp/jwt-public-key` |
+| `secrets-manager.tf` | `circle-banking-app/jwt-private-key`, `circle-banking-app/jwt-public-key` |
 | `cilium.tf` | Helm release for Cilium with Hubble enabled (`hubble.relay.enabled=true`, `hubble.ui.enabled=true`) |
 | `alb-controller.tf` | Helm release for AWS LB Controller with IRSA service account |
 | `cloudwatch.tf` | EKS addon `amazon-cloudwatch-observability` |
@@ -68,7 +68,7 @@ Create `terraform/` directory with all `.tf` files.
 ```hcl
 # Users table
 resource "aws_dynamodb_table" "users" {
-  name         = "bankcorp-users-${var.environment}"
+  name         = "circle-banking-app-users-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "userId"
 
@@ -80,7 +80,7 @@ resource "aws_dynamodb_table" "users" {
 
 # Contacts table
 resource "aws_dynamodb_table" "contacts" {
-  name         = "bankcorp-contacts-${var.environment}"
+  name         = "circle-banking-app-contacts-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "userId"
   range_key    = "contactId"
@@ -97,7 +97,7 @@ resource "aws_dynamodb_table" "contacts" {
 
 # Transactions table
 resource "aws_dynamodb_table" "transactions" {
-  name         = "bankcorp-transactions-${var.environment}"
+  name         = "circle-banking-app-transactions-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "accountId"
   range_key    = "timestampTxnId"
@@ -114,7 +114,7 @@ resource "aws_dynamodb_table" "transactions" {
 
 # Balances table
 resource "aws_dynamodb_table" "balances" {
-  name         = "bankcorp-balances-${var.environment}"
+  name         = "circle-banking-app-balances-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "accountId"
 
@@ -162,7 +162,7 @@ Rewrite `src/balancereader/`, `src/ledgerwriter/`, `src/transactionhistory/` in 
 
 **Each Go service needs:**
 - `main.go` -- HTTP server (net/http or chi router), health endpoints (`/ready`, `/healthy`), OTEL instrumentation
-- `go.mod` -- module path `github.com/circleci/bankcorp/{service}`
+- `go.mod` -- module path `github.com/circleci/circle-banking-app/{service}`
 - `Dockerfile` -- multi-stage: `golang:1.22-alpine` build -> `gcr.io/distroless/static-debian12` runtime
 - Unit tests in `*_test.go` files
 
@@ -240,7 +240,7 @@ parameters:
     default: "us-east-1"
   k8s_namespace:
     type: string
-    default: "bankcorp"
+    default: "circle-banking-app"
   domain:
     type: string
     default: "bankapp.example.com"

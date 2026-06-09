@@ -22,7 +22,7 @@ variable "environment" {
 }
 
 variable "k8s_namespace" {
-  description = "Kubernetes namespace where bankcorp application services are deployed."
+  description = "Kubernetes namespace where circle-banking-app application services are deployed."
   type        = string
-  default     = "bankcorp"
+  default     = "circle-banking-app"
 }

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ledgerwriter
-  namespace: bankcorp
+  namespace: circle-banking-app
 spec:
   replicas: 1
   selector:
@@ -13,10 +13,10 @@ spec:
       labels:
         app: ledgerwriter
     spec:
-      serviceAccountName: bankcorp-app
+      serviceAccountName: circle-banking-app-sa
       containers:
       - name: ledgerwriter
-        image: bankcorp/ledgerwriter:latest
+        image: circle-banking-app/ledgerwriter:latest
         ports:
         - containerPort: 8080
         envFrom:
@@ -51,7 +51,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ledgerwriter
-  namespace: bankcorp
+  namespace: circle-banking-app
 spec:
   selector:
     app: ledgerwriter

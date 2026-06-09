@@ -1,4 +1,4 @@
-module github.com/circleci/bankcorp/ledgerwriter
+module github.com/circleci/circle-banking-app/ledgerwriter
 
 go 1.22
 

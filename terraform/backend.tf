@@ -8,7 +8,7 @@
 
 terraform {
   backend "s3" {
-    key            = "bankcorp/terraform.tfstate"
+    key            = "circle-banking-app/terraform.tfstate"
     encrypt        = true
     dynamodb_table = ""
   }

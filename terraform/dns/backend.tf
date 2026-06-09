@@ -1,4 +1,4 @@
-# Separate state file from the main bankcorp infrastructure.
+# Separate state file from the main circle-banking-app infrastructure.
 # Same bucket, different key — keeps DNS concerns isolated so DNS
 # changes can be reviewed/rolled back independently of app infra.
 #
@@ -9,7 +9,7 @@
 
 terraform {
   backend "s3" {
-    key            = "bankcorp/dns.tfstate"
+    key            = "circle-banking-app/dns.tfstate"
     encrypt        = true
     dynamodb_table = ""
   }

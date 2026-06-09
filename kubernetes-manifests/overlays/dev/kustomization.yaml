@@ -11,13 +11,13 @@ patches:
     patch: |
       - op: replace
         path: /data/DYNAMODB_USERS_TABLE
-        value: bankcorp-users-dev
+        value: circle-banking-app-users-dev
       - op: replace
         path: /data/DYNAMODB_CONTACTS_TABLE
-        value: bankcorp-contacts-dev
+        value: circle-banking-app-contacts-dev
       - op: replace
         path: /data/DYNAMODB_TRANSACTIONS_TABLE
-        value: bankcorp-transactions-dev
+        value: circle-banking-app-transactions-dev
       - op: replace
         path: /data/DYNAMODB_BALANCES_TABLE
-        value: bankcorp-balances-dev
+        value: circle-banking-app-balances-dev

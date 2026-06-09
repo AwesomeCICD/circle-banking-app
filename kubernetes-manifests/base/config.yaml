@@ -2,24 +2,24 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: environment-config
-  namespace: bankcorp
+  namespace: circle-banking-app
 data:
   AWS_REGION: "us-east-1"
   LOCAL_ROUTING_NUM: "883745000"
   PUB_KEY_PATH: "/tmp/.ssh/publickey"
   PRIV_KEY_PATH: "/tmp/.ssh/privatekey"
   ENABLE_TRACING: "false"
-  POD_NAMESPACE: "bankcorp"
-  DYNAMODB_USERS_TABLE: "bankcorp-users-dev"
-  DYNAMODB_CONTACTS_TABLE: "bankcorp-contacts-dev"
-  DYNAMODB_TRANSACTIONS_TABLE: "bankcorp-transactions-dev"
-  DYNAMODB_BALANCES_TABLE: "bankcorp-balances-dev"
+  POD_NAMESPACE: "circle-banking-app"
+  DYNAMODB_USERS_TABLE: "circle-banking-app-users-dev"
+  DYNAMODB_CONTACTS_TABLE: "circle-banking-app-contacts-dev"
+  DYNAMODB_TRANSACTIONS_TABLE: "circle-banking-app-transactions-dev"
+  DYNAMODB_BALANCES_TABLE: "circle-banking-app-balances-dev"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: service-api-config
-  namespace: bankcorp
+  namespace: circle-banking-app
 data:
   TRANSACTIONS_API_ADDR: "ledgerwriter:8080"
   BALANCES_API_ADDR: "balancereader:8080"
@@ -31,7 +31,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: demo-data-config
-  namespace: bankcorp
+  namespace: circle-banking-app
 data:
   USE_DEMO_DATA: "True"
   DEMO_LOGIN_USERNAME: "testuser"

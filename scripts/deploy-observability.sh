@@ -2,7 +2,7 @@
 # Install Grafana + Prometheus (kube-prometheus-stack) and Tempo for demo observability.
 set -euo pipefail
 
-NAMESPACE="${K8S_NAMESPACE:-bankcorp}"
+NAMESPACE="${K8S_NAMESPACE:-circle-banking-app}"
 TEMPO_BUCKET="${TEMPO_TRACES_BUCKET:-}"
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts

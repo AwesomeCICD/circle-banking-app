@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grafana
-  namespace: bankcorp
+  namespace: circle-banking-app
 spec:
   selector:
     app.kubernetes.io/name: grafana
@@ -16,7 +16,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hubble-ui
-  namespace: bankcorp
+  namespace: circle-banking-app
 spec:
   selector:
     k8s-app: hubble-ui

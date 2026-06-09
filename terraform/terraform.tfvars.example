@@ -3,4 +3,4 @@
 # aws_region            = "us-east-1"
 # existing_cluster_name = "fe-runner-cluster"
 # environment           = "dev"
-# k8s_namespace         = "bankcorp"
+# k8s_namespace         = "circle-banking-app"

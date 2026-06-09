@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: bankcorp
+namespace: circle-banking-app
 
 resources:
   - namespace.yaml
@@ -18,24 +18,24 @@ resources:
   - observability-services.yaml
 
 images:
-  - name: bankcorp/frontend
-    newName: bankcorp/frontend
+  - name: circle-banking-app/frontend
+    newName: circle-banking-app/frontend
     newTag: latest
-  - name: bankcorp/userservice
-    newName: bankcorp/userservice
+  - name: circle-banking-app/userservice
+    newName: circle-banking-app/userservice
     newTag: latest
-  - name: bankcorp/contacts
-    newName: bankcorp/contacts
+  - name: circle-banking-app/contacts
+    newName: circle-banking-app/contacts
     newTag: latest
-  - name: bankcorp/balancereader
-    newName: bankcorp/balancereader
+  - name: circle-banking-app/balancereader
+    newName: circle-banking-app/balancereader
     newTag: latest
-  - name: bankcorp/ledgerwriter
-    newName: bankcorp/ledgerwriter
+  - name: circle-banking-app/ledgerwriter
+    newName: circle-banking-app/ledgerwriter
     newTag: latest
-  - name: bankcorp/transactionhistory
-    newName: bankcorp/transactionhistory
+  - name: circle-banking-app/transactionhistory
+    newName: circle-banking-app/transactionhistory
     newTag: latest
-  - name: bankcorp/loadgenerator
-    newName: bankcorp/loadgenerator
+  - name: circle-banking-app/loadgenerator
+    newName: circle-banking-app/loadgenerator
     newTag: latest

@@ -1,33 +1,34 @@
-# JWT keys are stored in Secrets Manager and mounted into pods via External Secrets Operator.
-# The secret resources are created here with placeholder values.
-# Set the real key material after apply:
-#   aws secretsmanager put-secret-value --secret-id bankcorp/jwt-private-key --secret-string "$(cat jwt.pem)"
+# JWT keys are stored in Secrets Manager and synced into Kubernetes Secret `jwt-keys`
+# by the deploy-dev / Deploy Production CircleCI jobs at deploy time.
+# Initial value is a placeholder string; deploy-dev auto-generates an RSA 2048 keypair
+# on the first run when it sees the placeholder, then calls put-secret-value.
 
 resource "aws_secretsmanager_secret" "jwt_private_key" {
-  name                    = "bankcorp/jwt-private-key"
-  description             = "RSA private key for signing JWT tokens (bankcorp userservice)"
-  recovery_window_in_days = 7
+  name                    = "circle-banking-app/jwt-private-key"
+  description             = "RSA private key for signing JWT tokens (circle-banking-app userservice)"
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "jwt_private_key" {
   secret_id     = aws_secretsmanager_secret.jwt_private_key.id
-  secret_string = "PLACEHOLDER — replace with actual RSA private key PEM"
+  secret_string = "PLACEHOLDER"
 
-  # Prevent Terraform from overwriting the real key once it has been set manually.
+  # Real key material is written by the deploy-dev bootstrap step; Terraform
+  # should not overwrite it on subsequent applies.
   lifecycle {
     ignore_changes = [secret_string]
   }
 }
 
 resource "aws_secretsmanager_secret" "jwt_public_key" {
-  name                    = "bankcorp/jwt-public-key"
-  description             = "RSA public key for verifying JWT tokens (bankcorp services)"
-  recovery_window_in_days = 7
+  name                    = "circle-banking-app/jwt-public-key"
+  description             = "RSA public key for verifying JWT tokens (circle-banking-app services)"
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "jwt_public_key" {
   secret_id     = aws_secretsmanager_secret.jwt_public_key.id
-  secret_string = "PLACEHOLDER — replace with actual RSA public key PEM"
+  secret_string = "PLACEHOLDER"
 
   lifecycle {
     ignore_changes = [secret_string]

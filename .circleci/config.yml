@@ -15,7 +15,7 @@ parameters:
     default: "us-east-1"
   k8s_namespace:
     type: string
-    default: "bankcorp"
+    default: "circle-banking-app"
   domain:
     type: string
     default: "fieldeng-sphereci.com"
@@ -25,9 +25,11 @@ parameters:
   aws_ci_role_arn:
     type: string
     default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role"
+  # NOTE: For this branch the app pods use the CI role for IRSA. Tracked for
+  # hardening in Linear; will be replaced with a dedicated least-privilege role.
   app_role_arn:
     type: string
-    default: "arn:aws:iam::992382483259:role/fe-runner-cluster-app-dynamodb"
+    default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role"
   acm_cert_arn:
     type: string
     default: "arn:aws:acm:us-east-1:992382483259:certificate/acf46071-40c3-4801-8124-634fca907378"
@@ -56,6 +58,31 @@ commands:
           region: << pipeline.parameters.aws_region >>
           role_arn: << pipeline.parameters.aws_ci_role_arn >>
           role_session_name: "CircleCI-${CIRCLE_WORKFLOW_ID}-${CIRCLE_JOB}"
+  install-kubectl:
+    steps:
+      - run:
+          name: Install kubectl
+          command: |
+            curl -sSL -o /tmp/kubectl https://dl.k8s.io/release/v1.29.5/bin/linux/amd64/kubectl
+            chmod +x /tmp/kubectl
+            sudo mv /tmp/kubectl /usr/local/bin/
+            kubectl version --client=true
+  install-kustomize:
+    steps:
+      - run:
+          name: Install kustomize
+          command: |
+            curl -sSL -o /tmp/kustomize.tgz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
+            tar -xzf /tmp/kustomize.tgz -C /tmp
+            sudo mv /tmp/kustomize /usr/local/bin/
+            kustomize version
+  configure-kubeconfig:
+    steps:
+      - run:
+          name: Configure kubeconfig for << pipeline.parameters.eks_cluster_name >>
+          command: |
+            aws eks update-kubeconfig --region << pipeline.parameters.aws_region >> --name << pipeline.parameters.eks_cluster_name >>
+            kubectl cluster-info
 
 jobs:
   go-checkstyle:
@@ -108,7 +135,7 @@ jobs:
               popd
             done
 
-  build-push-ecr:
+  build-and-push-to-ecr:
     executor: aws
     resource_class: medium.gen2
     parameters:
@@ -124,7 +151,7 @@ jobs:
             aws ecr get-login-password --region << pipeline.parameters.aws_region >> \
               | docker login --username AWS --password-stdin << pipeline.parameters.ecr_registry >>
             TAG="${CIRCLE_SHA1:0:7}"
-            IMAGE="<< pipeline.parameters.ecr_registry >>/bankcorp/<< parameters.service >>:${TAG}"
+            IMAGE="<< pipeline.parameters.ecr_registry >>/circle-banking-app/<< parameters.service >>:${TAG}"
             echo "Building ${IMAGE}"
             docker build -t "${IMAGE}" "src/<< parameters.service >>"
             docker push "${IMAGE}"
@@ -173,41 +200,133 @@ jobs:
         default: dev
     steps:
       - checkout
+      - aws-setup
+      - install-kubectl
+      - install-kustomize
+      - configure-kubeconfig
       - run:
-          name: Render Kustomize overlay (<< parameters.overlay >>)
+          name: Bootstrap JWT keys (auto-generate if Secrets Manager value is PLACEHOLDER)
+          command: |
+            REGION="<< pipeline.parameters.aws_region >>"
+            PRIV_ID="circle-banking-app/jwt-private-key"
+            PUB_ID="circle-banking-app/jwt-public-key"
+            CUR=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PRIV_ID" --query SecretString --output text)
+            if [ "$CUR" = "PLACEHOLDER" ]; then
+              echo "==> First run: generating RSA 2048 keypair"
+              openssl genrsa -out /tmp/priv.pem 2048 2>/dev/null
+              openssl rsa -in /tmp/priv.pem -pubout -out /tmp/pub.pem 2>/dev/null
+              aws secretsmanager put-secret-value --region "$REGION" --secret-id "$PRIV_ID" --secret-string "$(cat /tmp/priv.pem)" >/dev/null
+              aws secretsmanager put-secret-value --region "$REGION" --secret-id "$PUB_ID" --secret-string "$(cat /tmp/pub.pem)" >/dev/null
+              echo "==> JWT keys written to Secrets Manager"
+            else
+              echo "==> JWT keys already provisioned; pulling existing values"
+              aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PRIV_ID" --query SecretString --output text > /tmp/priv.pem
+              aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PUB_ID" --query SecretString --output text > /tmp/pub.pem
+            fi
+      - run:
+          name: Render Kustomize overlay (<< parameters.overlay >>) and substitute placeholders
           command: |
             TAG="${CIRCLE_SHA1:0:7}"
             REG="<< pipeline.parameters.ecr_registry >>"
-            curl -sSL -o /tmp/kustomize.tgz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
-            tar -xzf /tmp/kustomize.tgz -C /tmp
-            sudo mv /tmp/kustomize /usr/local/bin/
             cd kubernetes-manifests/overlays/<< parameters.overlay >>
             kustomize edit set image \
-              bankcorp/frontend=${REG}/bankcorp/frontend:${TAG} \
-              bankcorp/userservice=${REG}/bankcorp/userservice:${TAG} \
-              bankcorp/contacts=${REG}/bankcorp/contacts:${TAG} \
-              bankcorp/balancereader=${REG}/bankcorp/balancereader:${TAG} \
-              bankcorp/ledgerwriter=${REG}/bankcorp/ledgerwriter:${TAG} \
-              bankcorp/transactionhistory=${REG}/bankcorp/transactionhistory:${TAG} \
-              bankcorp/loadgenerator=${REG}/bankcorp/loadgenerator:${TAG}
+              circle-banking-app/frontend=${REG}/circle-banking-app/frontend:${TAG} \
+              circle-banking-app/userservice=${REG}/circle-banking-app/userservice:${TAG} \
+              circle-banking-app/contacts=${REG}/circle-banking-app/contacts:${TAG} \
+              circle-banking-app/balancereader=${REG}/circle-banking-app/balancereader:${TAG} \
+              circle-banking-app/ledgerwriter=${REG}/circle-banking-app/ledgerwriter:${TAG} \
+              circle-banking-app/transactionhistory=${REG}/circle-banking-app/transactionhistory:${TAG} \
+              circle-banking-app/loadgenerator=${REG}/circle-banking-app/loadgenerator:${TAG}
             kustomize build . > /tmp/manifest.yaml
-            echo "==> Rendered $(grep -c '^kind:' /tmp/manifest.yaml) Kubernetes manifests"
-            head -40 /tmp/manifest.yaml
+            sed -i "s|PLACEHOLDER_IAM_ROLE_ARN|<< pipeline.parameters.app_role_arn >>|g" /tmp/manifest.yaml
+            sed -i "s|PLACEHOLDER_ACM_CERT_ARN|<< pipeline.parameters.acm_cert_arn >>|g" /tmp/manifest.yaml
+            echo "==> Rendered $(grep -c '^kind:' /tmp/manifest.yaml) manifests"
+      - run:
+          name: Create namespace and jwt-keys secret (must exist before Deployments roll out)
+          command: |
+            kubectl apply -f kubernetes-manifests/base/namespace.yaml
+            kubectl -n << pipeline.parameters.k8s_namespace >> create secret generic jwt-keys \
+              --from-file=privatekey=/tmp/priv.pem \
+              --from-file=publickey=/tmp/pub.pem \
+              --dry-run=client -o yaml | kubectl apply -f -
+      - run:
+          name: kubectl apply rendered manifests
+          command: |
+            kubectl apply -f /tmp/manifest.yaml
+      - run:
+          name: Wait for rollouts (5-min per deployment)
+          command: |
+            NS="<< pipeline.parameters.k8s_namespace >>"
+            for d in frontend userservice contacts balancereader ledgerwriter transactionhistory; do
+              echo "==> waiting for $d"
+              kubectl -n "$NS" rollout status deploy/$d --timeout=5m || kubectl -n "$NS" describe deploy/$d
+            done
+            echo "==> Pods:"
+            kubectl -n "$NS" get pods -o wide
+            echo "==> Ingress:"
+            kubectl -n "$NS" get ingress
+      - run:
+          name: Capture live ALB DNS + zone for downstream dns-apply
+          command: |
+            mkdir -p /tmp/workspace
+            NS="<< pipeline.parameters.k8s_namespace >>"
+            for i in $(seq 1 30); do
+              ALB_DNS=$(kubectl get ingress main-ingress -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+              if [ -n "$ALB_DNS" ]; then break; fi
+              echo "waiting for ALB DNS... ($i/30)"; sleep 10
+            done
+            if [ -z "$ALB_DNS" ]; then
+              echo "WARN - ALB DNS not yet assigned. Writing empty values; dns-apply will skip."
+              : > /tmp/workspace/alb_dns
+              : > /tmp/workspace/alb_zone
+            else
+              # ALB DNS format: <name>-<random>.<region>.elb.amazonaws.com -- name is everything before the last hyphen-segment
+              ALB_NAME=$(echo "$ALB_DNS" | awk -F'.' '{print $1}' | sed 's/-[0-9]*$//' | sed 's/^internal-//')
+              ALB_ZONE=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" --region << pipeline.parameters.aws_region >> --query 'LoadBalancers[0].CanonicalHostedZoneId' --output text 2>/dev/null || true)
+              echo "$ALB_DNS" > /tmp/workspace/alb_dns
+              echo "$ALB_ZONE" > /tmp/workspace/alb_zone
+              echo "ALB_DNS  = $ALB_DNS"
+              echo "ALB_NAME = $ALB_NAME"
+              echo "ALB_ZONE = $ALB_ZONE"
+            fi
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - alb_dns
+            - alb_zone
 
   dns-apply:
-    executor: terraform
+    executor: aws
+    resource_class: medium.gen2
     steps:
       - checkout
       - aws-setup
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
-          name: Terraform apply (DNS — separate state)
+          name: Install Terraform
+          command: |
+            curl -sSL -o /tmp/tf.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
+            cd /tmp && unzip -o tf.zip >/dev/null
+            sudo mv /tmp/terraform /usr/local/bin/
+            terraform version
+      - run:
+          name: Terraform apply (DNS, with live ALB inputs)
           working_directory: terraform/dns
           command: |
+            ALB_DNS=$(cat /tmp/workspace/alb_dns 2>/dev/null || true)
+            ALB_ZONE=$(cat /tmp/workspace/alb_zone 2>/dev/null || true)
+            if [ -z "$ALB_DNS" ] || [ -z "$ALB_ZONE" ]; then
+              echo "ALB info missing — skipping DNS apply"
+              circleci step halt
+            fi
             terraform init -input=false \
               -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
               -backend-config="region=<< pipeline.parameters.aws_region >>"
-            terraform apply -input=false -auto-approve -lock=false
-            echo "==> Records created (empty list = ALB DNS not yet known):"
+            terraform apply -input=false -auto-approve -lock=false \
+              -var="alb_dns_name=$ALB_DNS" \
+              -var="alb_zone_id=$ALB_ZONE"
+            echo "==> Records created:"
             terraform output -json records_created
 
   deploy-observability:
@@ -215,13 +334,21 @@ jobs:
     resource_class: medium.gen2
     steps:
       - checkout
+      - aws-setup
+      - install-kubectl
+      - configure-kubeconfig
       - run:
-          name: Validate observability scripts
+          name: Install Helm
           command: |
-            echo "==> Verifying observability deploy script is present and executable"
-            test -f scripts/deploy-observability.sh && echo "PASS - script found"
+            curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            helm version
+      - run:
+          name: Deploy Grafana + Prometheus stack
+          command: |
             chmod +x scripts/deploy-observability.sh
-            bash -n scripts/deploy-observability.sh && echo "PASS - script syntax OK"
+            K8S_NAMESPACE=<< pipeline.parameters.k8s_namespace >> \
+            AWS_REGION=<< pipeline.parameters.aws_region >> \
+              bash scripts/deploy-observability.sh
 
   e2e-test:
     executor: python
@@ -229,37 +356,28 @@ jobs:
     steps:
       - checkout
       - run:
-          name: E2E smoke test
+          name: Smoke-test the app /ready endpoint over the public ALB
           command: |
-            echo "==> Validating deployed services are reachable"
-            # Until the public DNS / ALB cert is wired, treat this as a
-            # smoke test that the CI/CD pipeline reached the post-deploy
-            # stage successfully. The full Cypress suite will be wired
-            # once app.<env>.<domain> resolves.
-            python3 -c "
-            import sys
-            checks = [
-              ('frontend image built', True),
-              ('userservice image built', True),
-              ('contacts image built', True),
-              ('balancereader image built', True),
-              ('ledgerwriter image built', True),
-              ('transactionhistory image built', True),
-              ('loadgenerator image built', True),
-              ('deploy-dev rollout succeeded', True),
-              ('deploy-o11y helm release succeeded', True),
-            ]
-            failed = [name for name, ok in checks if not ok]
-            for name, ok in checks:
-              print(('PASS' if ok else 'FAIL') + ' - ' + name)
-            sys.exit(1 if failed else 0)
-            "
+            DOMAIN="<< pipeline.parameters.domain >>"
+            URL="https://app.dev.${DOMAIN}/ready"
+            echo "==> Probing $URL (up to 20 attempts, 15s apart)"
+            for i in $(seq 1 20); do
+              CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL" || echo "000")
+              echo "Attempt $i: HTTP $CODE"
+              if [ "$CODE" = "200" ] || [ "$CODE" = "302" ] || [ "$CODE" = "303" ]; then
+                echo "PASS - $URL returned $CODE"
+                exit 0
+              fi
+              sleep 15
+            done
+            echo "FAIL - $URL never returned a 2xx/3xx within the window"
+            exit 1
 
 # `deploy-ecr` serializes the full infra + build + deploy path under a
 # single org-wide lock. Plan and apply both touch Terraform state, so
 # both belong inside the group. ECR builds fan out in parallel after
-# apply creates the repos, then deploy-dev rolls out all images.
-# Inner-job `name` aliases must stay distinct across all groups.
+# apply creates the repos, then deploy-dev rolls out all images and
+# deploy-o11y installs the observability stack.
 job-groups:
   deploy-ecr:
     jobs:
@@ -269,38 +387,38 @@ job-groups:
           name: tf-apply
           requires:
             - tf-plan
-      - build-push-ecr:
-          name: ecr-frontend
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-frontend
           service: frontend
           requires:
             - tf-apply
-      - build-push-ecr:
-          name: ecr-userservice
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-userservice
           service: userservice
           requires:
             - tf-apply
-      - build-push-ecr:
-          name: ecr-contacts
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-contacts
           service: contacts
           requires:
             - tf-apply
-      - build-push-ecr:
-          name: ecr-balancereader
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-balancereader
           service: balancereader
           requires:
             - tf-apply
-      - build-push-ecr:
-          name: ecr-ledgerwriter
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-ledgerwriter
           service: ledgerwriter
           requires:
             - tf-apply
-      - build-push-ecr:
-          name: ecr-transactionhistory
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-transactionhistory
           service: transactionhistory
           requires:
             - tf-apply
-      - build-push-ecr:
-          name: ecr-loadgenerator
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-loadgenerator
           service: loadgenerator
           requires:
             - tf-apply
@@ -308,13 +426,13 @@ job-groups:
           name: deploy-dev
           overlay: dev
           requires:
-            - ecr-frontend
-            - ecr-userservice
-            - ecr-contacts
-            - ecr-balancereader
-            - ecr-ledgerwriter
-            - ecr-transactionhistory
-            - ecr-loadgenerator
+            - build-and-push-to-ecr-frontend
+            - build-and-push-to-ecr-userservice
+            - build-and-push-to-ecr-contacts
+            - build-and-push-to-ecr-balancereader
+            - build-and-push-to-ecr-ledgerwriter
+            - build-and-push-to-ecr-transactionhistory
+            - build-and-push-to-ecr-loadgenerator
       - deploy-observability:
           name: deploy-o11y
           requires:
@@ -331,9 +449,10 @@ workflows:
           name: circle-banking-app.deploy-ecr
           serial-group: << pipeline.project.slug >>/deploy-ecr
           requires: [go-test, python-test]
-      - dns-apply
-      - e2e-test:
+      - dns-apply:
           requires: [circle-banking-app.deploy-ecr]
+      - e2e-test:
+          requires: [dns-apply]
       - deploy-app:
           name: Deploy Production
           overlay: prod

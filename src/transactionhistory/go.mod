@@ -1,4 +1,4 @@
-module github.com/circleci/bankcorp/transactionhistory
+module github.com/circleci/circle-banking-app/transactionhistory
 
 go 1.22
 

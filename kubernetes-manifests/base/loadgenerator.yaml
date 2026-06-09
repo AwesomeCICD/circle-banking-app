@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: loadgenerator
-  namespace: bankcorp
+  namespace: circle-banking-app
 spec:
   replicas: 0
   selector:
@@ -13,10 +13,10 @@ spec:
       labels:
         app: loadgenerator
     spec:
-      serviceAccountName: bankcorp-app
+      serviceAccountName: circle-banking-app-sa
       containers:
       - name: loadgenerator
-        image: bankcorp/loadgenerator:latest
+        image: circle-banking-app/loadgenerator:latest
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"

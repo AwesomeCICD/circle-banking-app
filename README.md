@@ -41,7 +41,7 @@ cd src/userservice && pip install -r requirements.txt && pytest tests
 1. EKS cluster `fe-runner-cluster` with AWS Load Balancer Controller
 2. CircleCI OIDC context `aws-oidc-dev` with `AWS_ROLE_ARN`, `AWS_APP_ROLE_ARN`, `ACM_CERT_ARN`
 3. Terraform state bucket + `terraform.tfvars` (copy from `terraform/terraform.tfvars.example`)
-4. JWT keys in Secrets Manager (`bankcorp/jwt-private-key`, `bankcorp/jwt-public-key`)
+4. JWT keys in Secrets Manager (`circle-banking-app/jwt-private-key`, `circle-banking-app/jwt-public-key`)
 
 ## Pipeline flow
 
@@ -60,7 +60,7 @@ CircleCI pipeline parameters in `.circleci/config.yml`:
 |-----------|---------|
 | `eks_cluster_name` | `fe-runner-cluster` |
 | `aws_region` | `us-east-1` |
-| `k8s_namespace` | `bankcorp` |
+| `k8s_namespace` | `circle-banking-app` |
 | `domain` | `bankapp.example.com` |
 
 ## Demo login
