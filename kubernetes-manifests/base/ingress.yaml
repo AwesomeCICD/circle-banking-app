@@ -8,7 +8,7 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"
-    alb.ingress.kubernetes.io/group.name: circle-banking-app-main
+    alb.ingress.kubernetes.io/group.name: shared-alb
     alb.ingress.kubernetes.io/certificate-arn: PLACEHOLDER_ACM_CERT_ARN
 spec:
   ingressClassName: alb
