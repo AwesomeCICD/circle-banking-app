@@ -20,6 +20,21 @@ resource "aws_secretsmanager_secret_version" "jwt_private_key" {
   }
 }
 
+resource "aws_secretsmanager_secret" "demo_password" {
+  name                    = "circle-banking-app/demo-password"
+  description             = "Password for demo seed users"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "demo_password" {
+  secret_id     = aws_secretsmanager_secret.demo_password.id
+  secret_string = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
 resource "aws_secretsmanager_secret" "jwt_public_key" {
   name                    = "circle-banking-app/jwt-public-key"
   description             = "RSA public key for verifying JWT tokens (circle-banking-app services)"

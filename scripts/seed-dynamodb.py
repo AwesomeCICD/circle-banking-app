@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Seed DynamoDB with demo users, contacts, and starting balances."""
 
+import json
 import os
 import sys
 
@@ -18,7 +19,20 @@ USERS = [
 ]
 LOCAL_ROUTE = "883745000"
 STARTING_BALANCE = 1_000_000  # $10,000.00 in cents
-PASSWORD = b"circleci"
+SECRET_ID = "circle-banking-app/demo-password"
+
+
+def _get_demo_password() -> bytes:
+    """Fetch the demo password from Secrets Manager."""
+    sm = boto3.client("secretsmanager", region_name=REGION)
+    value = sm.get_secret_value(SecretId=SECRET_ID)["SecretString"]
+    if value == "PLACEHOLDER":
+        raise RuntimeError(
+            f"Secret {SECRET_ID} is still PLACEHOLDER — set it via: "
+            "aws secretsmanager put-secret-value --secret-id "
+            f"'{SECRET_ID}' --secret-string '<password>'"
+        )
+    return value.encode()
 
 
 def main():
@@ -27,7 +41,8 @@ def main():
     contacts = ddb.Table(f"circle-banking-app-contacts-{ENV}")
     balances = ddb.Table(f"circle-banking-app-balances-{ENV}")
 
-    pw_hash = bcrypt.hashpw(PASSWORD, bcrypt.gensalt()).decode()
+    password = _get_demo_password()
+    pw_hash = bcrypt.hashpw(password, bcrypt.gensalt()).decode()
 
     for account_id, username, first, last in USERS:
         users.put_item(Item={
