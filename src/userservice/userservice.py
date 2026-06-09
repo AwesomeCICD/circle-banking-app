@@ -262,7 +262,7 @@ def create_app():
     app.config['PUBLIC_KEY'] = open(os.environ.get('PUB_KEY_PATH'), 'r').read()
 
     # Configure database connection
-    users_db = UserDb(app.logger)
+    users_db = UserDb(logger=app.logger)
     return app
 
 

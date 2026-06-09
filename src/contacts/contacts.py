@@ -232,7 +232,7 @@ def create_app():
     app.config["LOCAL_ROUTING"] = os.environ.get("LOCAL_ROUTING_NUM")
     app.config["PUBLIC_KEY"] = open(os.environ.get("PUB_KEY_PATH"), "r").read()
 
-    contacts_db = ContactsDb(app.logger)
+    contacts_db = ContactsDb(logger=app.logger)
     return app
 
 

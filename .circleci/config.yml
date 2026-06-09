@@ -224,6 +224,19 @@ jobs:
               aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PUB_ID" --query SecretString --output text > /tmp/pub.pem
             fi
       - run:
+          name: Inject demo credentials from Secrets Manager
+          command: |
+            REGION="<< pipeline.parameters.aws_region >>"
+            SECRET_ID="AwesomeCICD/circle-banking-app/secrets"
+            SECRET_JSON=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$SECRET_ID" --query SecretString --output text)
+            DEMO_USER=$(echo "$SECRET_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['demo_username'])")
+            DEMO_PASS=$(echo "$SECRET_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['demo_password'])")
+            kubectl -n << pipeline.parameters.k8s_namespace >> create secret generic demo-credentials \
+              --from-literal=DEFAULT_USERNAME="$DEMO_USER" \
+              --from-literal=DEFAULT_PASSWORD="$DEMO_PASS" \
+              --dry-run=client -o yaml | kubectl apply -f -
+            echo "==> demo-credentials secret applied"
+      - run:
           name: Resolve ACM cert ARN from Terraform state
           command: |
             curl -sSL -o /tmp/tf.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
@@ -362,6 +375,22 @@ jobs:
             AWS_REGION=<< pipeline.parameters.aws_region >> \
               bash scripts/deploy-observability.sh
 
+  provision-dashboards:
+    executor: aws
+    resource_class: medium.gen2
+    steps:
+      - checkout
+      - aws-setup
+      - install-kubectl
+      - configure-kubeconfig
+      - run:
+          name: Provision Beyla Grafana dashboards
+          command: |
+            chmod +x scripts/provision-grafana-dashboards.sh
+            K8S_NAMESPACE=<< pipeline.parameters.k8s_namespace >> \
+            AWS_REGION=<< pipeline.parameters.aws_region >> \
+              bash scripts/provision-grafana-dashboards.sh
+
   e2e-test:
     executor: python
     resource_class: medium.gen2
@@ -448,6 +477,9 @@ job-groups:
           name: deploy-o11y
           requires:
             - tf-apply
+      - provision-dashboards:
+          requires:
+            - deploy-o11y
 
 workflows:
   main:

@@ -26,6 +26,8 @@ spec:
             name: service-api-config
         - configMapRef:
             name: demo-data-config
+        - secretRef:
+            name: demo-credentials
         env:
         - name: VERSION
           value: "0.1.0"
