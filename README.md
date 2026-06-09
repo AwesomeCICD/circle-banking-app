@@ -1,18 +1,15 @@
-# CCI Bank Corp — AWS Demo Application
+# Circle Banking App
 
-Polyglot microservices banking demo for CircleCI + Amazon EKS. Python frontend/services, Go ledger services, DynamoDB, ALB ingress, Grafana observability.
+Polyglot microservices banking demo for CircleCI + Amazon EKS.
 
-**Target cluster:** `fe-runner-cluster` (us-east-1)
+**Live app:** [https://app.dev.fieldeng-sphereci.com](https://app.dev.fieldeng-sphereci.com)
 
-## Architecture
+| Endpoint | URL |
+|----------|-----|
+| Banking UI | https://app.dev.fieldeng-sphereci.com |
+| Grafana | https://grafana.dev.fieldeng-sphereci.com |
 
-See [docs/proposed-architecture.md](docs/proposed-architecture.md) for diagrams.
-
-| Endpoint | Purpose |
-|----------|---------|
-| `app.dev.{domain}` | Banking UI |
-| `grafana.dev.{domain}` | Traces + metrics dashboards |
-| `hubble.dev.{domain}` | Network flow visualization (if Cilium/Hubble installed) |
+**Cluster:** `fe-runner-cluster` (us-east-1) — architecture docs in [docs/proposed-architecture.md](docs/proposed-architecture.md).
 
 ## Repo layout
 
@@ -61,7 +58,7 @@ CircleCI pipeline parameters in `.circleci/config.yml`:
 | `eks_cluster_name` | `fe-runner-cluster` |
 | `aws_region` | `us-east-1` |
 | `k8s_namespace` | `circle-banking-app` |
-| `domain` | `bankapp.example.com` |
+| `domain` | `fieldeng-sphereci.com` |
 
 ## Demo login
 
