@@ -20,12 +20,16 @@ Exercises the frontend endpoints for the system
 
 import json
 import logging
+import os
+import sys
 from string import ascii_letters, digits
 from random import randint, random, choice
 
 from locust import HttpUser, TaskSet, SequentialTaskSet, task, between
 
-MASTER_PASSWORD = "password"
+MASTER_PASSWORD = os.environ.get("LOCUST_PASSWORD", "")
+if not MASTER_PASSWORD:
+    sys.exit("FATAL: LOCUST_PASSWORD environment variable is not set or empty")
 
 TRANSACTION_ACCT_LIST = [str(randint(1111100000, 1111199999))
                          for _ in range(50)]

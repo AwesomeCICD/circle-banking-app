@@ -14,8 +14,9 @@ GRAFANA_PW=$(aws secretsmanager get-secret-value \
   --query SecretString --output text | python3 -c \
   "import json,sys; print(json.load(sys.stdin).get('grafana_admin_password','admin'))")
 if [ "${GRAFANA_PW}" = "PLACEHOLDER" ]; then
-  echo "WARN: grafana_admin_password is still PLACEHOLDER — using 'admin'"
-  GRAFANA_PW="admin"
+  echo "ERROR: grafana_admin_password is still PLACEHOLDER in Secrets Manager (${SECRETS_ID})."
+  echo "Set a real password before deploying: aws secretsmanager put-secret-value ..."
+  exit 1
 fi
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
