@@ -2,12 +2,12 @@
 
 Polyglot microservices banking demo for CircleCI + Amazon EKS.
 
-**Live app:** [https://app.dev.fieldeng-sphereci.com](https://app.dev.fieldeng-sphereci.com)
+**Live app:** [https://circle-banking-app.namer.fieldeng-sphereci.com](https://circle-banking-app.namer.fieldeng-sphereci.com)
 
 | Endpoint | URL |
 |----------|-----|
-| Banking UI | https://app.dev.fieldeng-sphereci.com |
-| Grafana | https://grafana.dev.fieldeng-sphereci.com |
+| Banking UI | https://circle-banking-app.namer.fieldeng-sphereci.com |
+| Grafana | https://grafana.namer.fieldeng-sphereci.com |
 
 **Cluster:** `fe-runner-cluster` (us-east-1) — architecture docs in [docs/proposed-architecture.md](docs/proposed-architecture.md).
 
@@ -47,7 +47,7 @@ cd src/userservice && pip install -r requirements.txt && pytest tests
 3. **terraform-plan/apply** — AWS resources (main branch for apply)
 4. **deploy-app** — `kubectl apply` via Kustomize to `fe-runner-cluster`
 5. **deploy-observability** — Helm: kube-prometheus-stack + Tempo
-6. **e2e-test** — Cypress against `app.dev.{domain}`
+6. **e2e-test** — smoke test against `circle-banking-app.namer.{domain}`
 
 ## Configuration
 

@@ -13,7 +13,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-  - host: app.dev.fieldeng-sphereci.com
+  - host: circle-banking-app.namer.fieldeng-sphereci.com
     http:
       paths:
       - path: /
@@ -23,7 +23,7 @@ spec:
             name: frontend
             port:
               number: 80
-  - host: grafana.dev.fieldeng-sphereci.com
+  - host: grafana.namer.fieldeng-sphereci.com
     http:
       paths:
       - path: /
@@ -33,7 +33,7 @@ spec:
             name: grafana
             port:
               number: 80
-  - host: hubble.dev.fieldeng-sphereci.com
+  - host: hubble.namer.fieldeng-sphereci.com
     http:
       paths:
       - path: /

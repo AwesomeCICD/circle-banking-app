@@ -26,3 +26,21 @@ variable "k8s_namespace" {
   type        = string
   default     = "circle-banking-app"
 }
+
+variable "domain_name" {
+  description = "Apex domain name."
+  type        = string
+  default     = "fieldeng-sphereci.com"
+}
+
+variable "region_prefix" {
+  description = "Regional subdomain prefix (e.g. namer, emea)."
+  type        = string
+  default     = "namer"
+}
+
+variable "hosted_zone_id" {
+  description = "Route 53 hosted zone ID for domain_name."
+  type        = string
+  default     = "Z09847963AEXN7Z99V23M"
+}

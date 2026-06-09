@@ -17,3 +17,8 @@ output "dynamodb_table_names" {
     balances     = aws_dynamodb_table.balances.name
   }
 }
+
+output "acm_cert_arn" {
+  description = "ARN of the regional wildcard ACM certificate (*.namer.fieldeng-sphereci.com)."
+  value       = aws_acm_certificate.regional.arn
+}

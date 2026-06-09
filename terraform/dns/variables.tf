@@ -15,10 +15,10 @@ variable "domain_name" {
   default     = "fieldeng-sphereci.com"
 }
 
-variable "env_prefix" {
-  description = "Prefix inserted between host and apex (e.g. dev → app.dev.fieldeng-sphereci.com). Empty = no prefix."
+variable "region_prefix" {
+  description = "Region prefix inserted between host and apex (e.g. namer → app.namer.fieldeng-sphereci.com)."
   type        = string
-  default     = "dev"
+  default     = "namer"
 }
 
 variable "alb_dns_name" {

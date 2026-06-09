@@ -224,6 +224,18 @@ jobs:
               aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PUB_ID" --query SecretString --output text > /tmp/pub.pem
             fi
       - run:
+          name: Resolve ACM cert ARN from Terraform state
+          command: |
+            curl -sSL -o /tmp/tf.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
+            cd /tmp && unzip -o tf.zip >/dev/null && sudo mv terraform /usr/local/bin/
+            cd ~/project/terraform
+            terraform init -input=false \
+              -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
+              -backend-config="region=<< pipeline.parameters.aws_region >>" >/dev/null 2>&1
+            CERT_ARN=$(terraform output -raw acm_cert_arn 2>/dev/null || echo "<< pipeline.parameters.acm_cert_arn >>")
+            echo "export RESOLVED_ACM_CERT_ARN='${CERT_ARN}'" >> "$BASH_ENV"
+            echo "==> ACM cert: $CERT_ARN"
+      - run:
           name: Render Kustomize overlay (<< parameters.overlay >>) and substitute placeholders
           command: |
             TAG="${CIRCLE_SHA1:0:7}"
@@ -239,7 +251,7 @@ jobs:
               circle-banking-app/loadgenerator=${REG}/circle-banking-app/loadgenerator:${TAG}
             kustomize build . > /tmp/manifest.yaml
             sed -i "s|PLACEHOLDER_IAM_ROLE_ARN|<< pipeline.parameters.app_role_arn >>|g" /tmp/manifest.yaml
-            sed -i "s|PLACEHOLDER_ACM_CERT_ARN|<< pipeline.parameters.acm_cert_arn >>|g" /tmp/manifest.yaml
+            sed -i "s|PLACEHOLDER_ACM_CERT_ARN|${RESOLVED_ACM_CERT_ARN}|g" /tmp/manifest.yaml
             echo "==> Rendered $(grep -c '^kind:' /tmp/manifest.yaml) manifests"
       - run:
           name: Create namespace and jwt-keys secret (must exist before Deployments roll out)
@@ -359,7 +371,7 @@ jobs:
           name: Smoke-test the app /ready endpoint over the public ALB
           command: |
             DOMAIN="<< pipeline.parameters.domain >>"
-            URL="https://app.dev.${DOMAIN}/ready"
+            URL="https://circle-banking-app.namer.${DOMAIN}/ready"
             echo "==> Probing $URL (up to 20 attempts, 15s apart)"
             for i in $(seq 1 20); do
               CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL" || echo "000")

@@ -1,12 +1,12 @@
 locals {
   alb_ready = var.alb_dns_name != "" && var.alb_zone_id != ""
 
-  prefix = var.env_prefix == "" ? "" : "${var.env_prefix}."
+  subdomain_suffix = "${var.region_prefix}.${var.domain_name}"
 
   subdomains = local.alb_ready ? {
-    app     = "app.${local.prefix}${var.domain_name}"
-    grafana = "grafana.${local.prefix}${var.domain_name}"
-    hubble  = "hubble.${local.prefix}${var.domain_name}"
+    app     = "circle-banking-app.${local.subdomain_suffix}"
+    grafana = "grafana.${local.subdomain_suffix}"
+    hubble  = "hubble.${local.subdomain_suffix}"
   } : {}
 }
 
@@ -31,3 +31,4 @@ output "records_created" {
 output "hosted_zone_name" {
   value = data.aws_route53_zone.main.name
 }
+
