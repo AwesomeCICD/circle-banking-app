@@ -4,6 +4,7 @@ metadata:
   name: environment-config
   namespace: circle-banking-app
 data:
+  PORT: "8080"
   AWS_REGION: "us-east-1"
   LOCAL_ROUTING_NUM: "883745000"
   PUB_KEY_PATH: "/tmp/.ssh/publickey"
