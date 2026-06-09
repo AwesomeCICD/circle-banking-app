@@ -1,4 +1,5 @@
 flask==2.1.2
+werkzeug==2.1.2
 gunicorn==20.1.0
 bcrypt==3.2.2
 bleach==5.0.1
