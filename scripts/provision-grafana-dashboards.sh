@@ -9,8 +9,7 @@ SECRETS_ID="AwesomeCICD/circle-banking-app/secrets"
 GRAFANA_LOCAL="http://localhost:3000"
 
 DASHBOARD_IDS=(
-  "19077"   # Beyla RED Metrics
-  "19923"   # Beyla Network Metrics
+  "19923"   # Beyla RED Metrics (19077 was removed from grafana.com)
 )
 
 PROMETHEUS_DS_UID="prometheus"
@@ -42,7 +41,10 @@ done
 for DASH_ID in "${DASHBOARD_IDS[@]}"; do
   echo "==> Importing dashboard ${DASH_ID} from grafana.com"
 
-  DASH_JSON=$(curl -sf "https://grafana.com/api/dashboards/${DASH_ID}/revisions/latest/download")
+  DASH_JSON=$(curl -sS -f "https://grafana.com/api/dashboards/${DASH_ID}/revisions/latest/download") || {
+    echo "    ✗ Failed to download dashboard ${DASH_ID} from grafana.com (check ID is still published)"
+    exit 1
+  }
 
   PAYLOAD=$(cat <<ENDJSON
 {
