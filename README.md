@@ -62,6 +62,6 @@ CircleCI pipeline parameters in `.circleci/config.yml`:
 
 ## Demo login
 
-Seed the database with `scripts/seed-dynamodb.py` (runs post-terraform-apply). The demo password is stored in Secrets Manager (`circle-banking-app/demo-password`) — set it before running the seed script.
+Seed the database with `scripts/seed-dynamodb.py` (runs post-terraform-apply). Credentials are stored in Secrets Manager (`AwesomeCICD/circle-banking-app/secrets`) — set `demo_password` and `grafana_admin_password` before first deploy.
 
 Implementation guide for agents: [CLAUDE.md](CLAUDE.md)

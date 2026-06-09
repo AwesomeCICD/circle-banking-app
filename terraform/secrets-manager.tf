@@ -13,23 +13,6 @@ resource "aws_secretsmanager_secret_version" "jwt_private_key" {
   secret_id     = aws_secretsmanager_secret.jwt_private_key.id
   secret_string = "PLACEHOLDER"
 
-  # Real key material is written by the deploy-dev bootstrap step; Terraform
-  # should not overwrite it on subsequent applies.
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
-}
-
-resource "aws_secretsmanager_secret" "demo_password" {
-  name                    = "circle-banking-app/demo-password"
-  description             = "Password for demo seed users"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "demo_password" {
-  secret_id     = aws_secretsmanager_secret.demo_password.id
-  secret_string = "PLACEHOLDER"
-
   lifecycle {
     ignore_changes = [secret_string]
   }
@@ -44,6 +27,30 @@ resource "aws_secretsmanager_secret" "jwt_public_key" {
 resource "aws_secretsmanager_secret_version" "jwt_public_key" {
   secret_id     = aws_secretsmanager_secret.jwt_public_key.id
   secret_string = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+# Consolidated app secrets as a single JSON key/value secret.
+# Keys: demo_password, grafana_admin_password
+# Set values via:
+#   aws secretsmanager put-secret-value \
+#     --secret-id AwesomeCICD/circle-banking-app/secrets \
+#     --secret-string '{"demo_password":"...","grafana_admin_password":"..."}'
+resource "aws_secretsmanager_secret" "app_secrets" {
+  name                    = "AwesomeCICD/circle-banking-app/secrets"
+  description             = "Consolidated app secrets (JSON key/value pairs)"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "app_secrets" {
+  secret_id = aws_secretsmanager_secret.app_secrets.id
+  secret_string = jsonencode({
+    demo_password          = "PLACEHOLDER"
+    grafana_admin_password = "PLACEHOLDER"
+  })
 
   lifecycle {
     ignore_changes = [secret_string]

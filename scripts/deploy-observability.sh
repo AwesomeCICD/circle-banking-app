@@ -5,6 +5,18 @@ set -euo pipefail
 
 NAMESPACE="${K8S_NAMESPACE:-circle-banking-app}"
 TEMPO_BUCKET="${TEMPO_TRACES_BUCKET:-}"
+REGION="${AWS_REGION:-us-east-1}"
+SECRETS_ID="AwesomeCICD/circle-banking-app/secrets"
+
+# Fetch Grafana admin password from Secrets Manager
+GRAFANA_PW=$(aws secretsmanager get-secret-value \
+  --region "${REGION}" --secret-id "${SECRETS_ID}" \
+  --query SecretString --output text | python3 -c \
+  "import json,sys; print(json.load(sys.stdin).get('grafana_admin_password','admin'))")
+if [ "${GRAFANA_PW}" = "PLACEHOLDER" ]; then
+  echo "WARN: grafana_admin_password is still PLACEHOLDER — using 'admin'"
+  GRAFANA_PW="admin"
+fi
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
@@ -17,7 +29,7 @@ helm upgrade --install kube-prometheus prometheus-community/kube-prometheus-stac
   --set grafana.service.type=ClusterIP \
   --set grafana.service.port=80 \
   --set grafana.service.targetPort=3000 \
-  --set grafana.adminPassword=admin \
+  --set "grafana.adminPassword=${GRAFANA_PW}" \
   --set "grafana.grafana\\.ini.server.root_url=https://grafana.namer.fieldeng-sphereci.com" \
   --set "grafana.grafana\\.ini.server.serve_from_sub_path=false" \
   --wait

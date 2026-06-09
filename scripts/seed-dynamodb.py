@@ -19,18 +19,18 @@ USERS = [
 ]
 LOCAL_ROUTE = "883745000"
 STARTING_BALANCE = 1_000_000  # $10,000.00 in cents
-SECRET_ID = "circle-banking-app/demo-password"
+SECRETS_ID = "AwesomeCICD/circle-banking-app/secrets"
 
 
 def _get_demo_password() -> bytes:
-    """Fetch the demo password from Secrets Manager."""
+    """Fetch the demo password from the consolidated app secrets."""
     sm = boto3.client("secretsmanager", region_name=REGION)
-    value = sm.get_secret_value(SecretId=SECRET_ID)["SecretString"]
+    raw = sm.get_secret_value(SecretId=SECRETS_ID)["SecretString"]
+    secrets = json.loads(raw)
+    value = secrets.get("demo_password", "PLACEHOLDER")
     if value == "PLACEHOLDER":
         raise RuntimeError(
-            f"Secret {SECRET_ID} is still PLACEHOLDER — set it via: "
-            "aws secretsmanager put-secret-value --secret-id "
-            f"'{SECRET_ID}' --secret-string '<password>'"
+            f"Secret {SECRETS_ID} key 'demo_password' is still PLACEHOLDER"
         )
     return value.encode()
 
