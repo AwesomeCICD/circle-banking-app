@@ -11,7 +11,7 @@ flask==2.1.2
 google-api-core==2.8.2
 google-auth==2.9.0
 grpcio==1.47.0
-gunicorn==20.1.0
+gunicorn==22.0.0
 idna==3.3
 importlib-metadata==4.12.0
 itsdangerous==2.1.2
