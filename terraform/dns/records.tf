@@ -6,7 +6,6 @@ locals {
   subdomains = local.alb_ready ? {
     app     = "circle-banking-app.${local.subdomain_suffix}"
     grafana = "grafana.${local.subdomain_suffix}"
-    hubble  = "hubble.${local.subdomain_suffix}"
   } : {}
 }
 

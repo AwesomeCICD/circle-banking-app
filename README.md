@@ -46,7 +46,7 @@ cd src/userservice && pip install -r requirements.txt && pytest tests
 2. **build-and-push** — 7 images to ECR (`docker build`, no Skaffold)
 3. **terraform-plan/apply** — AWS resources (main branch for apply)
 4. **deploy-app** — `kubectl apply` via Kustomize to `fe-runner-cluster`
-5. **deploy-observability** — Helm: kube-prometheus-stack + Tempo
+5. **deploy-observability** — Helm: kube-prometheus-stack + Tempo + Beyla
 6. **e2e-test** — smoke test against `circle-banking-app.namer.{domain}`
 
 ## Configuration

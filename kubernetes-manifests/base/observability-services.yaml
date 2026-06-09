@@ -1,5 +1,6 @@
-# Grafana and Hubble UI services — backends for the shared ALB ingress.
-# Deploy the full observability stack via the deploy-observability CircleCI job (Helm).
+# Grafana service — backend for the shared ALB ingress.
+# Deploy the full observability stack (Grafana, Prometheus, Beyla) via the
+# deploy-observability CircleCI job (Helm).
 apiVersion: v1
 kind: Service
 metadata:
@@ -11,15 +12,3 @@ spec:
   ports:
   - port: 80
     targetPort: 3000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: hubble-ui
-  namespace: circle-banking-app
-spec:
-  selector:
-    k8s-app: hubble-ui
-  ports:
-  - port: 80
-    targetPort: 8081
