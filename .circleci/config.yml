@@ -387,9 +387,8 @@ jobs:
 
 # `deploy-ecr` serializes the full infra + build + deploy path under a
 # single org-wide lock. Plan and apply both touch Terraform state, so
-# both belong inside the group. ECR builds fan out in parallel after
-# apply creates the repos, then deploy-dev rolls out all images and
-# deploy-o11y installs the observability stack.
+# both belong inside the group. ECR builds and deploy-o11y fan out in
+# parallel after apply; deploy-dev waits for all images to be pushed.
 job-groups:
   deploy-ecr:
     jobs:
@@ -448,7 +447,7 @@ job-groups:
       - deploy-observability:
           name: deploy-o11y
           requires:
-            - deploy-dev
+            - tf-apply
 
 workflows:
   main:
