@@ -34,11 +34,11 @@ resource "aws_secretsmanager_secret_version" "jwt_public_key" {
 }
 
 # Consolidated app secrets as a single JSON key/value secret.
-# Keys: demo_password, grafana_admin_password
+# Keys: demo_username, demo_password, grafana_admin_username, grafana_admin_password
 # Set values via:
 #   aws secretsmanager put-secret-value \
 #     --secret-id AwesomeCICD/circle-banking-app/secrets \
-#     --secret-string '{"demo_password":"...","grafana_admin_password":"..."}'
+#     --secret-string '{"demo_username":"...","demo_password":"...","grafana_admin_username":"admin","grafana_admin_password":"..."}'
 resource "aws_secretsmanager_secret" "app_secrets" {
   name                    = "AwesomeCICD/circle-banking-app/secrets"
   description             = "Consolidated app secrets (JSON key/value pairs)"
@@ -48,7 +48,9 @@ resource "aws_secretsmanager_secret" "app_secrets" {
 resource "aws_secretsmanager_secret_version" "app_secrets" {
   secret_id = aws_secretsmanager_secret.app_secrets.id
   secret_string = jsonencode({
+    demo_username          = "PLACEHOLDER"
     demo_password          = "PLACEHOLDER"
+    grafana_admin_username = "PLACEHOLDER"
     grafana_admin_password = "PLACEHOLDER"
   })
 
