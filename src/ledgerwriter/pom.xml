@@ -162,7 +162,7 @@
                 <version>3.4.3</version>
                 <configuration>
                     <from>
-                        <image>openjdk:17</image>
+                        <image>public.ecr.aws/docker/library/openjdk:17</image>
                     </from>
                 </configuration>
             </plugin>
