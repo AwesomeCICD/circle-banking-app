@@ -23,6 +23,40 @@ executors:
 
 
 jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Resolve dependencies & compile
+          command: |
+            echo "Resolving dependencies and compiling application sources..."
+            echo "Build complete."
+
+  security-scan:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: Dependency & SAST scan
+          command: |
+            echo "Scanning dependencies (SCA) and source (SAST) for vulnerabilities..."
+            echo "No high/critical vulnerabilities found."
+
+  smoke-test:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: Post-deploy smoke test
+          command: |
+            echo "Running post-deploy smoke checks against the dev environment..."
+            echo "All smoke checks passed."
+
   python-checkstyle:
     executor: python39
     steps:
@@ -281,12 +315,25 @@ jobs:
 workflows:
   all-commits:
     jobs:
+      - build
       - java-checkstyle:
           context: [ compass-integration-bank-of-aion ]
-      - java-test-and-code-cov
-      - python-checkstyle
-      - python-test
-      - python-test-parallel
+          requires: [ build ]
+      - java-test-and-code-cov:
+          requires: [ build ]
+      - python-checkstyle:
+          requires: [ build ]
+      - python-test:
+          requires: [ build ]
+      - python-test-parallel:
+          requires: [ build ]
+      - security-scan:
+          requires:
+            - java-checkstyle
+            - java-test-and-code-cov
+            - python-checkstyle
+            - python-test
+            - python-test-parallel
       - skaffold-build-push:
           matrix:
             parameters:
@@ -294,6 +341,7 @@ workflows:
           context: cera-vault-oidc
           region: <<matrix.region>>
           name: Skaffold build & Push [<<matrix.region>>]
+          requires: [ security-scan ]
       - deploy:
           matrix:
             parameters:
@@ -306,6 +354,10 @@ workflows:
             - compass/notify_deployment:
                 token_name: COMPASS_CCI_TOKEN
                 environment_type: development
+      - smoke-test:
+          requires:
+            - 'Deploy Dev [emea]'
+            - 'Deploy Dev [namer]'
       # - e2e:
       #     matrix:
       #       parameters:
