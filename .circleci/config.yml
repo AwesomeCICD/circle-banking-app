@@ -1,373 +1,591 @@
 version: 2.1
+
 orbs:
-  compass: atlassian-labs/compass@0.1.3
-  maven: circleci/maven@1.4
-          
+  aws-cli: circleci/aws-cli@5.4.1
+
+parameters:
+  ecr_registry:
+    type: string
+    default: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
+  eks_cluster_name:
+    type: string
+    default: "fe-runner-cluster"
+  aws_region:
+    type: string
+    default: "us-east-1"
+  k8s_namespace:
+    type: string
+    default: "circle-banking-app"
+  domain:
+    type: string
+    default: "fieldeng-sphereci.com"
+  app_environment:
+    type: string
+    default: "dev"
+  aws_ci_role_arn:
+    type: string
+    default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role"
+  # NOTE: For this branch the app pods use the CI role for IRSA. Tracked for
+  # hardening in Linear; will be replaced with a dedicated least-privilege role.
+  app_role_arn:
+    type: string
+    default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role"
+  acm_cert_arn:
+    type: string
+    default: "arn:aws:acm:us-east-1:992382483259:certificate/acf46071-40c3-4801-8124-634fca907378"
+
 executors:
   with-chrome:
     docker:
-      - image: 'cypress/browsers:node-22.14.0-chrome-133.0.6943.126-1-ff-135.0.1-edge-133.0.3065.82-1'
-
-  base:
+      - image: cypress/browsers:node-22.14.0-chrome-133.0.6943.126-1-ff-135.0.1-edge-133.0.3065.82-1
+  aws:
     docker:
-      - image: cimg/deploy:2022.08
-
-  jdk17:
+      - image: cimg/aws:2024.03
+  go:
     docker:
-      - image: cimg/openjdk:17.0.3
-    resource_class: xlarge
-
-  python38:
+      - image: cimg/go:1.22
+  python:
     docker:
-      - image: cimg/python:3.8
+      - image: cimg/python:3.10
+  terraform:
+    docker:
+      - image: hashicorp/terraform:1.7
 
+commands:
+  aws-setup:
+    steps:
+      - aws-cli/setup:
+          region: << pipeline.parameters.aws_region >>
+          role_arn: << pipeline.parameters.aws_ci_role_arn >>
+          role_session_name: "CircleCI-${CIRCLE_WORKFLOW_ID}-${CIRCLE_JOB}"
+  install-kubectl:
+    steps:
+      - run:
+          name: Install kubectl
+          command: |
+            curl -sSL -o /tmp/kubectl https://dl.k8s.io/release/v1.29.5/bin/linux/amd64/kubectl
+            chmod +x /tmp/kubectl
+            sudo mv /tmp/kubectl /usr/local/bin/
+            kubectl version --client=true
+  install-kustomize:
+    steps:
+      - run:
+          name: Install kustomize
+          command: |
+            curl -sSL -o /tmp/kustomize.tgz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
+            tar -xzf /tmp/kustomize.tgz -C /tmp
+            sudo mv /tmp/kustomize /usr/local/bin/
+            kustomize version
+  configure-kubeconfig:
+    steps:
+      - run:
+          name: Configure kubeconfig for << pipeline.parameters.eks_cluster_name >>
+          command: |
+            aws eks update-kubeconfig --region << pipeline.parameters.aws_region >> --name << pipeline.parameters.eks_cluster_name >>
+            kubectl cluster-info
 
 jobs:
-  python-checkstyle:
-    executor: python38
+  go-checkstyle:
+    executor: go
     steps:
       - checkout
-      - run: pip install pylint
       - run:
-          name: Lint Python
-          command: pylint --rcfile=./.pylintrc ./src/*/*.py
+          name: Go vet and staticcheck
+          command: |
+            go install honnef.co/go/tools/cmd/staticcheck@latest
+            for svc in balancereader ledgerwriter transactionhistory; do
+              echo "==> $svc"
+              (cd src/$svc && go vet ./... && staticcheck ./...)
+            done
+
+  go-test:
+    executor: go
+    parallelism: 15
+    steps:
+      - checkout
+      - run:
+          name: Go tests (split across parallel nodes)
+          command: |
+            REPO_ROOT=$(pwd)
+            RESULT_DIR="${REPO_ROOT}/test-results/go/${CIRCLE_NODE_INDEX:-0}"
+            mkdir -p "$RESULT_DIR"
+            TEST_LIST=/tmp/go-tests.txt
+            : > "$TEST_LIST"
+            for svc in balancereader ledgerwriter transactionhistory; do
+              (cd "src/$svc" && go test -list . | awk '/^Test/ { print }' | while read -r test; do
+                echo "${svc}/${test}"
+              done) >> "$TEST_LIST"
+            done
+            if [ ! -s "$TEST_LIST" ]; then
+              echo "No Go tests discovered; skipping split"
+              exit 0
+            fi
+            SPLIT_LIST=/tmp/go-tests-split.txt
+            circleci tests split --split-by=timings < "$TEST_LIST" > "$SPLIT_LIST"
+            if [ ! -s "$SPLIT_LIST" ]; then
+              echo "No Go tests assigned to node ${CIRCLE_NODE_INDEX:-0}"
+              exit 0
+            fi
+            go install gotest.tools/gotestsum@v1.12.2
+            export PATH="$(go env GOPATH)/bin:$PATH"
+            while IFS= read -r entry; do
+              svc="${entry%%/*}"
+              test="${entry#*/}"
+              safe_test=$(printf '%s' "$test" | tr -c 'A-Za-z0-9_.-' '_')
+              echo "==> ${svc} (${test})"
+              (cd "src/$svc" && gotestsum --format standard-verbose --junitfile "${RESULT_DIR}/${svc}-${safe_test}.xml" -- -race -run "^${test}$" ./...)
+            done < "$SPLIT_LIST"
+      - store_test_results:
+          path: test-results/go
+      - store_artifacts:
+          path: test-results/go
+
+  python-checkstyle:
+    executor: python
+    steps:
+      - checkout
+      - run:
+          command: pip install pylint && pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
-    executor: python38
+    executor: python
+    parallelism: 15
     steps:
       - checkout
-      - run: mkdir test-reports
       - run:
-          name: Test Python Services
+          name: Python tests (split across parallel nodes)
           command: |
-            for SERVICE in "contacts" "userservice"; do
-              echo "testing $SERVICE..."
-              # save current working dir to memory and cd to src/$SERVICE
-              pushd src/$SERVICE
-                python3 -m venv $HOME/venv-$SERVICE
-                source $HOME/venv-$SERVICE/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
-                TEST_FILES=$(circleci tests glob "tests/test_*.py")
-                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
-                deactivate
-              # return to previously saved path
-              popd
-            done
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-
-  python-test-parallel:
-    executor: python38
-    parallelism: 2 #match number of python services
-    steps:
-      - checkout
-      - run: mkdir test-reports
-      - run:
-          name: Test Python Services
-          command: |
-            MODULES=("contacts" "userservice")
-            MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
-            echo "Running modules ${MY_MODULES[@]}"
-            for MOD in "${MY_MODULES[@]}"; do
-                pushd src/$MOD >/dev/null
-                python3 -m venv $HOME/venv-$MOD
-                source $HOME/venv-$MOD/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
-                python -m pytest tests --junit-xml=../../test-reports/report-${MOD}.xml -v -p no:warnings
-                deactivate
-                # return to previously saved path
-                popd >/dev/null
-            done
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-
-  java-checkstyle:
-    executor: jdk17
-    steps:
-      - checkout
-      - maven/with_cache:  
-          verify_dependencies: false       
-          steps: 
-          - run: ./mvnw checkstyle:check
-
-
-  java-test-and-code-cov:
-    executor: jdk17
-    steps:
-      - checkout
-      - run: mkdir test-reports
-      - restore_cache:
-          keys:
-            - v2-mvn-full-{{ .Branch }}
-            - v2-mvn-full-
-      - run: mvn dependency:go-offline
-      - save_cache:
-          key: v2-mvn-full-{{ .Branch }}
-          paths:
-            - ~/.m2
-      - run:
-          environment:
-            PARAM_IT_PATTERN: '**/*IT*.java'
-            PARAM_TEST_DIR: 'src/**/src/test/java'
-            PARAM_TEST_PATTERN: '**/*Test*.java'
-          name: Parellel and Selected Tests
-          command: |
-            echo -e "\033[31m\033[4mNotes on Test Splitting & Re-running failed tests only \033[0m
-                    \033[34mCaveat 1:\033[0m  CircleCI Test Splitting uses filename by default, but JUnit reports use class names.
-                    Therefore this uses naive translation of linux file paths to dot separated package names and strips the .java suffix.
-                    \033[34mCaveat 2:\033[0m  Because we "skip" tests on re-runs, Maven will fail by default without `-DfailIfNoTests=false`
-                    \033[34mDebugging:\033[0m This will place all files used to decide tests in .circleci/tests and export it as an artifact for inspection/debugging.
-                    "
-            mkdir -p .circleci/tests/
-            #convert file names to classnames
-            circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
-                sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
-                tr "/" "." > .circleci/tests/surefire_classnames
-            #pass classnames to CircleCI CLI as test wrapper
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings  
-      - run: 
-          name: aggregate all module tests
-          when: always
-          command: |
-            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-            echo "checking $SERVICE..."
-            # save current working dir to memory and cd to src/$SERVICE
-            cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
-            # return to previously saved path
-            done
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-      - store_artifacts:
-          path: .circleci/tests/
-
-
-
-
-  skaffold-build-push:
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    executor: jdk17
-    environment:
-      APP_ENV: dev
-    steps:
-      - checkout
-      - run: |
-          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-          sudo install skaffold /usr/local/bin/
-      - load-credentials:
-          region: <<parameters.region>>
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - restore_cache:
-          keys:
-            - v2-mvn-full-{{ .Branch }}
-            - v2-mvn-full-
-      - restore_cache:
-          keys:
-            - v1-skaffold-{{ .Branch }}
-            - v1-skaffold-
-      - run: |
-          echo "${DOCKER_PWD}" | docker login --username ${DOCKER_LOGIN} --password-stdin docker.nexus.<<parameters.region>>.circleci-fieldeng.com
-          # seems like skaffold jib needs a eird kick, hit me locally, passes on second run
-          ./mvnw jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=3.2.1 --projects src/ledgerwriter --also-make jib:_skaffold-files-v2 --quiet --batch-mode
-          echo "Jib ready"
-          mkdir output
-          skaffold build --build-concurrency=4 --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --file-output=output/tags.json
-          ls /tmp/
-      - save_cache:
-          key: v1-skaffold-{{ .Branch }}
-          paths:
-            - ~/.skaffold/cache
-      - persist_to_workspace:
-          root: output
-          paths: [ 'tags.json' ]
- 
-
-  deploy:
-    executor: base
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    environment:
-      APP_ENV: <<parameters.app-environment>>
-      CERA_REGION: <<parameters.region>>
-    steps:
-      - checkout
-      - load-credentials:
-          region: <<parameters.region>>
-      # all k8s info (cluster, ns, etc) came from vault.
-      - run: echo "Now using ${K8S_USER}@${K8S_NAMESPACE}"
-      - run: |
-          sudo apt update && sudo apt install kubectl -y
-          echo ${K8S_CERT} | base64 -d > ca.crt
-          kubectl config set-cluster ${K8S_CLUSTER} --server=${K8S_URL} --certificate-authority=ca.crt
-          export DECODED_TOKEN=$(echo ${K8S_TOKEN} | base64 -d) #kubectl prints an encoded value, MUST decode it to work.
-          kubectl config set-credentials ${K8S_USER} --token=${DECODED_TOKEN}
-          kubectl config set-context default --user=${K8S_USER}  --cluster=${K8S_CLUSTER} --namespace ${K8S_NAMESPACE}
-          kubectl config use-context default
-          kubectl get serviceaccounts -n ${K8S_NAMESPACE}
-      - attach_workspace:
-          at: output
-      - run: 
-          name: Deploy CCI Bank Corp Services
-          command: |
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-            sudo install skaffold /usr/local/bin/
-            export APP_VERSION="0.1.<<pipeline.number>>"
-            export CIRCLE_PIPELINE_ID=<<pipeline.id>>
-            #only kuztomizing frontend for D&R demo
-            cat .circleci/release_tracking/kustomization.yaml | circleci env subst > dev-kubernetes-manifests/kustomization.yaml
-            cat .circleci/release_tracking/template_patch.yaml | circleci env subst > dev-kubernetes-manifests/template_patch.yaml
-            cat .circleci/release_tracking/virtual_service_${APP_ENV}.yaml | circleci env subst > dev-kubernetes-manifests/virtual_service.yaml
-            kubectl kustomize dev-kubernetes-manifests > dev-kubernetes-manifests/frontend-annotated.yaml
-            skaffold deploy --default-repo=docker.nexus.<<parameters.region>>.circleci-fieldeng.com --namespace=${K8S_NAMESPACE} --build-artifacts=output/tags.json
-      - run:
-          name: Wait for deployment
-          command: |
-            kubectl wait rollout -n ${K8S_NAMESPACE} frontend-rollout --for condition=Available=True --timeout=90s
-      - run: 
-          name: Print Frontend URL
-          command: kubectl get service frontend -n ${K8S_NAMESPACE} | awk '{print $4}'
-  e2e:
-    executor: with-chrome
-    parameters:
-      app-environment:
-        type: string
-        default: dev
-        description: Environment suffix used by namesapce and SA account name.
-      region:
-        type: string
-        description: where we are deploying, a CERA cluster region
-    steps:
-      - checkout
-      - run: 
-          name: Run Cypress Tests
-          command: |
-            URL="https://<<parameters.region>>.circleci-fieldeng.com"
-            if [ "<<parameters.app-environment>>" != "prod" ]; then
-              URL="https://<<parameters.app-environment>>.<<parameters.region>>.circleci-fieldeng.com"
+            REPO_ROOT=$(pwd)
+            RESULT_DIR="${REPO_ROOT}/test-results/python/${CIRCLE_NODE_INDEX:-0}"
+            mkdir -p "$RESULT_DIR"
+            TEST_LIST=/tmp/python-tests.txt
+            SPLIT_LIST=/tmp/python-tests-split.txt
+            : > "$TEST_LIST"
+            circleci tests glob "src/contacts/tests/test_ci_shard_*.py" >> "$TEST_LIST"
+            circleci tests glob "src/userservice/tests/test_ci_shard_*.py" >> "$TEST_LIST"
+            if [ ! -s "$TEST_LIST" ]; then
+              echo "No Python test files discovered; skipping split"
+              exit 0
             fi
-            echo "Testing against ${URL}"
-            cd ui-tests
-            npx cypress run \
-            --config baseUrl=${URL} \
-            --browser firefox \
-            --reporter junit \
-            --reporter-options "mochaFile=results/my-test-output-[hash].xml"
+            circleci tests split --split-by=timings < "$TEST_LIST" > "$SPLIT_LIST"
+            if [ ! -s "$SPLIT_LIST" ]; then
+              echo "No Python test files assigned to node ${CIRCLE_NODE_INDEX:-0}"
+              exit 0
+            fi
+            while IFS= read -r test_file; do
+              [ -z "$test_file" ] && continue
+              svc=$(echo "$test_file" | cut -d/ -f2)
+              rel="${test_file#src/${svc}/}"
+              safe_file=$(printf '%s' "$test_file" | tr -c 'A-Za-z0-9_.-' '_')
+              echo "==> ${svc} (${rel})"
+              pushd "src/$svc"
+              python3 -m venv "/tmp/venv-${svc}-${CIRCLE_NODE_INDEX:-0}"
+              source "/tmp/venv-${svc}-${CIRCLE_NODE_INDEX:-0}/bin/activate"
+              pip install -q -r requirements.txt
+              python -m pytest "$rel" -v -p no:warnings --junitxml="${RESULT_DIR}/${safe_file}.xml"
+              deactivate
+              popd
+            done < "$SPLIT_LIST"
       - store_test_results:
-          path: ui-tests/results
+          path: test-results/python
       - store_artifacts:
-          path: ui-tests/cypress/videos
-      - store_artifacts:
-          path: ui-tests/cypress/screenshots
-          
-commands:
-  load-credentials:
+          path: test-results/python
+
+  build-and-push-to-ecr:
+    executor: aws
+    resource_class: medium.gen2
     parameters:
-      region:
+      service:
         type: string
-        description: where we are deploying, a CERA cluster region
     steps:
+      - checkout
+      - aws-setup
+      - setup_remote_docker
       - run:
-          name: install vault agent (if not present)
+          name: Build & push << parameters.service >> → ECR
           command: |
-            vault -h && exit 0 || echo "Installing vault"
-            #only runs if vault command avbove failed
-            cd /tmp
-            wget https://releases.hashicorp.com/vault/1.12.2/vault_1.12.2_linux_amd64.zip
-            unzip vault_1.12.2_linux_amd64.zip
-            sudo mv vault /usr/local/bin        
-            vault -h    
+            aws ecr get-login-password --region << pipeline.parameters.aws_region >> \
+              | docker login --username AWS --password-stdin << pipeline.parameters.ecr_registry >>
+            TAG="${CIRCLE_SHA1:0:7}"
+            IMAGE="<< pipeline.parameters.ecr_registry >>/circle-banking-app/<< parameters.service >>:${TAG}"
+            echo "Building ${IMAGE}"
+            docker build -t "${IMAGE}" "src/<< parameters.service >>"
+            docker push "${IMAGE}"
+
+  terraform-plan:
+    executor: terraform
+    steps:
+      - checkout
+      - aws-setup
       - run:
-          name: Load Credentials from Vault
+          name: Terraform plan
+          working_directory: terraform
           command: |
-            echo "Environment (APP_ENV ): $APP_ENV"
-            export VAULT_ADDR="https://vault.<<parameters.region>>.circleci-fieldeng.com"
-            export VAULT_ROLE=cba-${APP_ENV}-deploy
-            echo $VAULT_ROLE
-            echo $CIRCLE_OIDC_TOKEN > .circleci/vault/token.json
-            circleci env subst < .circleci/vault/agent.hcl.tpl > .circleci/vault/agent.hcl
-            cat .circleci/vault/agent.hcl
-            vault agent -config=.circleci/vault/agent.hcl
+            terraform init -input=false \
+              -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
+              -backend-config="region=<< pipeline.parameters.aws_region >>"
+            terraform plan -input=false -lock=false -out=tfplan
+
+  terraform-apply:
+    executor: terraform
+    steps:
+      - checkout
       - run:
+          name: Skip apply outside cera-refactor
           command: |
-            source .circleci/vault/setenv
-            #export for other steps
-          name: Set Environment Variables from Vault
+            if [ "${CIRCLE_BRANCH}" != "cera-refactor" ]; then
+              echo "Skipping terraform apply on branch ${CIRCLE_BRANCH} (cera-refactor only for now)"
+              circleci step halt
+            fi
+      - aws-setup
+      - run:
+          name: Terraform apply
+          working_directory: terraform
+          command: |
+            terraform init -input=false \
+              -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
+              -backend-config="region=<< pipeline.parameters.aws_region >>"
+            terraform apply -input=false -auto-approve -lock=false
+
+  deploy-app:
+    executor: aws
+    resource_class: medium.gen2
+    parameters:
+      overlay:
+        type: string
+        default: dev
+    steps:
+      - checkout
+      - aws-setup
+      - install-kubectl
+      - install-kustomize
+      - configure-kubeconfig
+      - run:
+          name: Bootstrap JWT keys (auto-generate if Secrets Manager value is PLACEHOLDER)
+          command: |
+            REGION="<< pipeline.parameters.aws_region >>"
+            PRIV_ID="circle-banking-app/jwt-private-key"
+            PUB_ID="circle-banking-app/jwt-public-key"
+            CUR=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PRIV_ID" --query SecretString --output text)
+            if [ "$CUR" = "PLACEHOLDER" ]; then
+              echo "==> First run: generating RSA 2048 keypair"
+              openssl genrsa -out /tmp/priv.pem 2048 2>/dev/null
+              openssl rsa -in /tmp/priv.pem -pubout -out /tmp/pub.pem 2>/dev/null
+              aws secretsmanager put-secret-value --region "$REGION" --secret-id "$PRIV_ID" --secret-string "$(cat /tmp/priv.pem)" >/dev/null
+              aws secretsmanager put-secret-value --region "$REGION" --secret-id "$PUB_ID" --secret-string "$(cat /tmp/pub.pem)" >/dev/null
+              echo "==> JWT keys written to Secrets Manager"
+            else
+              echo "==> JWT keys already provisioned; pulling existing values"
+              aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PRIV_ID" --query SecretString --output text > /tmp/priv.pem
+              aws secretsmanager get-secret-value --region "$REGION" --secret-id "$PUB_ID" --query SecretString --output text > /tmp/pub.pem
+            fi
+      - run:
+          name: Inject demo credentials from Secrets Manager
+          command: |
+            REGION="<< pipeline.parameters.aws_region >>"
+            SECRET_ID="AwesomeCICD/circle-banking-app/secrets"
+            SECRET_JSON=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$SECRET_ID" --query SecretString --output text)
+            DEMO_USER=$(echo "$SECRET_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['demo_username'])")
+            DEMO_PASS=$(echo "$SECRET_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['demo_password'])")
+            kubectl -n << pipeline.parameters.k8s_namespace >> create secret generic demo-credentials \
+              --from-literal=DEFAULT_USERNAME="$DEMO_USER" \
+              --from-literal=DEFAULT_PASSWORD="$DEMO_PASS" \
+              --dry-run=client -o yaml | kubectl apply -f -
+            echo "==> demo-credentials secret applied"
+      - run:
+          name: Resolve ACM cert ARN from Terraform state
+          command: |
+            curl -sSL -o /tmp/tf.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
+            cd /tmp && unzip -o tf.zip >/dev/null && sudo mv terraform /usr/local/bin/
+            cd ~/project/terraform
+            terraform init -input=false \
+              -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
+              -backend-config="region=<< pipeline.parameters.aws_region >>" >/dev/null 2>&1
+            CERT_ARN=$(terraform output -raw acm_cert_arn 2>/dev/null || echo "<< pipeline.parameters.acm_cert_arn >>")
+            echo "export RESOLVED_ACM_CERT_ARN='${CERT_ARN}'" >> "$BASH_ENV"
+            echo "==> ACM cert: $CERT_ARN"
+      - run:
+          name: Render Kustomize overlay (<< parameters.overlay >>) and substitute placeholders
+          command: |
+            TAG="${CIRCLE_SHA1:0:7}"
+            REG="<< pipeline.parameters.ecr_registry >>"
+            cd kubernetes-manifests/overlays/<< parameters.overlay >>
+            kustomize edit set image \
+              circle-banking-app/frontend=${REG}/circle-banking-app/frontend:${TAG} \
+              circle-banking-app/userservice=${REG}/circle-banking-app/userservice:${TAG} \
+              circle-banking-app/contacts=${REG}/circle-banking-app/contacts:${TAG} \
+              circle-banking-app/balancereader=${REG}/circle-banking-app/balancereader:${TAG} \
+              circle-banking-app/ledgerwriter=${REG}/circle-banking-app/ledgerwriter:${TAG} \
+              circle-banking-app/transactionhistory=${REG}/circle-banking-app/transactionhistory:${TAG} \
+              circle-banking-app/loadgenerator=${REG}/circle-banking-app/loadgenerator:${TAG}
+            kustomize build . > /tmp/manifest.yaml
+            sed -i "s|PLACEHOLDER_IAM_ROLE_ARN|<< pipeline.parameters.app_role_arn >>|g" /tmp/manifest.yaml
+            sed -i "s|PLACEHOLDER_ACM_CERT_ARN|${RESOLVED_ACM_CERT_ARN}|g" /tmp/manifest.yaml
+            echo "==> Rendered $(grep -c '^kind:' /tmp/manifest.yaml) manifests"
+      - run:
+          name: Create namespace and jwt-keys secret (must exist before Deployments roll out)
+          command: |
+            kubectl apply -f kubernetes-manifests/base/namespace.yaml
+            kubectl -n << pipeline.parameters.k8s_namespace >> create secret generic jwt-keys \
+              --from-file=privatekey=/tmp/priv.pem \
+              --from-file=publickey=/tmp/pub.pem \
+              --dry-run=client -o yaml | kubectl apply -f -
+      - run:
+          name: kubectl apply rendered manifests
+          command: |
+            kubectl apply -f /tmp/manifest.yaml
+      - run:
+          name: Wait for rollouts (5-min per deployment)
+          command: |
+            NS="<< pipeline.parameters.k8s_namespace >>"
+            for d in frontend userservice contacts balancereader ledgerwriter transactionhistory; do
+              echo "==> waiting for $d"
+              kubectl -n "$NS" rollout status deploy/$d --timeout=5m || kubectl -n "$NS" describe deploy/$d
+            done
+            echo "==> Pods:"
+            kubectl -n "$NS" get pods -o wide
+            echo "==> Ingress:"
+            kubectl -n "$NS" get ingress
+      - run:
+          name: Capture live ALB DNS + zone for downstream dns-apply
+          command: |
+            mkdir -p /tmp/workspace
+            NS="<< pipeline.parameters.k8s_namespace >>"
+            for i in $(seq 1 30); do
+              ALB_DNS=$(kubectl get ingress main-ingress -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+              if [ -n "$ALB_DNS" ]; then break; fi
+              echo "waiting for ALB DNS... ($i/30)"; sleep 10
+            done
+            if [ -z "$ALB_DNS" ]; then
+              echo "WARN - ALB DNS not yet assigned. Writing empty values; dns-apply will skip."
+              : > /tmp/workspace/alb_dns
+              : > /tmp/workspace/alb_zone
+            else
+              # ALB DNS format: <name>-<random>.<region>.elb.amazonaws.com -- name is everything before the last hyphen-segment
+              ALB_NAME=$(echo "$ALB_DNS" | awk -F'.' '{print $1}' | sed 's/-[0-9]*$//' | sed 's/^internal-//')
+              ALB_ZONE=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" --region << pipeline.parameters.aws_region >> --query 'LoadBalancers[0].CanonicalHostedZoneId' --output text 2>/dev/null || true)
+              echo "$ALB_DNS" > /tmp/workspace/alb_dns
+              echo "$ALB_ZONE" > /tmp/workspace/alb_zone
+              echo "ALB_DNS  = $ALB_DNS"
+              echo "ALB_NAME = $ALB_NAME"
+              echo "ALB_ZONE = $ALB_ZONE"
+            fi
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - alb_dns
+            - alb_zone
+
+  dns-apply:
+    executor: aws
+    resource_class: medium.gen2
+    steps:
+      - checkout
+      - aws-setup
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Install Terraform
+          command: |
+            curl -sSL -o /tmp/tf.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
+            cd /tmp && unzip -o tf.zip >/dev/null
+            sudo mv /tmp/terraform /usr/local/bin/
+            terraform version
+      - run:
+          name: Terraform apply (DNS, with live ALB inputs)
+          working_directory: terraform/dns
+          command: |
+            ALB_DNS=$(cat /tmp/workspace/alb_dns 2>/dev/null || true)
+            ALB_ZONE=$(cat /tmp/workspace/alb_zone 2>/dev/null || true)
+            if [ -z "$ALB_DNS" ] || [ -z "$ALB_ZONE" ]; then
+              echo "ALB info missing — skipping DNS apply"
+              circleci step halt
+            fi
+            terraform init -input=false \
+              -backend-config="bucket=fieldeng-cera-bucket-992382483259-us-east-1-an" \
+              -backend-config="region=<< pipeline.parameters.aws_region >>"
+            terraform apply -input=false -auto-approve -lock=false \
+              -var="alb_dns_name=$ALB_DNS" \
+              -var="alb_zone_id=$ALB_ZONE"
+            echo "==> Records created:"
+            terraform output -json records_created
+
+  deploy-observability:
+    executor: aws
+    resource_class: medium.gen2
+    steps:
+      - checkout
+      - aws-setup
+      - install-kubectl
+      - configure-kubeconfig
+      - run:
+          name: Install Helm
+          command: |
+            curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            helm version
+      - run:
+          name: Deploy Grafana + Prometheus stack
+          command: |
+            chmod +x scripts/deploy-observability.sh
+            K8S_NAMESPACE=<< pipeline.parameters.k8s_namespace >> \
+            AWS_REGION=<< pipeline.parameters.aws_region >> \
+              bash scripts/deploy-observability.sh
+
+  e2e-test:
+    executor: python
+    resource_class: medium.gen2
+    parallelism: 15
+    steps:
+      - checkout
+      - run:
+          name: Smoke-test public endpoints (split across parallel nodes)
+          command: |
+            DOMAIN="<< pipeline.parameters.domain >>"
+            RESULT_DIR="test-results/e2e/${CIRCLE_NODE_INDEX:-0}"
+            mkdir -p "$RESULT_DIR"
+            write_junit() {
+              if [ -n "$5" ]; then
+                printf '<?xml version="1.0"?><testsuite name="e2e-public-endpoints" tests="1" failures="1" errors="0"><testcase classname="e2e.public-endpoint" name="%s %s"><failure message="%s">Last HTTP status: %s</failure></testcase></testsuite>\n' "$2" "$3" "$5" "$4" > "$1"
+              else
+                printf '<?xml version="1.0"?><testsuite name="e2e-public-endpoints" tests="1" failures="0" errors="0"><testcase classname="e2e.public-endpoint" name="%s %s"/></testsuite>\n' "$2" "$3" > "$1"
+              fi
+            }
+            TARGET_LIST=$(mktemp)
+            SPLIT_LIST=$(mktemp)
+            sed "s/\${DOMAIN}/${DOMAIN}/g" scripts/ci/e2e-targets.txt > "$TARGET_LIST"
+            if [ ! -s "$TARGET_LIST" ]; then
+              echo "No e2e targets discovered; skipping split"
+              exit 0
+            fi
+            circleci tests split --split-by=timings < "$TARGET_LIST" > "$SPLIT_LIST"
+            if [ ! -s "$SPLIT_LIST" ]; then
+              echo "No e2e targets assigned to node ${CIRCLE_NODE_INDEX:-0}"
+              exit 0
+            fi
+            TARGET_INDEX=0
+            while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              TARGET_INDEX=$((TARGET_INDEX + 1))
+              METHOD=$(echo "$line" | awk '{print $1}')
+              URL=$(echo "$line" | awk '{print $2}')
+              safe_target=$(printf '%s' "${METHOD}-${URL}" | tr -c 'A-Za-z0-9_.-' '_' | cut -c1-160)
+              RESULT_FILE="${RESULT_DIR}/$(printf '%03d' "$TARGET_INDEX")-${safe_target}.xml"
+              PASSED=0
+              CODE="000"
+              echo "==> Probing ${METHOD} ${URL} (up to 20 attempts, 15s apart)"
+              for i in $(seq 1 20); do
+                if [ "$METHOD" = "HEAD" ]; then
+                  RAW_CODE=$(curl -k -sS -o /dev/null -w "%{http_code}" --max-time 10 --head "$URL") || true
+                else
+                  RAW_CODE=$(curl -k -sS -o /dev/null -w "%{http_code}" --max-time 10 -X "$METHOD" "$URL") || true
+                fi
+                CODE=$(printf '%s' "$RAW_CODE" | awk 'match($0, /[0-9][0-9][0-9]/) { print substr($0, RSTART, 3); exit }')
+                [ -n "$CODE" ] || CODE="000"
+                echo "Attempt $i: HTTP $CODE"
+                case "$CODE" in
+                2??|3??)
+                  echo "PASS - ${URL} returned $CODE"
+                  write_junit "$RESULT_FILE" "$METHOD" "$URL" "$CODE" ""
+                  PASSED=1
+                  break
+                  ;;
+                esac
+                sleep 15
+              done
+              if [ "$PASSED" -ne 1 ]; then
+                echo "FAIL - ${URL} never returned a 2xx/3xx within the window"
+                write_junit "$RESULT_FILE" "$METHOD" "$URL" "$CODE" "Endpoint never returned an accepted HTTP status"
+                exit 1
+              fi
+            done < "$SPLIT_LIST"
+      - store_test_results:
+          path: test-results/e2e
+      - store_artifacts:
+          path: test-results/e2e
+
+# `deploy-ecr` serializes the full infra + build + deploy path under a
+# single org-wide lock. Plan and apply both touch Terraform state, so
+# both belong inside the group. ECR builds and deploy-o11y fan out in
+# parallel after apply; deploy-dev waits for all images to be pushed.
+job-groups:
+  deploy-ecr:
+    jobs:
+      - terraform-plan:
+          name: tf-plan
+      - terraform-apply:
+          name: tf-apply
+          requires:
+            - tf-plan
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-frontend
+          service: frontend
+          requires:
+            - tf-apply
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-userservice
+          service: userservice
+          requires:
+            - tf-apply
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-contacts
+          service: contacts
+          requires:
+            - tf-apply
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-balancereader
+          service: balancereader
+          requires:
+            - tf-apply
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-ledgerwriter
+          service: ledgerwriter
+          requires:
+            - tf-apply
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-transactionhistory
+          service: transactionhistory
+          requires:
+            - tf-apply
+      - build-and-push-to-ecr:
+          name: build-and-push-to-ecr-loadgenerator
+          service: loadgenerator
+          requires:
+            - tf-apply
+      - deploy-app:
+          name: deploy-dev
+          overlay: dev
+          requires:
+            - build-and-push-to-ecr-frontend
+            - build-and-push-to-ecr-userservice
+            - build-and-push-to-ecr-contacts
+            - build-and-push-to-ecr-balancereader
+            - build-and-push-to-ecr-ledgerwriter
+            - build-and-push-to-ecr-transactionhistory
+            - build-and-push-to-ecr-loadgenerator
+      - deploy-observability:
+          name: deploy-o11y
+          requires:
+            - tf-apply
 
 workflows:
   main:
     jobs:
-      - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
-      - java-test-and-code-cov
+      - go-checkstyle
+      - go-test
       - python-checkstyle
       - python-test
-      - python-test-parallel
-      - skaffold-build-push:
-          matrix:
-            parameters:
-              region: [emea, namer]
-          context: [cera-vault-oidc]
-          region: <<matrix.region>>
-          name: Skaffold build & Push [<<matrix.region>>]
-      - deploy:
-          serial-group: cba/deploy-dev-<<matrix.region>>
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: Deploy Dev [<<matrix.region>>]
-          region: <<matrix.region>>
-          requires: [ 'Skaffold build & Push [<<matrix.region>>]', python-test, java-test-and-code-cov ]
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: development
-      - e2e:
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: e2e [<<matrix.region>>]
-          requires: [ 'Deploy Dev [<<matrix.region>>]' ]
-          region: <<matrix.region>>
-      - deploy:
-          serial-group: cba/deploy-production-<<matrix.region>>
-          matrix:
-            parameters:
-              region: [emea,namer]
-          name: Deploy Production [<<matrix.region>>]
-          requires: 
-            - 'e2e [<<matrix.region>>]'
-          app-environment: prod
-          region: <<matrix.region>>
-          context: [ compass-integration-bank-of-aion, cera-vault-oidc-prod ]
+      - deploy-ecr:
+          name: circle-banking-app.deploy-ecr
+          serial-group: << pipeline.project.slug >>/deploy-ecr
+          requires: [go-test, python-test]
+      - dns-apply:
+          requires: [circle-banking-app.deploy-ecr]
+      - e2e-test:
+          requires: [dns-apply]
+      - deploy-app:
+          name: Deploy Production
+          overlay: prod
+          requires: [e2e-test]
           filters:
             branches:
-              only: [ main ]
-          post-steps:
-            - compass/notify_deployment:
-                token_name: COMPASS_CCI_TOKEN
-                environment_type: production
-                environment: CERA-Cluster-namer-Prod
+              only: cera-refactor

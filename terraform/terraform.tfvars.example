@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars (gitignored). All vars have defaults — uncomment to override.
+
+# aws_region            = "us-east-1"
+# existing_cluster_name = "fe-runner-cluster"
+# environment           = "dev"
+# k8s_namespace         = "circle-banking-app"

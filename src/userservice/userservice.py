@@ -20,14 +20,13 @@ import atexit
 from datetime import datetime, timedelta
 import logging
 import os
-import sys
 import re
 
 import bcrypt
 import jwt
 from flask import Flask, jsonify, request
 import bleach
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from botocore.exceptions import ClientError
 from db import UserDb
 
 
@@ -134,7 +133,7 @@ def create_app():
         except NameError as err:
             app.logger.error("Error creating new user: %s", str(err))
             return str(err), 409
-        except SQLAlchemyError as err:
+        except ClientError as err:
             app.logger.error("Error creating new user: %s", str(err))
             return 'failed to create user', 500
 
@@ -219,7 +218,7 @@ def create_app():
         except PermissionError as err:
             app.logger.error('Error logging in: %s', str(err))
             return str(err), 401
-        except SQLAlchemyError as err:
+        except ClientError as err:
             app.logger.error('Error logging in: %s', str(err))
             return 'failed to retrieve user information', 500
 
@@ -263,11 +262,7 @@ def create_app():
     app.config['PUBLIC_KEY'] = open(os.environ.get('PUB_KEY_PATH'), 'r').read()
 
     # Configure database connection
-    try:
-        users_db = UserDb(os.environ.get("ACCOUNTS_DB_URI"), app.logger)
-    except OperationalError:
-        app.logger.critical("users_db database connection failed")
-        sys.exit(1)
+    users_db = UserDb(logger=app.logger)
     return app
 
 

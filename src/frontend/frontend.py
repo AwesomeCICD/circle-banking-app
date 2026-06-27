@@ -636,7 +636,7 @@ def create_app():
             if tags["Key"] == 'aws:eks:cluster-name':
                 cluster_name = tags["Value"]
                 break
-    except (RequestException, HTTPError) as err:
+    except (FileNotFoundError, RequestException, HTTPError) as err:
         app.logger.warning(
             "Unable to retrieve cluster name from Deployment manifest.")
 
