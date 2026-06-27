@@ -100,15 +100,31 @@ jobs:
 
   go-test:
     executor: go
+    parallelism: 15
     steps:
       - checkout
       - run:
-          name: Go tests
+          name: Go tests (split across parallel nodes)
           command: |
+            TEST_LIST=/tmp/go-tests.txt
+            : > "$TEST_LIST"
             for svc in balancereader ledgerwriter transactionhistory; do
-              echo "==> $svc"
-              (cd src/$svc && go test -race ./...)
+              (cd "src/$svc" && go test -list . | grep '^Test' | while read -r test; do
+                echo "${svc}/${test}"
+              done) >> "$TEST_LIST"
             done
+            SPLIT_LIST=/tmp/go-tests-split.txt
+            circleci tests split --split-by=timings < "$TEST_LIST" > "$SPLIT_LIST"
+            if [ ! -s "$SPLIT_LIST" ]; then
+              echo "No Go tests assigned to node ${CIRCLE_NODE_INDEX:-0}"
+              exit 0
+            fi
+            while IFS= read -r entry; do
+              svc="${entry%%/*}"
+              test="${entry#*/}"
+              echo "==> ${svc} (${test})"
+              (cd "src/$svc" && go test -race -run "^${test}$" ./...)
+            done < "$SPLIT_LIST"
 
   python-checkstyle:
     executor: python
@@ -119,18 +135,26 @@ jobs:
 
   python-test:
     executor: python
+    parallelism: 15
     steps:
       - checkout
       - run:
-          name: Python tests
+          name: Python tests (split across parallel nodes)
           command: |
-            mkdir -p test-reports
-            for svc in contacts userservice; do
-              pushd src/$svc
-              python3 -m venv /tmp/venv-$svc
-              source /tmp/venv-$svc/bin/activate
+            TEST_FILES=$(circleci tests glob "src/contacts/tests/test_ci_shard_*.py src/userservice/tests/test_ci_shard_*.py" | circleci tests split --split-by=timings)
+            if [ -z "$TEST_FILES" ]; then
+              echo "No Python test files assigned to node ${CIRCLE_NODE_INDEX:-0}"
+              exit 0
+            fi
+            for test_file in $TEST_FILES; do
+              svc=$(echo "$test_file" | cut -d/ -f2)
+              rel="${test_file#src/${svc}/}"
+              echo "==> ${svc} (${rel})"
+              pushd "src/$svc"
+              python3 -m venv "/tmp/venv-${svc}-${CIRCLE_NODE_INDEX:-0}"
+              source "/tmp/venv-${svc}-${CIRCLE_NODE_INDEX:-0}/bin/activate"
               pip install -q -r requirements.txt
-              python -m pytest tests -v -p no:warnings || true
+              python -m pytest "$rel" -v -p no:warnings
               deactivate
               popd
             done
@@ -375,44 +399,40 @@ jobs:
             AWS_REGION=<< pipeline.parameters.aws_region >> \
               bash scripts/deploy-observability.sh
 
-  provision-dashboards:
-    executor: aws
-    resource_class: medium.gen2
-    steps:
-      - checkout
-      - aws-setup
-      - install-kubectl
-      - configure-kubeconfig
-      - run:
-          name: Provision Beyla Grafana dashboards
-          command: |
-            chmod +x scripts/provision-grafana-dashboards.sh
-            K8S_NAMESPACE=<< pipeline.parameters.k8s_namespace >> \
-            AWS_REGION=<< pipeline.parameters.aws_region >> \
-              bash scripts/provision-grafana-dashboards.sh
-
   e2e-test:
     executor: python
     resource_class: medium.gen2
+    parallelism: 15
     steps:
       - checkout
       - run:
-          name: Smoke-test the app /ready endpoint over the public ALB
+          name: Smoke-test public endpoints (split across parallel nodes)
           command: |
             DOMAIN="<< pipeline.parameters.domain >>"
-            URL="https://circle-banking-app.namer.${DOMAIN}/ready"
-            echo "==> Probing $URL (up to 20 attempts, 15s apart)"
-            for i in $(seq 1 20); do
-              CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL" || echo "000")
-              echo "Attempt $i: HTTP $CODE"
-              if [ "$CODE" = "200" ] || [ "$CODE" = "302" ] || [ "$CODE" = "303" ]; then
-                echo "PASS - $URL returned $CODE"
-                exit 0
-              fi
-              sleep 15
-            done
-            echo "FAIL - $URL never returned a 2xx/3xx within the window"
-            exit 1
+            TARGETS=$(sed "s/\${DOMAIN}/${DOMAIN}/g" scripts/ci/e2e-targets.txt | circleci tests split --split-by=timings)
+            if [ -z "$TARGETS" ]; then
+              echo "No e2e targets assigned to node ${CIRCLE_NODE_INDEX:-0}"
+              exit 0
+            fi
+            while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              METHOD=$(echo "$line" | awk '{print $1}')
+              URL=$(echo "$line" | awk '{print $2}')
+              echo "==> Probing ${METHOD} ${URL} (up to 20 attempts, 15s apart)"
+              for i in $(seq 1 20); do
+                CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 -X "$METHOD" "$URL" || echo "000")
+                echo "Attempt $i: HTTP $CODE"
+                if [ "$CODE" = "200" ] || [ "$CODE" = "302" ] || [ "$CODE" = "303" ]; then
+                  echo "PASS - ${URL} returned $CODE"
+                  break
+                fi
+                if [ "$i" -eq 20 ]; then
+                  echo "FAIL - ${URL} never returned a 2xx/3xx within the window"
+                  exit 1
+                fi
+                sleep 15
+              done
+            done <<< "$TARGETS"
 
 # `deploy-ecr` serializes the full infra + build + deploy path under a
 # single org-wide lock. Plan and apply both touch Terraform state, so
@@ -477,9 +497,6 @@ job-groups:
           name: deploy-o11y
           requires:
             - tf-apply
-      - provision-dashboards:
-          requires:
-            - deploy-o11y
 
 workflows:
   main:
