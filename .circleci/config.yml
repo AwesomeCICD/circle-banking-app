@@ -109,10 +109,14 @@ jobs:
             TEST_LIST=/tmp/go-tests.txt
             : > "$TEST_LIST"
             for svc in balancereader ledgerwriter transactionhistory; do
-              (cd "src/$svc" && go test -list . | grep '^Test' | while read -r test; do
+              (cd "src/$svc" && go test -list . | awk '/^Test/ { print }' | while read -r test; do
                 echo "${svc}/${test}"
               done) >> "$TEST_LIST"
             done
+            if [ ! -s "$TEST_LIST" ]; then
+              echo "No Go tests discovered; skipping split"
+              exit 0
+            fi
             SPLIT_LIST=/tmp/go-tests-split.txt
             circleci tests split --split-by=timings < "$TEST_LIST" > "$SPLIT_LIST"
             if [ ! -s "$SPLIT_LIST" ]; then
@@ -141,12 +145,22 @@ jobs:
       - run:
           name: Python tests (split across parallel nodes)
           command: |
-            TEST_FILES=$(circleci tests glob "src/contacts/tests/test_ci_shard_*.py src/userservice/tests/test_ci_shard_*.py" | circleci tests split --split-by=timings)
-            if [ -z "$TEST_FILES" ]; then
+            TEST_LIST=/tmp/python-tests.txt
+            SPLIT_LIST=/tmp/python-tests-split.txt
+            : > "$TEST_LIST"
+            circleci tests glob "src/contacts/tests/test_ci_shard_*.py" >> "$TEST_LIST"
+            circleci tests glob "src/userservice/tests/test_ci_shard_*.py" >> "$TEST_LIST"
+            if [ ! -s "$TEST_LIST" ]; then
+              echo "No Python test files discovered; skipping split"
+              exit 0
+            fi
+            circleci tests split --split-by=timings < "$TEST_LIST" > "$SPLIT_LIST"
+            if [ ! -s "$SPLIT_LIST" ]; then
               echo "No Python test files assigned to node ${CIRCLE_NODE_INDEX:-0}"
               exit 0
             fi
-            for test_file in $TEST_FILES; do
+            while IFS= read -r test_file; do
+              [ -z "$test_file" ] && continue
               svc=$(echo "$test_file" | cut -d/ -f2)
               rel="${test_file#src/${svc}/}"
               echo "==> ${svc} (${rel})"
@@ -157,7 +171,7 @@ jobs:
               python -m pytest "$rel" -v -p no:warnings
               deactivate
               popd
-            done
+            done < "$SPLIT_LIST"
 
   build-and-push-to-ecr:
     executor: aws
@@ -409,9 +423,15 @@ jobs:
           name: Smoke-test public endpoints (split across parallel nodes)
           command: |
             DOMAIN="<< pipeline.parameters.domain >>"
-            TARGET_FILE=$(mktemp)
-            sed "s/\${DOMAIN}/${DOMAIN}/g" scripts/ci/e2e-targets.txt | circleci tests split --split-by=timings > "$TARGET_FILE"
-            if [ ! -s "$TARGET_FILE" ]; then
+            TARGET_LIST=$(mktemp)
+            SPLIT_LIST=$(mktemp)
+            sed "s/\${DOMAIN}/${DOMAIN}/g" scripts/ci/e2e-targets.txt > "$TARGET_LIST"
+            if [ ! -s "$TARGET_LIST" ]; then
+              echo "No e2e targets discovered; skipping split"
+              exit 0
+            fi
+            circleci tests split --split-by=timings < "$TARGET_LIST" > "$SPLIT_LIST"
+            if [ ! -s "$SPLIT_LIST" ]; then
               echo "No e2e targets assigned to node ${CIRCLE_NODE_INDEX:-0}"
               exit 0
             fi
@@ -433,7 +453,7 @@ jobs:
                 fi
                 sleep 15
               done
-            done < "$TARGET_FILE"
+            done < "$SPLIT_LIST"
 
 # `deploy-ecr` serializes the full infra + build + deploy path under a
 # single org-wide lock. Plan and apply both touch Terraform state, so
