@@ -409,8 +409,9 @@ jobs:
           name: Smoke-test public endpoints (split across parallel nodes)
           command: |
             DOMAIN="<< pipeline.parameters.domain >>"
-            TARGETS=$(sed "s/\${DOMAIN}/${DOMAIN}/g" scripts/ci/e2e-targets.txt | circleci tests split --split-by=timings)
-            if [ -z "$TARGETS" ]; then
+            TARGET_FILE=$(mktemp)
+            sed "s/\${DOMAIN}/${DOMAIN}/g" scripts/ci/e2e-targets.txt | circleci tests split --split-by=timings > "$TARGET_FILE"
+            if [ ! -s "$TARGET_FILE" ]; then
               echo "No e2e targets assigned to node ${CIRCLE_NODE_INDEX:-0}"
               exit 0
             fi
@@ -432,7 +433,7 @@ jobs:
                 fi
                 sleep 15
               done
-            done <<< "$TARGETS"
+            done < "$TARGET_FILE"
 
 # `deploy-ecr` serializes the full infra + build + deploy path under a
 # single org-wide lock. Plan and apply both touch Terraform state, so
