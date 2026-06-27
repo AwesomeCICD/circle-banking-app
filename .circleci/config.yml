@@ -474,14 +474,22 @@ jobs:
               CODE="000"
               echo "==> Probing ${METHOD} ${URL} (up to 20 attempts, 15s apart)"
               for i in $(seq 1 20); do
-                CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 -X "$METHOD" "$URL" || echo "000")
+                if [ "$METHOD" = "HEAD" ]; then
+                  RAW_CODE=$(curl -k -sS -o /dev/null -w "%{http_code}" --max-time 10 --head "$URL") || true
+                else
+                  RAW_CODE=$(curl -k -sS -o /dev/null -w "%{http_code}" --max-time 10 -X "$METHOD" "$URL") || true
+                fi
+                CODE=$(printf '%s' "$RAW_CODE" | awk 'match($0, /[0-9][0-9][0-9]/) { print substr($0, RSTART, 3); exit }')
+                [ -n "$CODE" ] || CODE="000"
                 echo "Attempt $i: HTTP $CODE"
-                if [ "$CODE" = "200" ] || [ "$CODE" = "302" ] || [ "$CODE" = "303" ]; then
+                case "$CODE" in
+                2??|3??)
                   echo "PASS - ${URL} returned $CODE"
                   write_junit "$RESULT_FILE" "$METHOD" "$URL" "$CODE" ""
                   PASSED=1
                   break
-                fi
+                  ;;
+                esac
                 sleep 15
               done
               if [ "$PASSED" -ne 1 ]; then
