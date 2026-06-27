@@ -106,6 +106,9 @@ jobs:
       - run:
           name: Go tests (split across parallel nodes)
           command: |
+            REPO_ROOT=$(pwd)
+            RESULT_DIR="${REPO_ROOT}/test-results/go/${CIRCLE_NODE_INDEX:-0}"
+            mkdir -p "$RESULT_DIR"
             TEST_LIST=/tmp/go-tests.txt
             : > "$TEST_LIST"
             for svc in balancereader ledgerwriter transactionhistory; do
@@ -123,12 +126,19 @@ jobs:
               echo "No Go tests assigned to node ${CIRCLE_NODE_INDEX:-0}"
               exit 0
             fi
+            go install gotest.tools/gotestsum@v1.12.2
+            export PATH="$(go env GOPATH)/bin:$PATH"
             while IFS= read -r entry; do
               svc="${entry%%/*}"
               test="${entry#*/}"
+              safe_test=$(printf '%s' "$test" | tr -c 'A-Za-z0-9_.-' '_')
               echo "==> ${svc} (${test})"
-              (cd "src/$svc" && go test -race -run "^${test}$" ./...)
+              (cd "src/$svc" && gotestsum --format standard-verbose --junitfile "${RESULT_DIR}/${svc}-${safe_test}.xml" -- -race -run "^${test}$" ./...)
             done < "$SPLIT_LIST"
+      - store_test_results:
+          path: test-results/go
+      - store_artifacts:
+          path: test-results/go
 
   python-checkstyle:
     executor: python
@@ -145,6 +155,9 @@ jobs:
       - run:
           name: Python tests (split across parallel nodes)
           command: |
+            REPO_ROOT=$(pwd)
+            RESULT_DIR="${REPO_ROOT}/test-results/python/${CIRCLE_NODE_INDEX:-0}"
+            mkdir -p "$RESULT_DIR"
             TEST_LIST=/tmp/python-tests.txt
             SPLIT_LIST=/tmp/python-tests-split.txt
             : > "$TEST_LIST"
@@ -163,15 +176,20 @@ jobs:
               [ -z "$test_file" ] && continue
               svc=$(echo "$test_file" | cut -d/ -f2)
               rel="${test_file#src/${svc}/}"
+              safe_file=$(printf '%s' "$test_file" | tr -c 'A-Za-z0-9_.-' '_')
               echo "==> ${svc} (${rel})"
               pushd "src/$svc"
               python3 -m venv "/tmp/venv-${svc}-${CIRCLE_NODE_INDEX:-0}"
               source "/tmp/venv-${svc}-${CIRCLE_NODE_INDEX:-0}/bin/activate"
               pip install -q -r requirements.txt
-              python -m pytest "$rel" -v -p no:warnings
+              python -m pytest "$rel" -v -p no:warnings --junitxml="${RESULT_DIR}/${safe_file}.xml"
               deactivate
               popd
             done < "$SPLIT_LIST"
+      - store_test_results:
+          path: test-results/python
+      - store_artifacts:
+          path: test-results/python
 
   build-and-push-to-ecr:
     executor: aws
@@ -423,6 +441,15 @@ jobs:
           name: Smoke-test public endpoints (split across parallel nodes)
           command: |
             DOMAIN="<< pipeline.parameters.domain >>"
+            RESULT_DIR="test-results/e2e/${CIRCLE_NODE_INDEX:-0}"
+            mkdir -p "$RESULT_DIR"
+            write_junit() {
+              if [ -n "$5" ]; then
+                printf '<?xml version="1.0"?><testsuite name="e2e-public-endpoints" tests="1" failures="1" errors="0"><testcase classname="e2e.public-endpoint" name="%s %s"><failure message="%s">Last HTTP status: %s</failure></testcase></testsuite>\n' "$2" "$3" "$5" "$4" > "$1"
+              else
+                printf '<?xml version="1.0"?><testsuite name="e2e-public-endpoints" tests="1" failures="0" errors="0"><testcase classname="e2e.public-endpoint" name="%s %s"/></testsuite>\n' "$2" "$3" > "$1"
+              fi
+            }
             TARGET_LIST=$(mktemp)
             SPLIT_LIST=$(mktemp)
             sed "s/\${DOMAIN}/${DOMAIN}/g" scripts/ci/e2e-targets.txt > "$TARGET_LIST"
@@ -435,25 +462,38 @@ jobs:
               echo "No e2e targets assigned to node ${CIRCLE_NODE_INDEX:-0}"
               exit 0
             fi
+            TARGET_INDEX=0
             while IFS= read -r line; do
               [ -z "$line" ] && continue
+              TARGET_INDEX=$((TARGET_INDEX + 1))
               METHOD=$(echo "$line" | awk '{print $1}')
               URL=$(echo "$line" | awk '{print $2}')
+              safe_target=$(printf '%s' "${METHOD}-${URL}" | tr -c 'A-Za-z0-9_.-' '_' | cut -c1-160)
+              RESULT_FILE="${RESULT_DIR}/$(printf '%03d' "$TARGET_INDEX")-${safe_target}.xml"
+              PASSED=0
+              CODE="000"
               echo "==> Probing ${METHOD} ${URL} (up to 20 attempts, 15s apart)"
               for i in $(seq 1 20); do
                 CODE=$(curl -k -s -o /dev/null -w "%{http_code}" --max-time 10 -X "$METHOD" "$URL" || echo "000")
                 echo "Attempt $i: HTTP $CODE"
                 if [ "$CODE" = "200" ] || [ "$CODE" = "302" ] || [ "$CODE" = "303" ]; then
                   echo "PASS - ${URL} returned $CODE"
+                  write_junit "$RESULT_FILE" "$METHOD" "$URL" "$CODE" ""
+                  PASSED=1
                   break
-                fi
-                if [ "$i" -eq 20 ]; then
-                  echo "FAIL - ${URL} never returned a 2xx/3xx within the window"
-                  exit 1
                 fi
                 sleep 15
               done
+              if [ "$PASSED" -ne 1 ]; then
+                echo "FAIL - ${URL} never returned a 2xx/3xx within the window"
+                write_junit "$RESULT_FILE" "$METHOD" "$URL" "$CODE" "Endpoint never returned an accepted HTTP status"
+                exit 1
+              fi
             done < "$SPLIT_LIST"
+      - store_test_results:
+          path: test-results/e2e
+      - store_artifacts:
+          path: test-results/e2e
 
 # `deploy-ecr` serializes the full infra + build + deploy path under a
 # single org-wide lock. Plan and apply both touch Terraform state, so
