@@ -1,4 +1,13 @@
 version: 2.1
+
+parameters:
+  run_full_suite:
+    type: boolean
+    default: true
+  run_targeted_tests:
+    type: boolean
+    default: false
+
 orbs:
   maven: circleci/maven@1.4
 
@@ -322,6 +331,7 @@ jobs:
 
 workflows:
   main:
+    when: << pipeline.parameters.run_full_suite >>
     jobs:
       - java-checkstyle:
           context: [ compass-integration-bank-of-aion ]
@@ -354,3 +364,11 @@ workflows:
       - post-deploy-smoke-test:
           requires:
             - deploy-preview
+
+  # Scoped "validate my fix" workflow: triggered on the branch's latest commit
+  # with run_targeted_tests=true so only the relevant job runs, not the whole
+  # heavy suite. Trigger via API/CLI/MCP or the web app trigger modal.
+  validate-fix:
+    when: << pipeline.parameters.run_targeted_tests >>
+    jobs:
+      - java-test-and-code-cov
