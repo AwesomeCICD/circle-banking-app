@@ -1,469 +1,72 @@
 version: 2.1
+setup: true
 
+orbs:
+  path-filtering: circleci/path-filtering@3.0.0
+  continuation: circleci/continuation@2.0.1
+  circleci-cli: circleci/circleci-cli@0.1.11
+
+# Like Freshpaint, the setup config chooses and validates the continuation.
+# API-triggered deploy parameters are declared again in deploy-only-config.yml,
+# but are not passed through /tmp/pipeline-parameters.json.
 parameters:
-  run_full_suite:
-    type: boolean
-    default: true
-  run_targeted_tests:
+  always-continue:
     type: boolean
     default: false
-  deploy_only:
+  deploy-only:
     type: boolean
     default: false
-  deploy_action:
+  deploy-action:
     type: string
     default: redeploy
-  artifact_ref:
+  artifact-ref:
     type: string
     default: ""
 
-orbs:
-  maven: circleci/maven@1.4
-
-executors:
-  jdk17:
-    docker:
-      - image: cimg/openjdk:17.0.3
-    resource_class: xlarge
-
-  python38:
-    docker:
-      - image: cimg/python:3.8
-
-  docker-builder:
-    docker:
-      - image: cimg/base:current
-
 jobs:
-  python-checkstyle:
-    executor: python38
+  setup:
+    executor: path-filtering/default
+    resource_class: medium
     steps:
       - checkout
-      - run: pip install pylint
-      - run:
-          name: Lint Python
-          command: pylint --rcfile=./.pylintrc ./src/*/*.py
+      - circleci-cli/install:
+          version: "v0.1.38646"
 
-  # Python unit tests with pip download caching — turns a cold dependency
-  # install into a warm one on rerun. Build-time lever #1 for the Python side.
-  python-test:
-    executor: python38
-    steps:
-      - checkout
-      - run: mkdir test-reports
-      - restore_cache:
-          keys:
-            - v2-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
-            - v2-pip-
-      - run:
-          name: Test Python Services
-          command: |
-            for SERVICE in "contacts" "userservice"; do
-              echo "testing $SERVICE..."
-              pushd src/$SERVICE
-                python3 -m venv $HOME/venv-$SERVICE
-                source $HOME/venv-$SERVICE/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
-                TEST_FILES=$(circleci tests glob "tests/test_*.py")
-                echo $TEST_FILES | circleci tests run --command="xargs python -m pytest -o junit_family=legacy --junit-xml=../../test-reports/report-${SERVICE}.xml -v -p no:warnings" --verbose --split-by=timings
-                deactivate
-              popd
-            done
-      - save_cache:
-          key: v2-pip-{{ checksum "src/contacts/requirements.txt" }}-{{ checksum "src/userservice/requirements.txt" }}
-          paths:
-            - ~/.cache/pip
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-
-  # Same suite fanned across 2 containers via test splitting — the
-  # parallelization answer for Propel's slow legacy tests.
-  python-test-parallel:
-    executor: python38
-    parallelism: 2 #match number of python services
-    steps:
-      - checkout
-      - run: mkdir test-reports
-      - run:
-          name: Test Python Services
-          command: |
-            MODULES=("contacts" "userservice")
-            MY_MODULES=`printf '%s\n' "${MODULES[@]}" | circleci tests split`
-            echo "Running modules ${MY_MODULES[@]}"
-            for MOD in "${MY_MODULES[@]}"; do
-                pushd src/$MOD >/dev/null
-                python3 -m venv $HOME/venv-$MOD
-                source $HOME/venv-$MOD/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                #CLI wraps test runner to allow "rerun failed tests only"
-                python -m pytest tests --junit-xml=../../test-reports/report-${MOD}.xml -v -p no:warnings
-                deactivate
-                popd >/dev/null
-            done
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-
-  java-checkstyle:
-    executor: jdk17
-    steps:
-      - checkout
-      - maven/with_cache:
-          verify_dependencies: false
+      # A deploy-only request bypasses path filtering and the normal test config.
+      - when:
+          condition: << pipeline.parameters.deploy-only >>
           steps:
-          - run: ./mvnw checkstyle:check
+            - run:
+                name: Stage deploy-only configuration
+                command: cp .circleci/deploy-only-config.yml /tmp/deploy-only-config.yml
+            - run:
+                name: Validate deploy-only configuration
+                command: circleci config validate /tmp/deploy-only-config.yml
+            - continuation/continue:
+                configuration_path: /tmp/deploy-only-config.yml
 
-  # Java tests with ~/.m2 caching + timing-based test splitting. The cache is
-  # the headline build-time lever (the 40-min legacy build story); splitting +
-  # rerun-failed-only is the smarter-testing beat.
-  java-test-and-code-cov:
-    executor: jdk17
-    steps:
-      - checkout
-      - run: mkdir test-reports
-      - restore_cache:
-          keys:
-            - v3-mvn-full-{{ .Branch }}
-            - v3-mvn-full-
-      - run: mvn dependency:go-offline
-      - save_cache:
-          key: v3-mvn-full-{{ .Branch }}
-          paths:
-            - ~/.m2
-      - run:
-          environment:
-            PARAM_IT_PATTERN: '**/*IT*.java'
-            PARAM_TEST_DIR: 'src/**/src/test/java'
-            PARAM_TEST_PATTERN: '**/*Test*.java'
-          name: Parellel and Selected Tests
-          command: |
-            echo -e "\033[31m\033[4mNotes on Test Splitting & Re-running failed tests only \033[0m
-                    \033[34mCaveat 1:\033[0m  CircleCI Test Splitting uses filename by default, but JUnit reports use class names.
-                    Therefore this uses naive translation of linux file paths to dot separated package names and strips the .java suffix.
-                    \033[34mCaveat 2:\033[0m  Because we "skip" tests on re-runs, Maven will fail by default without `-DfailIfNoTests=false`
-                    \033[34mDebugging:\033[0m This will place all files used to decide tests in .circleci/tests and export it as an artifact for inspection/debugging.
-                    "
-            mkdir -p .circleci/tests/
-            #convert file names to classnames
-            circleci tests glob 'src/**/src/test/java/**/*Test*.java' | \
-                sed -e 's#^src/[a-z]*/src/test/java/\(.*\).java#\1#' | \
-                tr "/" "." > .circleci/tests/surefire_classnames
-            #pass classnames to CircleCI CLI as test wrapper
-            cat .circleci/tests/surefire_classnames | circleci tests run --command 'tr " " "," | xargs -I {} ./mvnw -B  -DfailIfNoTests=false -Dtest={} test' --verbose --split-by=timings
-      - run:
-          name: aggregate all module tests
-          when: always
-          command: |
-            for SERVICE in "balancereader" "ledgerwriter" "transactionhistory"; do
-            echo "checking $SERVICE..."
-            cp src/$SERVICE/target/surefire-reports/*.xml test-reports || echo "No tests for this node"
-            done
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-      - store_artifacts:
-          path: .circleci/tests/
-
-  # ---- Docker image build: control vs Docker Layer Caching ----
-  # Both build a deliberately heavy demo image (src/frontend/Dockerfile.demo):
-  # an apt toolchain layer + source-compiled Postgres/uWSGI deps. That slow
-  # dependency layer is what DLC caches. Build-only, no push, so nothing
-  # external can break mid-demo. Pre-warm once before the demo, then a fresh run
-  # shows the DLC job collapse next to the cold control in the same workflow.
-  #
-  # DOCKER_BUILDKIT=0 forces the classic builder on purpose: DLC persists the
-  # daemon's layer store (/var/lib/docker), which the classic builder uses, so
-  # cache hits are reliable. BuildKit keeps its cache elsewhere that DLC does
-  # not persist, so BuildKit builds come back cold every run (measured).
-  build-image-nocache:
-    executor: docker-builder
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          name: Build frontend image (control, no layer cache)
-          command: |
-            START=$(date +%s)
-            DOCKER_BUILDKIT=0 docker build -f src/frontend/Dockerfile.demo -t banking-frontend:${CIRCLE_SHA1} src/frontend
-            echo "Build (no cache) took $(( $(date +%s) - START ))s"
-
-  build-image-dlc:
-    executor: docker-builder
-    steps:
-      - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run:
-          name: Build frontend image (Docker Layer Caching)
-          command: |
-            START=$(date +%s)
-            DOCKER_BUILDKIT=0 docker build -f src/frontend/Dockerfile.demo -t banking-frontend:${CIRCLE_SHA1} src/frontend
-            echo "Build (DLC) took $(( $(date +%s) - START ))s"
-
-  # ---- Build once, reuse downstream ----
-  # package-service compiles a real Spring Boot jar once and persists it to the
-  # workspace. reuse-service attaches it and proves (sha256) the SAME artifact
-  # is reused — no recompile. Maps to Propel's interdependent legacy builds.
-  package-service:
-    executor: jdk17
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v3-mvn-full-{{ .Branch }}
-            - v3-mvn-full-
-      - run:
-          name: Package ledgerwriter (compile once)
-          command: |
-            ./mvnw -B -pl src/ledgerwriter -am package -DskipTests
-            mkdir -p workspace
-            JAR=$(ls src/ledgerwriter/target/*.jar | head -1)
-            cp "${JAR}" workspace/ledgerwriter.jar
-            sha256sum workspace/ledgerwriter.jar | awk '{print $1}' > workspace/ledgerwriter.jar.sha256
-            echo "Built $(basename "${JAR}") -> workspace/ledgerwriter.jar"
-            cat workspace/ledgerwriter.jar.sha256
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - ledgerwriter.jar
-            - ledgerwriter.jar.sha256
-      - store_artifacts:
-          path: workspace/ledgerwriter.jar
-
-  reuse-service:
-    executor: docker-builder
-    steps:
-      - attach_workspace:
-          at: /tmp/ws
-      - run:
-          name: Reuse the compiled jar (no rebuild)
-          command: |
-            EXPECTED=$(cat /tmp/ws/ledgerwriter.jar.sha256)
-            ACTUAL=$(sha256sum /tmp/ws/ledgerwriter.jar | awk '{print $1}')
-            echo "expected sha256: ${EXPECTED}"
-            echo "actual   sha256: ${ACTUAL}"
-            if [ "${EXPECTED}" != "${ACTUAL}" ]; then
-              echo "FAIL: artifact changed since package-service — a rebuild happened" >&2
-              exit 1
-            fi
-            echo "OK: identical jar reused from package-service — no recompile"
-
-  # Second downstream consumer — proves "build once, reuse MANY". Attaches the
-  # same workspace and reuses the identical jar (sha256) in ~1s instead of
-  # recompiling. One package job fans out to N services, each reusing the exact
-  # bytes — maps to Propel's interdependent legacy builds. The speed number is
-  # the multiplier: every consumer here would otherwise re-run the package step.
-  reuse-service-2:
-    executor: docker-builder
-    steps:
-      - attach_workspace:
-          at: /tmp/ws
-      - run:
-          name: Second consumer reuses the same jar (no rebuild)
-          command: |
-            EXPECTED=$(cat /tmp/ws/ledgerwriter.jar.sha256)
-            ACTUAL=$(sha256sum /tmp/ws/ledgerwriter.jar | awk '{print $1}')
-            SIZE=$(ls -lh /tmp/ws/ledgerwriter.jar | awk '{print $5}')
-            echo "jar size: ${SIZE}"
-            echo "expected sha256: ${EXPECTED}"
-            echo "actual   sha256: ${ACTUAL}"
-            if [ "${EXPECTED}" != "${ACTUAL}" ]; then
-              echo "FAIL: artifact changed since package-service — a rebuild happened" >&2
-              exit 1
-            fi
-            echo "OK: second downstream job reused the identical jar — no recompile"
-
-  # ---- Build-failure debugging demo ----
-  # Runs a focused cross-service validation that catches a real ledgerwriter
-  # regression: insufficient-funds transactions are incorrectly approved when
-  # the service queries the wrong balance-reader endpoint.
-  integration-check:
-    executor: jdk17
-    steps:
-      - checkout
-      - run: mkdir -p test-reports
-      - restore_cache:
-          keys:
-            - v3-mvn-full-{{ .Branch }}
-            - v3-mvn-full-
-      - run:
-          name: Integration checks
-          command: |
-            echo "Running integration checks against ledger services..."
-            echo "  contacts           ... ok"
-            echo "  userservice        ... ok"
-            echo "  transactionhistory ... ok"
-            echo "  ledgerwriter       ... validating insufficient-funds handling"
-            ./mvnw -B -pl src/ledgerwriter \
-              -Dtest=TransactionValidationIT#testInsufficientFunds test
-      - run:
-          name: Collect integration test reports
-          when: always
-          command: |
-            cp src/ledgerwriter/target/surefire-reports/*.xml test-reports || true
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
-
-  # Lightweight downstream stage for the demo graph. This intentionally does
-  # not touch real infrastructure; it shows that integration failures stop the
-  # delivery path before anything reaches a preview environment.
-  deploy-preview:
-    executor: docker-builder
-    steps:
-      - run:
-          name: Deploy preview environment
-          command: |
-            echo "Deploying CCI Bank preview environment..."
-            echo "namespace: cba-dev"
-            echo "image tag: ${CIRCLE_SHA1}"
-            echo "Preview deploy complete"
-
-  post-deploy-smoke-test:
-    executor: docker-builder
-    steps:
-      - run:
-          name: Post-deploy smoke test
-          command: |
-            echo "Checking frontend health endpoint..."
-            echo "Checking ledgerwriter transaction validation..."
-            echo "Checking userservice auth endpoint..."
-            echo "Smoke tests passed"
-
-  validate-deploy-request:
-    executor: docker-builder
-    steps:
-      - checkout
-      - run:
-          name: Validate deploy-only request
-          environment:
-            DEPLOY_ACTION: << pipeline.parameters.deploy_action >>
-            ARTIFACT_REF: << pipeline.parameters.artifact_ref >>
-          command: |
-            .circleci/scripts/validate-deploy-request.sh \
-              "${DEPLOY_ACTION}" \
-              "${ARTIFACT_REF}"
-
-  deploy-existing-artifact:
-    executor: docker-builder
-    steps:
-      - run:
-          name: Deploy existing immutable artifact
-          environment:
-            DEPLOY_ACTION: << pipeline.parameters.deploy_action >>
-            ARTIFACT_REF: << pipeline.parameters.artifact_ref >>
-          command: |
-            mkdir -p /tmp/deployment
-            {
-              printf 'action=%s\n' "${DEPLOY_ACTION}"
-              printf 'artifact_ref=%s\n' "${ARTIFACT_REF}"
-              printf 'workflow_id=%s\n' "${CIRCLE_WORKFLOW_ID}"
-              printf 'pipeline_id=%s\n' "${CIRCLE_PIPELINE_ID}"
-              printf 'actor=%s\n' "${CIRCLE_USERNAME:-unknown}"
-              printf 'deployed_at=%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-            } > /tmp/deployment/manifest.txt
-            echo "Deploying existing artifact ${ARTIFACT_REF}"
-            cat /tmp/deployment/manifest.txt
-      - persist_to_workspace:
-          root: /tmp/deployment
-          paths:
-            - manifest.txt
-      - store_artifacts:
-          path: /tmp/deployment/manifest.txt
-
-  verify-deployed-artifact:
-    executor: docker-builder
-    steps:
-      - attach_workspace:
-          at: /tmp/deployment
-      - run:
-          name: Verify prototype deployment manifest and run smoke checks
-          environment:
-            ARTIFACT_REF: << pipeline.parameters.artifact_ref >>
-          command: |
-            # Prototype scope: this verifies manifest propagation only. A
-            # production pipeline must query the actual deployment target or
-            # artifact registry for the artifact that is really running.
-            echo "NOTE: prototype verification checks manifest propagation only;"
-            echo "NOTE: production must query the deployment target or registry for the running artifact."
-            EXPECTED="${ARTIFACT_REF}"
-            ACTUAL=$(grep '^artifact_ref=' /tmp/deployment/manifest.txt | cut -d= -f2-)
-            if [ "${ACTUAL}" != "${EXPECTED}" ]; then
-              echo "FAIL: manifest artifact ${ACTUAL} does not match requested artifact ${EXPECTED}" >&2
-              exit 1
-            fi
-            echo "Checking frontend health endpoint..."
-            echo "Checking ledgerwriter transaction validation..."
-            echo "Checking userservice auth endpoint..."
-            echo "Smoke tests passed"
+      # Normal pipelines retain Freshpaint's pack -> path-filter -> validate ->
+      # continue flow.
+      - unless:
+          condition: << pipeline.parameters.deploy-only >>
+          steps:
+            - run:
+                name: Pack shared configuration
+                command: circleci config pack .circleci/shared > .circleci/shared-config.yml
+            - path-filtering/set-parameters:
+                base-revision: main
+                config-path: .circleci/no-updates.yml
+                mapping: |
+                  .* always-continue true .circleci/shared-config.yml
+            - path-filtering/generate-config
+            - run:
+                name: Validate generated config
+                command: circleci config validate /tmp/generated-config.yml
+            - continuation/continue:
+                configuration_path: /tmp/generated-config.yml
+                parameters: /tmp/pipeline-parameters.json
 
 workflows:
-  main:
-    when:
-      and:
-        - << pipeline.parameters.run_full_suite >>
-        - not: << pipeline.parameters.deploy_only >>
+  setup:
     jobs:
-      - java-checkstyle:
-          context: [ compass-integration-bank-of-aion ]
-      - java-test-and-code-cov
-      - python-checkstyle
-      - python-test
-      - python-test-parallel
-      - build-image-nocache
-      - build-image-dlc
-      - package-service
-      - reuse-service:
-          requires:
-            - package-service
-      - reuse-service-2:
-          requires:
-            - package-service
-      - integration-check:
-          requires:
-            - java-checkstyle
-            - java-test-and-code-cov
-            - python-checkstyle
-            - python-test-parallel
-            - build-image-nocache
-            - build-image-dlc
-            - reuse-service
-            - reuse-service-2
-      - deploy-preview:
-          requires:
-            - integration-check
-      - post-deploy-smoke-test:
-          requires:
-            - deploy-preview
-
-  # Scoped "validate my fix" workflow: triggered on the branch's latest commit
-  # with run_targeted_tests=true so only the relevant job runs, not the whole
-  # heavy suite. Trigger via API/CLI/MCP or the web app trigger modal.
-  validate-fix:
-    when: << pipeline.parameters.run_targeted_tests >>
-    jobs:
-      - java-test-and-code-cov
-
-  deploy-only:
-    when: << pipeline.parameters.deploy_only >>
-    jobs:
-      - validate-deploy-request
-      - approve-deploy-only:
-          type: approval
-          requires:
-            - validate-deploy-request
-      - deploy-existing-artifact:
-          serial-group: << pipeline.project.slug >>/production-deploy
-          requires:
-            - approve-deploy-only
-      - verify-deployed-artifact:
-          requires:
-            - deploy-existing-artifact
+      - setup

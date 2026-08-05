@@ -1,0 +1,13 @@
+version: 2.1
+
+jobs:
+  no-updates:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run: echo "No matching changes"
+
+workflows:
+  no-updates:
+    jobs:
+      - no-updates

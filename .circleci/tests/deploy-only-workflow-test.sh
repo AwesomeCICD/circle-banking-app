@@ -104,28 +104,46 @@ trap 'rm -rf "${TEMP_DIR}"' EXIT
 MALICIOUS_REF='sha256:abc"; rm -rf / #'
 
 cat > "${TEMP_DIR}/deploy-only-parameters.yml" <<YAML
-deploy_only: true
-deploy_action: rollback
-artifact_ref: '${MALICIOUS_REF}'
+deploy-only: true
+deploy-action: rollback
+artifact-ref: '${MALICIOUS_REF}'
 YAML
 
+circleci config pack "${ROOT_DIR}/.circleci/shared" \
+  > "${TEMP_DIR}/normal-config.yml" ||
+  fail "could not pack the normal continuation config"
+
+circleci config process "${TEMP_DIR}/normal-config.yml" \
+  > "${TEMP_DIR}/normal-processed.yml" ||
+  fail "could not process the normal continuation config"
+
+circleci config process "${ROOT_DIR}/.circleci/deploy-only-config.yml" \
+  --pipeline-parameters "${TEMP_DIR}/deploy-only-parameters.yml" \
+  > "${TEMP_DIR}/deploy-only-processed.yml" ||
+  fail "could not process the deploy-only continuation config"
+
 circleci config process "${ROOT_DIR}/.circleci/config.yml" \
-  > "${TEMP_DIR}/default-config.yml" ||
-  fail "could not process config with default parameters"
+  > "${TEMP_DIR}/setup-normal.yml" ||
+  fail "could not process the setup config with default parameters"
 
 circleci config process "${ROOT_DIR}/.circleci/config.yml" \
   --pipeline-parameters "${TEMP_DIR}/deploy-only-parameters.yml" \
-  > "${TEMP_DIR}/deploy-only-config.yml" ||
-  fail "could not process config with deploy-only parameters"
+  > "${TEMP_DIR}/setup-deploy-only.yml" ||
+  fail "could not process the setup config with deploy-only parameters"
 
-assert_contains "${TEMP_DIR}/default-config.yml" "java-test-and-code-cov"
-assert_not_contains "${TEMP_DIR}/default-config.yml" "validate-deploy-request"
-assert_not_contains "${TEMP_DIR}/deploy-only-config.yml" "java-test-and-code-cov"
+assert_contains "${TEMP_DIR}/normal-processed.yml" "java-test-and-code-cov"
+assert_not_contains "${TEMP_DIR}/normal-processed.yml" "validate-deploy-request"
+assert_not_contains "${TEMP_DIR}/deploy-only-processed.yml" "java-test-and-code-cov"
+
+assert_contains "${TEMP_DIR}/setup-normal.yml" "/tmp/generated-config.yml"
+assert_not_contains "${TEMP_DIR}/setup-normal.yml" "/tmp/deploy-only-config.yml"
+assert_contains "${TEMP_DIR}/setup-deploy-only.yml" "/tmp/deploy-only-config.yml"
+assert_not_contains "${TEMP_DIR}/setup-deploy-only.yml" "path-filtering/set-parameters"
 
 python3 "${CONFIG_ASSERTIONS}" \
-  "${TEMP_DIR}/deploy-only-config.yml" \
-  "${TEMP_DIR}/default-config.yml" \
+  "${TEMP_DIR}/deploy-only-processed.yml" \
+  "${TEMP_DIR}/normal-processed.yml" \
   "${MALICIOUS_REF}" ||
   fail "processed config safety assertions failed"
 
-echo "PASS: deploy-only workflow selection"
+echo "PASS: dynamic setup and deploy-only continuation selection"
