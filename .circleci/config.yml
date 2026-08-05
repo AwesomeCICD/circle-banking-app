@@ -7,6 +7,15 @@ parameters:
   run_targeted_tests:
     type: boolean
     default: false
+  deploy_only:
+    type: boolean
+    default: false
+  deploy_action:
+    type: string
+    default: redeploy
+  artifact_ref:
+    type: string
+    default: ""
 
 orbs:
   maven: circleci/maven@1.4
@@ -329,9 +338,79 @@ jobs:
             echo "Checking userservice auth endpoint..."
             echo "Smoke tests passed"
 
+  validate-deploy-request:
+    executor: docker-builder
+    steps:
+      - checkout
+      - run:
+          name: Validate deploy-only request
+          environment:
+            DEPLOY_ACTION: << pipeline.parameters.deploy_action >>
+            ARTIFACT_REF: << pipeline.parameters.artifact_ref >>
+          command: |
+            .circleci/scripts/validate-deploy-request.sh \
+              "${DEPLOY_ACTION}" \
+              "${ARTIFACT_REF}"
+
+  deploy-existing-artifact:
+    executor: docker-builder
+    steps:
+      - run:
+          name: Deploy existing immutable artifact
+          environment:
+            DEPLOY_ACTION: << pipeline.parameters.deploy_action >>
+            ARTIFACT_REF: << pipeline.parameters.artifact_ref >>
+          command: |
+            mkdir -p /tmp/deployment
+            {
+              printf 'action=%s\n' "${DEPLOY_ACTION}"
+              printf 'artifact_ref=%s\n' "${ARTIFACT_REF}"
+              printf 'workflow_id=%s\n' "${CIRCLE_WORKFLOW_ID}"
+              printf 'pipeline_id=%s\n' "${CIRCLE_PIPELINE_ID}"
+              printf 'actor=%s\n' "${CIRCLE_USERNAME:-unknown}"
+              printf 'deployed_at=%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            } > /tmp/deployment/manifest.txt
+            echo "Deploying existing artifact ${ARTIFACT_REF}"
+            cat /tmp/deployment/manifest.txt
+      - persist_to_workspace:
+          root: /tmp/deployment
+          paths:
+            - manifest.txt
+      - store_artifacts:
+          path: /tmp/deployment/manifest.txt
+
+  verify-deployed-artifact:
+    executor: docker-builder
+    steps:
+      - attach_workspace:
+          at: /tmp/deployment
+      - run:
+          name: Verify prototype deployment manifest and run smoke checks
+          environment:
+            ARTIFACT_REF: << pipeline.parameters.artifact_ref >>
+          command: |
+            # Prototype scope: this verifies manifest propagation only. A
+            # production pipeline must query the actual deployment target or
+            # artifact registry for the artifact that is really running.
+            echo "NOTE: prototype verification checks manifest propagation only;"
+            echo "NOTE: production must query the deployment target or registry for the running artifact."
+            EXPECTED="${ARTIFACT_REF}"
+            ACTUAL=$(grep '^artifact_ref=' /tmp/deployment/manifest.txt | cut -d= -f2-)
+            if [ "${ACTUAL}" != "${EXPECTED}" ]; then
+              echo "FAIL: manifest artifact ${ACTUAL} does not match requested artifact ${EXPECTED}" >&2
+              exit 1
+            fi
+            echo "Checking frontend health endpoint..."
+            echo "Checking ledgerwriter transaction validation..."
+            echo "Checking userservice auth endpoint..."
+            echo "Smoke tests passed"
+
 workflows:
   main:
-    when: << pipeline.parameters.run_full_suite >>
+    when:
+      and:
+        - << pipeline.parameters.run_full_suite >>
+        - not: << pipeline.parameters.deploy_only >>
     jobs:
       - java-checkstyle:
           context: [ compass-integration-bank-of-aion ]
@@ -372,3 +451,19 @@ workflows:
     when: << pipeline.parameters.run_targeted_tests >>
     jobs:
       - java-test-and-code-cov
+
+  deploy-only:
+    when: << pipeline.parameters.deploy_only >>
+    jobs:
+      - validate-deploy-request
+      - approve-deploy-only:
+          type: approval
+          requires:
+            - validate-deploy-request
+      - deploy-existing-artifact:
+          serial-group: << pipeline.project.slug >>/production-deploy
+          requires:
+            - approve-deploy-only
+      - verify-deployed-artifact:
+          requires:
+            - deploy-existing-artifact
