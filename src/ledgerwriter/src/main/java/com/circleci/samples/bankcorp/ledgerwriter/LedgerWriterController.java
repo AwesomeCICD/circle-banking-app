@@ -211,7 +211,7 @@ public final class LedgerWriterController {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         HttpEntity entity = new HttpEntity(headers);
-        String uri = balancesApiUri;
+        String uri = balancesApiUri + "/" + fromAcct;
         ResponseEntity<Integer> response = restTemplate.exchange(
             uri, HttpMethod.GET, entity, Integer.class);
         Integer senderBalance = response.getBody();
