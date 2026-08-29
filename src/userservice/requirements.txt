@@ -12,7 +12,7 @@ backoff==2.1.2
     # via opentelemetry-exporter-otlp-proto-grpc
 bcrypt==3.2.2
     # via -r requirements.in
-bleach==5.0.1
+bleach==6.4.0
     # via -r requirements.in
 cachetools==5.2.0
     # via
