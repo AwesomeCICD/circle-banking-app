@@ -176,7 +176,7 @@ pyparsing==3.0.9
     # via
     #   -r requirements.in
     #   packaging
-pytest==7.1.2
+pytest==9.0.3
     # via
     #   -r requirements.in
     #   pytest-cov
