@@ -26,10 +26,11 @@ describe('Login Page', function() {
 })
 
 describe('Pre-filled Credentials on Login Form', function() {
-  it('are expected strings'), function() {
-    cy.get('#login-username').should('eq', username)
-    cy.get('#login-password').should('eq', password)
-  }
+  it('are expected strings', function() {
+    cy.visit('/login')
+    cy.get('#login-username').should('have.value', username)
+    cy.get('#login-password').should('have.value', password)
+  })
 })
 
 describe('Default Credentials on Form Submission', function() {

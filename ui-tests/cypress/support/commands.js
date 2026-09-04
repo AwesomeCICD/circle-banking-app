@@ -65,7 +65,7 @@ Cypress.Commands.add('createAccount', (user) => {
 Cypress.Commands.add('deposit', (externalAccount, depositAmount) => {
     Cypress.log({
         name: 'deposit',
-        message: `${externalAccount}` | `${depositAmount}`
+        message: `${externalAccount} | ${depositAmount}`
     })
 
     const accountNum = externalAccount.accountNum
@@ -83,7 +83,7 @@ Cypress.Commands.add('deposit', (externalAccount, depositAmount) => {
 Cypress.Commands.add('depositToNewAccount', (externalAccount, depositAmount) => {
     Cypress.log({
         name: 'depositToNewAccount',
-        message: `${externalAccount}` | `${depositAmount}`
+        message: `${externalAccount} | ${depositAmount}`
     })
     cy.get('#depositSpan').click() 
     cy.get('#depositFunds').should('be.visible') 
@@ -100,7 +100,7 @@ Cypress.Commands.add('depositToNewAccount', (externalAccount, depositAmount) => 
 Cypress.Commands.add('transfer', (recipient, paymentAmount) => {
     Cypress.log({
         name: 'transfer',
-        message: `${recipient}` | `${paymentAmount}`
+        message: `${recipient} | ${paymentAmount}`
     })
     cy.get('#paymentSpan').click() 
     cy.get('#payment-accounts').select(recipient.accountNum)
@@ -112,7 +112,7 @@ Cypress.Commands.add('transfer', (recipient, paymentAmount) => {
 Cypress.Commands.add('transferRequest', (recipientAccount, paymentAmount) => {
     Cypress.log({
         name: 'transferRequest',
-        message: `${recipientAccount}` | `${paymentAmount}`,
+        message: `${recipientAccount} | ${paymentAmount}`,
     })
 
     const id = uuid()
@@ -139,7 +139,7 @@ Cypress.Commands.add('transferRequest', (recipientAccount, paymentAmount) => {
 Cypress.Commands.add('transferToNewContact', (recipient, paymentAmount) => {
     Cypress.log({
         name: 'transferToNewContact',
-        message: `${recipient}` | `${paymentAmount}`
+        message: `${recipient} | ${paymentAmount}`
     }) 
     cy.get('#paymentSpan').click() 
     cy.get('#payment-accounts').select("add")
