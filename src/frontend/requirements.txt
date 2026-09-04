@@ -120,7 +120,7 @@ typing-extensions==4.2.0
     # via
     #   importlib-metadata
     #   opentelemetry-sdk
-urllib3==1.26.9
+urllib3==2.7.0
     # via
     #   -r requirements.in
     #   botocore
