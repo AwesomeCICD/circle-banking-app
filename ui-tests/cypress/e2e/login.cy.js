@@ -68,6 +68,9 @@ describe('Default Credentials on Form Submission', function() {
   })
   
   it('does not see error message', function() {
+    // Wait for transactions to load successfully first
+    cy.get('#transaction-list').children().should('have.length.greaterThan', 0)
+
     cy.get('#transaction-table').children().should('not.have.class', 'card-table-header')
     cy.get('#transaction-table').children().should('not.contain', transactionMsgs.error)
   })
