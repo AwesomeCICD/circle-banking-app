@@ -67,7 +67,7 @@ typing-extensions==4.2.0
     #   locust
 urllib3==1.26.9
     # via requests
-werkzeug==2.1.2
+werkzeug==3.1.6
     # via
     #   flask
     #   locust
