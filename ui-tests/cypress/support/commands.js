@@ -22,8 +22,8 @@ Cypress.Commands.add('login', (username, password) => {
 
     cy.visit('login')
 
-    cy.get('#login-username').clear().type(username)
-    cy.get('#login-password').clear().type(password)
+    cy.get('#login-username').should('be.visible').clear().type(username)
+    cy.get('#login-password').should('be.visible').clear().type(password)
     cy.get('#login-form').submit()
 
 })
@@ -52,12 +52,12 @@ Cypress.Commands.add('createAccount', (user) => {
     })
 
     cy.visit('/signup')
-    cy.get('#signup-username').type(user.username)
-    cy.get('#signup-password').type(user.password)
-    cy.get('#signup-password-repeat').type(user.password)
-    cy.get('#signup-firstname').type(user.firstName)
-    cy.get('#signup-lastname').type(user.lastName)
-    cy.get('#signup-birthday').type('1981-01-01')
+    cy.get('#signup-username').should('be.visible').type(user.username)
+    cy.get('#signup-password').should('be.visible').type(user.password)
+    cy.get('#signup-password-repeat').should('be.visible').type(user.password)
+    cy.get('#signup-firstname').should('be.visible').type(user.firstName)
+    cy.get('#signup-lastname').should('be.visible').type(user.lastName)
+    cy.get('#signup-birthday').should('be.visible').type('1981-01-01')
     cy.get('#signup-form').submit()
 })
 
