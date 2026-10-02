@@ -145,7 +145,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: pip install pylint && pylint --rcfile=./.pylintrc ./src/*/*.py
+          command: pip install 'pylint==4.1.1' && pylint --rcfile=./.pylintrc ./src/*/*.py
 
   python-test:
     executor: python
