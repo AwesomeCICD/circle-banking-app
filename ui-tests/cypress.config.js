@@ -29,7 +29,7 @@ module.exports = {
     },
     defaultUser: {
       username: 'testuser',
-      password: 'circleci',
+      password: process.env.CYPRESS_DEMO_PASSWORD || '',
       name: 'Test',
       accountNum: '1011226111',
       externalAccounts: [

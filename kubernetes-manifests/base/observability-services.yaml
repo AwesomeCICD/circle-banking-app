@@ -1,0 +1,14 @@
+# Grafana service — backend for the shared ALB ingress.
+# Deploy the full observability stack (Grafana, Prometheus, Beyla) via the
+# deploy-observability CircleCI job (Helm).
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: circle-banking-app
+spec:
+  selector:
+    app.kubernetes.io/name: grafana
+  ports:
+  - port: 80
+    targetPort: 3000

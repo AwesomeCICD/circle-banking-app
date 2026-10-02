@@ -1,0 +1,26 @@
+---
+description: Guardrails for agent behavior - always confirm before making changes
+alwaysApply: true
+---
+
+# Agent Guardrails
+
+## No unsolicited changes to the repository
+
+- NEVER push commits, create branches, or open PRs unless the user explicitly says "go ahead", "execute", "implement it", or similar unambiguous confirmation.
+- Creating Linear tickets, updating ticket status, and other project management actions are OK when requested.
+- When the user asks you to "make" or "add" something, clarify whether they want a plan/proposal or actual execution before touching any files.
+- Confirm with the user before updating statuses or closing Linear tickets.
+- Linear tickets should not be verbose for this project. Maximum of 4-5 bullet points are sufficient per ticket description.
+
+## Default to planning
+
+- When in doubt, present a plan and ask for confirmation before writing code, committing, or pushing.
+- Treat "can you do X?" as a request to plan X, not to execute X.
+- Always show the user what you intend to commit before committing.
+
+## Git safety
+
+- Never push to main/master.
+- Never force push.
+- Never amend commits that have been pushed.

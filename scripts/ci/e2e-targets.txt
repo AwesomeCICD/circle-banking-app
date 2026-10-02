@@ -1,0 +1,15 @@
+GET https://circle-banking-app.namer.${DOMAIN}/ready
+GET https://circle-banking-app.namer.${DOMAIN}/version
+GET https://circle-banking-app.namer.${DOMAIN}/whereami
+GET https://circle-banking-app.namer.${DOMAIN}/login
+GET https://circle-banking-app.namer.${DOMAIN}/signup
+GET https://circle-banking-app.namer.${DOMAIN}/
+HEAD https://circle-banking-app.namer.${DOMAIN}/ready
+HEAD https://circle-banking-app.namer.${DOMAIN}/version
+GET https://grafana.namer.${DOMAIN}/api/health
+GET https://grafana.namer.${DOMAIN}/login
+HEAD https://grafana.namer.${DOMAIN}/api/health
+HEAD https://grafana.namer.${DOMAIN}/login
+GET https://circle-banking-app.namer.${DOMAIN}/home
+GET https://circle-banking-app.namer.${DOMAIN}/ready
+HEAD https://circle-banking-app.namer.${DOMAIN}/whereami
