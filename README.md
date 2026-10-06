@@ -2,6 +2,8 @@
 
 Polyglot microservices banking demo for CircleCI + Amazon EKS.
 
+**Running this demo?** Start with [DEMO.md](DEMO.md) — pre-flight checklist, talk tracks, and known gaps.
+
 **Live app:** [https://circle-banking-app.namer.fieldeng-sphereci.com](https://circle-banking-app.namer.fieldeng-sphereci.com)
 
 | Endpoint | URL |
