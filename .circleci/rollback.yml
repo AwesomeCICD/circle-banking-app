@@ -100,7 +100,7 @@ jobs:
               echo "WARN - live tag ${LIVE_TAG} differs from expected current version ${CURRENT_VERSION}"
             fi
       - run:
-          name: Roll back ${COMPONENT_NAME} to ${TARGET_VERSION}
+          name: Roll back component to target version
           command: |
             kubectl -n "$DEPLOY_NAMESPACE" set image deploy/"$COMPONENT_NAME" \
               "${COMPONENT_NAME}=<< pipeline.parameters.ecr_registry >>/circle-banking-app/${COMPONENT_NAME}:${TARGET_VERSION}"
