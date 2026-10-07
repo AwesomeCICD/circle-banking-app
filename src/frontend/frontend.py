@@ -35,6 +35,7 @@ import datetime
 import json
 import logging
 import os
+import random
 import socket
 from decimal import Decimal, DecimalException
 import boto3
@@ -69,9 +70,23 @@ def create_app():
     """
     app = Flask(__name__)
 
+    # Demo-only fault injection for Smart Deployments rehearsals. Baked into
+    # the "-bad" image by the bad_version pipeline parameter; 0 (off) otherwise.
+    fault_rate = float(os.environ.get('FAULT_INJECTION_RATE') or 0)
+
     # Disabling unused-variable for lines with route decorated functions
     # as pylint thinks they are unused
     # pylint: disable=unused-variable
+    @app.before_request
+    def inject_fault():
+        """
+        Returns a 500 for a share of requests when FAULT_INJECTION_RATE > 0.
+        The readiness probe is exempt so a bad version still rolls out.
+        """
+        if fault_rate > 0 and request.path != '/ready' and random.random() < fault_rate:
+            return 'Injected fault (FAULT_INJECTION_RATE)', 500
+        return None
+
     @app.route('/version', methods=['GET'])
     def version():
         """

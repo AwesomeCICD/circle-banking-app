@@ -33,6 +33,12 @@ parameters:
   acm_cert_arn:
     type: string
     default: "arn:aws:acm:us-east-1:992382483259:certificate/acf46071-40c3-4801-8124-634fca907378"
+  # Smart Deployments demo: build and deploy a frontend that returns 500 on
+  # half its requests, tagged <sha>-bad, so release validation fails and
+  # rolls back. Dev only.
+  bad_version:
+    type: boolean
+    default: false
 
 executors:
   with-chrome:
@@ -207,9 +213,14 @@ jobs:
             aws ecr get-login-password --region << pipeline.parameters.aws_region >> \
               | docker login --username AWS --password-stdin << pipeline.parameters.ecr_registry >>
             TAG="${CIRCLE_SHA1:0:7}"
+            BUILD_ARGS=()
+            if [ "<< parameters.service >>" = "frontend" ] && [ "<< pipeline.parameters.bad_version >>" = "true" ]; then
+              TAG="${TAG}-bad"
+              BUILD_ARGS=(--build-arg FAULT_INJECTION_RATE=0.5)
+            fi
             IMAGE="<< pipeline.parameters.ecr_registry >>/circle-banking-app/<< parameters.service >>:${TAG}"
             echo "Building ${IMAGE}"
-            docker build -t "${IMAGE}" "src/<< parameters.service >>"
+            docker build "${BUILD_ARGS[@]}" -t "${IMAGE}" "src/<< parameters.service >>"
             docker push "${IMAGE}"
 
   terraform-plan:
@@ -262,6 +273,21 @@ jobs:
         default: ""
     steps:
       - checkout
+      - run:
+          name: Resolve image tags
+          command: |
+            TAG="${CIRCLE_SHA1:0:7}"
+            FRONTEND_TAG="${TAG}"
+            if [ "<< pipeline.parameters.bad_version >>" = "true" ]; then
+              if [ "<< parameters.overlay >>" != "dev" ]; then
+                echo "bad_version is a dev-only demo toggle; refusing to deploy it with the << parameters.overlay >> overlay"
+                exit 1
+              fi
+              FRONTEND_TAG="${TAG}-bad"
+            fi
+            echo "export TAG='${TAG}'" >> "$BASH_ENV"
+            echo "export FRONTEND_TAG='${FRONTEND_TAG}'" >> "$BASH_ENV"
+            echo "==> services: ${TAG}  frontend: ${FRONTEND_TAG}"
       - when:
           condition: << parameters.release_environment >>
           steps:
@@ -271,7 +297,7 @@ jobs:
                   circleci run release plan frontend-<< parameters.release_environment >> \
                     --environment-name=<< parameters.release_environment >> \
                     --component-name=frontend \
-                    --target-version="${CIRCLE_SHA1:0:7}" \
+                    --target-version="${FRONTEND_TAG}" \
                     --namespace=<< pipeline.parameters.k8s_namespace >>
       - aws-setup
       - install-kubectl
@@ -324,11 +350,10 @@ jobs:
       - run:
           name: Render Kustomize overlay (<< parameters.overlay >>) and substitute placeholders
           command: |
-            TAG="${CIRCLE_SHA1:0:7}"
             REG="<< pipeline.parameters.ecr_registry >>"
             cd kubernetes-manifests/overlays/<< parameters.overlay >>
             kustomize edit set image \
-              circle-banking-app/frontend=${REG}/circle-banking-app/frontend:${TAG} \
+              circle-banking-app/frontend=${REG}/circle-banking-app/frontend:${FRONTEND_TAG} \
               circle-banking-app/userservice=${REG}/circle-banking-app/userservice:${TAG} \
               circle-banking-app/contacts=${REG}/circle-banking-app/contacts:${TAG} \
               circle-banking-app/balancereader=${REG}/circle-banking-app/balancereader:${TAG} \
