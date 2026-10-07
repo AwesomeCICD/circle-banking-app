@@ -31,7 +31,9 @@ alertmanager:
           group_by: [alertname, component_name, env]
           group_wait: 10s
           group_interval: 1m
-          repeat_interval: 5m
+          # Resend while firing so an alert raised before the evaluation
+          # window opens still lands inside it.
+          repeat_interval: 1m
     receivers:
       - name: "null"
       - name: circleci-smart-deployments

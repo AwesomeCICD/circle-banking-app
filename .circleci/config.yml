@@ -424,9 +424,22 @@ jobs:
                     --failure-reason="$FAILURE_REASON"
                 when: on_fail
 
+  # Smart Deployments release validation. The window opens when this job
+  # starts (after the whole deploy-ecr group), so it must cover alert
+  # latency (~2.5m: scrape + rule `for: 1m` + group_wait) plus any gap since
+  # frontend went live; Alertmanager resends every 1m while firing.
   release-frontend-cba-dev:
     type: release
     plan_name: frontend-cba-dev
+    validation:
+      enabled: true
+      evaluation_time: 10m
+      auto_rollback_on_failure: true
+      webhooks:
+        # name must equal the Prometheus alertname.
+        - name: frontend_error_rate
+          provider: alertmanager
+          max_failures: 1
 
   dns-apply:
     executor: aws
