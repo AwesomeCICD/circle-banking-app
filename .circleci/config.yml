@@ -254,8 +254,25 @@ jobs:
       overlay:
         type: string
         default: dev
+      # Smart Deployments environment for the frontend deploy marker. Empty
+      # skips the marker steps (Deploy Production shares the dev namespace,
+      # so it is not tracked yet).
+      release_environment:
+        type: string
+        default: ""
     steps:
       - checkout
+      - when:
+          condition: << parameters.release_environment >>
+          steps:
+            - run:
+                name: Plan frontend release (<< parameters.release_environment >>)
+                command: |
+                  circleci run release plan frontend-<< parameters.release_environment >> \
+                    --environment-name=<< parameters.release_environment >> \
+                    --component-name=frontend \
+                    --target-version="${CIRCLE_SHA1:0:7}" \
+                    --namespace=<< pipeline.parameters.k8s_namespace >>
       - aws-setup
       - install-kubectl
       - install-kustomize
@@ -334,11 +351,24 @@ jobs:
           name: kubectl apply rendered manifests
           command: |
             kubectl apply -f /tmp/manifest.yaml
+      - when:
+          condition: << parameters.release_environment >>
+          steps:
+            - run:
+                name: Update frontend release to running
+                command: circleci run release update frontend-<< parameters.release_environment >> --status=running
       - run:
           name: Wait for rollouts (5-min per deployment)
           command: |
             NS="<< pipeline.parameters.k8s_namespace >>"
-            for d in frontend userservice contacts balancereader ledgerwriter transactionhistory; do
+            # frontend is the tracked release component, so its rollout must
+            # succeed; the others stay best-effort.
+            if ! kubectl -n "$NS" rollout status deploy/frontend --timeout=5m; then
+              kubectl -n "$NS" describe deploy/frontend
+              echo "FAILURE_REASON='frontend rollout did not complete within 5m'" > /tmp/failure_reason.env
+              exit 1
+            fi
+            for d in userservice contacts balancereader ledgerwriter transactionhistory; do
               echo "==> waiting for $d"
               kubectl -n "$NS" rollout status deploy/$d --timeout=5m || kubectl -n "$NS" describe deploy/$d
             done
@@ -375,6 +405,28 @@ jobs:
           paths:
             - alb_dns
             - alb_zone
+      - when:
+          condition: << parameters.release_environment >>
+          steps:
+            - run:
+                name: Update frontend release to SUCCESS
+                command: circleci run release update frontend-<< parameters.release_environment >> --status=SUCCESS
+                when: on_success
+            - run:
+                name: Update frontend release to FAILED
+                command: |
+                  FAILURE_REASON="deploy-app job failed (see job steps)"
+                  if [ -f /tmp/failure_reason.env ]; then
+                    source /tmp/failure_reason.env
+                  fi
+                  circleci run release update frontend-<< parameters.release_environment >> \
+                    --status=FAILED \
+                    --failure-reason="$FAILURE_REASON"
+                when: on_fail
+
+  release-frontend-cba-dev:
+    type: release
+    plan_name: frontend-cba-dev
 
   dns-apply:
     executor: aws
@@ -554,6 +606,7 @@ job-groups:
       - deploy-app:
           name: deploy-dev
           overlay: dev
+          release_environment: cba-dev
           requires:
             - build-and-push-to-ecr-frontend
             - build-and-push-to-ecr-userservice
@@ -578,6 +631,10 @@ workflows:
           name: circle-banking-app.deploy-ecr
           serial-group: << pipeline.project.slug >>/deploy-ecr
           requires: [go-test, python-test]
+      # Outside the deploy-ecr group so a validation window never holds the
+      # serial lock or delays dns-apply / e2e.
+      - release-frontend-cba-dev:
+          requires: [circle-banking-app.deploy-ecr]
       - dns-apply:
           requires: [circle-banking-app.deploy-ecr]
       - e2e-test:
