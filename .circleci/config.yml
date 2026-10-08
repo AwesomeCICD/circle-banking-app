@@ -376,12 +376,6 @@ jobs:
           name: kubectl apply rendered manifests
           command: |
             kubectl apply -f /tmp/manifest.yaml
-      - when:
-          condition: << parameters.release_environment >>
-          steps:
-            - run:
-                name: Update frontend release to running
-                command: circleci run release update frontend-<< parameters.release_environment >> --status=running
       - run:
           name: Wait for rollouts (5-min per deployment)
           command: |
@@ -430,13 +424,13 @@ jobs:
           paths:
             - alb_dns
             - alb_zone
+      # With release validation on, the engine sets running/SUCCESS itself
+      # (sending SUCCESS here closes the release, and validation can no
+      # longer roll it back). Only report a deploy that broke outright,
+      # since validation never starts in that case.
       - when:
           condition: << parameters.release_environment >>
           steps:
-            - run:
-                name: Update frontend release to SUCCESS
-                command: circleci run release update frontend-<< parameters.release_environment >> --status=SUCCESS
-                when: on_success
             - run:
                 name: Update frontend release to FAILED
                 command: |
