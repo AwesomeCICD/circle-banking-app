@@ -11,7 +11,7 @@ Polyglot microservices banking demo for CircleCI + Amazon EKS.
 | Banking UI | https://circle-banking-app.namer.fieldeng-sphereci.com |
 | Grafana | https://grafana.namer.fieldeng-sphereci.com |
 
-**Cluster:** `fe-runner-cluster` (us-east-1) — architecture docs in [docs/proposed-architecture.md](docs/proposed-architecture.md).
+**Cluster:** `fe-cera-v2-namer` (us-east-1) — architecture docs in [docs/proposed-architecture.md](docs/proposed-architecture.md).
 
 ## Repo layout
 
@@ -37,7 +37,7 @@ cd src/userservice && pip install -r requirements.txt && pytest tests
 
 ## Deploy prerequisites
 
-1. EKS cluster `fe-runner-cluster` with AWS Load Balancer Controller
+1. EKS cluster `fe-cera-v2-namer` (cluster add-ons, incl. the AWS Load Balancer Controller, are managed in AwesomeCICD/fe-eks-cluster `eks-cluster-cera-v2/`)
 2. CircleCI OIDC context `aws-oidc-dev` with `AWS_ROLE_ARN`, `AWS_APP_ROLE_ARN`, `ACM_CERT_ARN`
 3. Terraform state bucket + `terraform.tfvars` (copy from `terraform/terraform.tfvars.example`)
 4. JWT keys in Secrets Manager (`circle-banking-app/jwt-private-key`, `circle-banking-app/jwt-public-key`)
@@ -47,7 +47,7 @@ cd src/userservice && pip install -r requirements.txt && pytest tests
 1. **Lint & test** — Go + Python
 2. **build-and-push** — 7 images to ECR (`docker build`, no Skaffold)
 3. **terraform-plan/apply** — AWS resources (main branch for apply)
-4. **deploy-app** — `kubectl apply` via Kustomize to `fe-runner-cluster`
+4. **deploy-app** — `kubectl apply` via Kustomize to `fe-cera-v2-namer`
 5. **deploy-observability** — Helm: kube-prometheus-stack + Tempo + Beyla
 6. **e2e-test** — smoke test against `circle-banking-app.namer.{domain}`
 
@@ -57,7 +57,7 @@ CircleCI pipeline parameters in `.circleci/config.yml`:
 
 | Parameter | Default |
 |-----------|---------|
-| `eks_cluster_name` | `fe-runner-cluster` |
+| `eks_cluster_name` | `fe-cera-v2-namer` |
 | `aws_region` | `us-east-1` |
 | `k8s_namespace` | `circle-banking-app` |
 | `domain` | `fieldeng-sphereci.com` |

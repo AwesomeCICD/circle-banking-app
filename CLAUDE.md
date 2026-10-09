@@ -234,7 +234,7 @@ parameters:
     type: string
   eks_cluster_name:
     type: string
-    default: "fe-runner-cluster"
+    default: "fe-cera-v2-namer"
   aws_region:
     type: string
     default: "us-east-1"
