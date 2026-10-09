@@ -8,7 +8,7 @@ version: 2.1
 # image tag as the release version.
 
 orbs:
-  aws-cli: circleci/aws-cli@5.4.1
+  aws-cli: circleci/aws-cli@5.4.2
 
 parameters:
   ecr_registry:
