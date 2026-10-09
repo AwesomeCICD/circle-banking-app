@@ -660,18 +660,26 @@ workflows:
       - go-test
       - python-checkstyle
       - python-test
+      # Only main and cera-refactor deploy to cba-dev. Other branches (e.g.
+      # Renovate) would otherwise supersede each other's frontend releases.
       - deploy-ecr:
           name: circle-banking-app.deploy-ecr
           serial-group: << pipeline.project.slug >>/deploy-ecr
           requires: [go-test, python-test]
+          filters: &deploy-branches
+            branches:
+              only: [main, cera-refactor]
       # Outside the deploy-ecr group so a validation window never holds the
       # serial lock or delays dns-apply / e2e.
       - release-frontend-cba-dev:
           requires: [circle-banking-app.deploy-ecr]
+          filters: *deploy-branches
       - dns-apply:
           requires: [circle-banking-app.deploy-ecr]
+          filters: *deploy-branches
       - e2e-test:
           requires: [dns-apply]
+          filters: *deploy-branches
       - deploy-app:
           name: Deploy Production
           overlay: prod
