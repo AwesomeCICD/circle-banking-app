@@ -1,7 +1,7 @@
 variable "existing_cluster_name" {
-  description = "Name of the pre-provisioned EKS cluster. Used for resource naming only — TF does not interact with the cluster directly."
+  description = "Name of the pre-provisioned EKS cluster. Read for its OIDC issuer (app IRSA role); TF does not manage the cluster."
   type        = string
-  default     = "fe-runner-cluster"
+  default     = "fe-cera-v2-namer"
 }
 
 variable "aws_region" {

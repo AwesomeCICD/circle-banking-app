@@ -9,7 +9,7 @@ parameters:
     default: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
   eks_cluster_name:
     type: string
-    default: "fe-runner-cluster"
+    default: "fe-cera-v2-namer"
   aws_region:
     type: string
     default: "us-east-1"
@@ -25,11 +25,12 @@ parameters:
   aws_ci_role_arn:
     type: string
     default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role"
-  # NOTE: For this branch the app pods use the CI role for IRSA. Tracked for
-  # hardening in Linear; will be replaced with a dedicated least-privilege role.
+  # Fallback IRSA role for the app pods. deploy-app reads the real value from
+  # the Terraform output `app_role_arn` (terraform/iam.tf), which trusts the
+  # OIDC provider of the cluster in terraform's existing_cluster_name.
   app_role_arn:
     type: string
-    default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role"
+    default: "arn:aws:iam::992382483259:role/circle-banking-app-dev-pods"
   acm_cert_arn:
     type: string
     default: "arn:aws:acm:us-east-1:992382483259:certificate/acf46071-40c3-4801-8124-634fca907378"
@@ -242,10 +243,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Skip apply outside cera-refactor
+          name: Skip apply outside main and cera-refactor
           command: |
-            if [ "${CIRCLE_BRANCH}" != "cera-refactor" ]; then
-              echo "Skipping terraform apply on branch ${CIRCLE_BRANCH} (cera-refactor only for now)"
+            if [ "${CIRCLE_BRANCH}" != "main" ] && [ "${CIRCLE_BRANCH}" != "cera-refactor" ]; then
+              echo "Skipping terraform apply on branch ${CIRCLE_BRANCH} (main and cera-refactor only)"
               circleci step halt
             fi
       - aws-setup
@@ -336,7 +337,7 @@ jobs:
               --dry-run=client -o yaml | kubectl apply -f -
             echo "==> demo-credentials secret applied"
       - run:
-          name: Resolve ACM cert ARN from Terraform state
+          name: Resolve ACM cert and app role ARNs from Terraform state
           command: |
             curl -sSL -o /tmp/tf.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
             cd /tmp && unzip -o tf.zip >/dev/null && sudo mv terraform /usr/local/bin/
@@ -347,6 +348,9 @@ jobs:
             CERT_ARN=$(terraform output -raw acm_cert_arn 2>/dev/null || echo "<< pipeline.parameters.acm_cert_arn >>")
             echo "export RESOLVED_ACM_CERT_ARN='${CERT_ARN}'" >> "$BASH_ENV"
             echo "==> ACM cert: $CERT_ARN"
+            ROLE_ARN=$(terraform output -raw app_role_arn 2>/dev/null || echo "<< pipeline.parameters.app_role_arn >>")
+            echo "export RESOLVED_APP_ROLE_ARN='${ROLE_ARN}'" >> "$BASH_ENV"
+            echo "==> App role: $ROLE_ARN"
       - run:
           name: Render Kustomize overlay (<< parameters.overlay >>) and substitute placeholders
           command: |
@@ -361,7 +365,7 @@ jobs:
               circle-banking-app/transactionhistory=${REG}/circle-banking-app/transactionhistory:${TAG} \
               circle-banking-app/loadgenerator=${REG}/circle-banking-app/loadgenerator:${TAG}
             kustomize build . > /tmp/manifest.yaml
-            sed -i "s|PLACEHOLDER_IAM_ROLE_ARN|<< pipeline.parameters.app_role_arn >>|g" /tmp/manifest.yaml
+            sed -i "s|PLACEHOLDER_IAM_ROLE_ARN|${RESOLVED_APP_ROLE_ARN}|g" /tmp/manifest.yaml
             sed -i "s|PLACEHOLDER_ACM_CERT_ARN|${RESOLVED_ACM_CERT_ARN}|g" /tmp/manifest.yaml
             echo "==> Rendered $(grep -c '^kind:' /tmp/manifest.yaml) manifests"
       - run:

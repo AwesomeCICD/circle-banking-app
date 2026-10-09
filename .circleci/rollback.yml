@@ -16,7 +16,7 @@ parameters:
     default: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
   eks_cluster_name:
     type: string
-    default: "fe-runner-cluster"
+    default: "fe-cera-v2-namer"
   aws_region:
     type: string
     default: "us-east-1"

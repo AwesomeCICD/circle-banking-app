@@ -8,7 +8,7 @@
 | **Status** | DRAFT — talk tracks written from the branch, not yet run at demo triage |
 | **Live app** | https://circle-banking-app.namer.fieldeng-sphereci.com |
 | **Grafana** | https://grafana.namer.fieldeng-sphereci.com |
-| **Cluster** | EKS `fe-runner-cluster`, us-east-1, namespace `circle-banking-app` |
+| **Cluster** | EKS `fe-cera-v2-namer`, us-east-1, namespace `circle-banking-app` |
 
 The baseline is the demo to run cold: booths, first calls and discovery. It's a 7-service polyglot banking app ("CCI Bank Corp"): 3 Go, 3 Python and a Locust load generator. One pipeline tests it, provisions AWS with Terraform, builds 7 images to ECR, deploys to EKS with Kustomize, smoke-tests the live endpoints and promotes to production.
 
