@@ -1,0 +1,151 @@
+version: 2.1
+
+# Smart Deployments rollback pipeline for circle-banking-app.
+#
+# Triggered from the Deploys UI (manual rollback) or by release validation
+# (auto_rollback_on_failure). CircleCI supplies the pipeline.deploy.* values;
+# target_version is the image tag to restore, because deploy-dev uses the
+# image tag as the release version.
+
+orbs:
+  aws-cli: circleci/aws-cli@5.4.1
+
+parameters:
+  ecr_registry:
+    type: string
+    default: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
+  eks_cluster_name:
+    type: string
+    default: "fe-runner-cluster"
+  aws_region:
+    type: string
+    default: "us-east-1"
+  aws_ci_role_arn:
+    type: string
+    default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role"
+
+executors:
+  aws:
+    docker:
+      - image: cimg/aws:2024.03
+
+jobs:
+  rollback-component:
+    executor: aws
+    environment:
+      COMPONENT_NAME: << pipeline.deploy.component_name >>
+      ENVIRONMENT_NAME: << pipeline.deploy.environment_name >>
+      TARGET_VERSION: << pipeline.deploy.target_version >>
+      CURRENT_VERSION: << pipeline.deploy.current_version >>
+      DEPLOY_NAMESPACE: << pipeline.deploy.namespace >>
+      ROLLBACK_REASON: << pipeline.deploy.reason >>
+    steps:
+      - run:
+          name: Show rollback request
+          command: |
+            echo "component   = ${COMPONENT_NAME}"
+            echo "environment = ${ENVIRONMENT_NAME}"
+            echo "namespace   = ${DEPLOY_NAMESPACE}"
+            echo "current     = ${CURRENT_VERSION}"
+            echo "target      = ${TARGET_VERSION}"
+            echo "reason      = ${ROLLBACK_REASON}"
+            if [ -z "$TARGET_VERSION" ]; then
+              echo "No target version supplied; nothing to roll back to"
+              exit 1
+            fi
+            # Only frontend is tracked as a release component today.
+            if [ "$COMPONENT_NAME" != "frontend" ]; then
+              echo "Unsupported component '${COMPONENT_NAME}' (only frontend is tracked)"
+              exit 1
+            fi
+      - run:
+          name: Plan rollback release
+          command: |
+            circleci run release plan \
+              --environment-name="${ENVIRONMENT_NAME}" \
+              --namespace="${DEPLOY_NAMESPACE}" \
+              --component-name="${COMPONENT_NAME}" \
+              --target-version="${TARGET_VERSION}" \
+              --rollback
+      - aws-cli/setup:
+          region: << pipeline.parameters.aws_region >>
+          role_arn: << pipeline.parameters.aws_ci_role_arn >>
+          role_session_name: "CircleCI-rollback-${CIRCLE_WORKFLOW_ID}"
+      - run:
+          name: Install kubectl and configure kubeconfig
+          command: |
+            curl -sSL -o /tmp/kubectl https://dl.k8s.io/release/v1.29.5/bin/linux/amd64/kubectl
+            chmod +x /tmp/kubectl
+            sudo mv /tmp/kubectl /usr/local/bin/
+            aws eks update-kubeconfig --region << pipeline.parameters.aws_region >> --name << pipeline.parameters.eks_cluster_name >>
+      - run:
+          name: Check target image exists in ECR
+          command: |
+            if ! aws ecr describe-images --region << pipeline.parameters.aws_region >> \
+                --repository-name "circle-banking-app/${COMPONENT_NAME}" \
+                --image-ids imageTag="${TARGET_VERSION}" >/dev/null; then
+              echo "FAILURE_REASON='Image circle-banking-app/${COMPONENT_NAME}:${TARGET_VERSION} not found in ECR'" > /tmp/failure_reason.env
+              exit 1
+            fi
+      - run:
+          name: Compare live version with expected current version
+          command: |
+            LIVE_IMAGE=$(kubectl -n "$DEPLOY_NAMESPACE" get deploy/"$COMPONENT_NAME" \
+              -o jsonpath="{.spec.template.spec.containers[?(@.name=='${COMPONENT_NAME}')].image}")
+            LIVE_TAG="${LIVE_IMAGE##*:}"
+            echo "Live image: ${LIVE_IMAGE}"
+            # Warn rather than fail: restoring a known-good version is still
+            # the right outcome if someone redeployed in the meantime.
+            if [ -n "$CURRENT_VERSION" ] && [ "$LIVE_TAG" != "$CURRENT_VERSION" ]; then
+              echo "WARN - live tag ${LIVE_TAG} differs from expected current version ${CURRENT_VERSION}"
+            fi
+      - run:
+          name: Roll back component to target version
+          command: |
+            kubectl -n "$DEPLOY_NAMESPACE" set image deploy/"$COMPONENT_NAME" \
+              "${COMPONENT_NAME}=<< pipeline.parameters.ecr_registry >>/circle-banking-app/${COMPONENT_NAME}:${TARGET_VERSION}"
+            kubectl -n "$DEPLOY_NAMESPACE" annotate deploy/"$COMPONENT_NAME" --overwrite \
+              kubernetes.io/change-cause="CircleCI rollback to ${TARGET_VERSION}: ${ROLLBACK_REASON}"
+      - run:
+          name: Update rollback release to running
+          command: circleci run release update --status=running
+      - run:
+          name: Wait for rollout
+          command: |
+            if ! kubectl -n "$DEPLOY_NAMESPACE" rollout status deploy/"$COMPONENT_NAME" --timeout=5m; then
+              kubectl -n "$DEPLOY_NAMESPACE" describe deploy/"$COMPONENT_NAME"
+              echo "FAILURE_REASON='${COMPONENT_NAME} rollout to ${TARGET_VERSION} did not complete within 5m'" > /tmp/failure_reason.env
+              exit 1
+            fi
+            kubectl -n "$DEPLOY_NAMESPACE" get pods -l app="$COMPONENT_NAME" -o wide
+      - run:
+          name: Update rollback release to SUCCESS
+          command: circleci run release update --status=SUCCESS
+          when: on_success
+      - run:
+          name: Update rollback release to FAILED
+          command: |
+            FAILURE_REASON="rollback job failed (see job steps)"
+            if [ -f /tmp/failure_reason.env ]; then
+              source /tmp/failure_reason.env
+            fi
+            circleci run release update \
+              --status=FAILED \
+              --failure-reason="$FAILURE_REASON"
+          when: on_fail
+
+  cancel-rollback:
+    executor: aws
+    steps:
+      - run:
+          name: Update rollback release to CANCELED
+          command: circleci run release update --status=CANCELED
+
+workflows:
+  rollback:
+    jobs:
+      - rollback-component
+      - cancel-rollback:
+          requires:
+            - rollback-component:
+              - canceled

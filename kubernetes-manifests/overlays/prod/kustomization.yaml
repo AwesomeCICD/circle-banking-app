@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: environment-config
+    patch: |
+      - op: replace
+        path: /data/DYNAMODB_USERS_TABLE
+        value: circle-banking-app-users-prod
+      - op: replace
+        path: /data/DYNAMODB_CONTACTS_TABLE
+        value: circle-banking-app-contacts-prod
+      - op: replace
+        path: /data/DYNAMODB_TRANSACTIONS_TABLE
+        value: circle-banking-app-transactions-prod
+      - op: replace
+        path: /data/DYNAMODB_BALANCES_TABLE
+        value: circle-banking-app-balances-prod
+  - target:
+      kind: Ingress
+      name: main-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: circle-banking-app.namer.fieldeng-sphereci.com
+      - op: replace
+        path: /spec/rules/1/host
+        value: grafana.namer.fieldeng-sphereci.com
+
+replicas:
+  - name: frontend
+    count: 2

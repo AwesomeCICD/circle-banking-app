@@ -1,0 +1,62 @@
+# Smart Deployments validation signal for the frontend.
+#
+# Beyla (eBPF) exports HTTP server metrics for every instrumented pod; the
+# PodMonitor gets them into Prometheus, and the PrometheusRule fires
+# frontend_error_rate when the frontend 5xx ratio stays high. Alertmanager
+# routes that alert to the CircleCI release validation webhook
+# (see kube-prometheus-values.yaml).
+#
+# Both objects need the release: kube-prometheus label, which is what the
+# kube-prometheus-stack Prometheus selects on.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: beyla
+  namespace: circle-banking-app
+  labels:
+    release: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: beyla
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      # Beyla instruments the whole cluster; keep only this app's series.
+      metricRelabelings:
+        - sourceLabels: [k8s_namespace_name]
+          regex: circle-banking-app
+          action: keep
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: smart-deploys-frontend
+  namespace: circle-banking-app
+  labels:
+    release: kube-prometheus
+spec:
+  groups:
+    - name: smart-deploys.frontend
+      interval: 15s
+      rules:
+        # alertname must equal the release job's validation.webhooks[].name.
+        # component_name / env must equal --component-name / --environment-name
+        # on the deploy marker. Probe routes are excluded so a bad version
+        # still passes readiness and actually rolls out.
+        - alert: frontend_error_rate
+          expr: |
+            (
+              sum(rate(http_server_request_duration_seconds_count{k8s_namespace_name="circle-banking-app",k8s_deployment_name="frontend",http_route!~"/ready|/healthy",http_response_status_code=~"5.."}[1m]))
+            /
+              sum(rate(http_server_request_duration_seconds_count{k8s_namespace_name="circle-banking-app",k8s_deployment_name="frontend",http_route!~"/ready|/healthy"}[1m]))
+            ) > 0.10
+          for: 1m
+          labels:
+            severity: critical
+            component_name: frontend
+            env: cba-dev
+          annotations:
+            summary: Frontend 5xx ratio above 10% for 1m
+            description: '{{ $value | humanizePercentage }} of frontend requests are returning 5xx.'

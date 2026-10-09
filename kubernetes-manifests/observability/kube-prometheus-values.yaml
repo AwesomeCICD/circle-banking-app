@@ -1,0 +1,60 @@
+# kube-prometheus-stack values applied by scripts/deploy-observability.sh
+# (in addition to its --set flags).
+#
+# Alertmanager routes frontend_error_rate to the CircleCI Smart Deployments
+# release validation webhook. The bearer token lives in the
+# cba-smart-deploys-webhook Secret (synced from Secrets Manager by the
+# script) and is mounted at /etc/alertmanager/secrets/<secret>/<key>; it is
+# never stored in this file.
+alertmanager:
+  alertmanagerSpec:
+    secrets:
+      - cba-smart-deploys-webhook
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: "null"
+      group_by: [namespace]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      routes:
+        - receiver: "null"
+          matchers:
+            - alertname = "Watchdog"
+        # The validation engine reads alertname / component_name / env from
+        # groupLabels, so they must all be in group_by.
+        - receiver: circleci-smart-deployments
+          matchers:
+            - alertname = "frontend_error_rate"
+          group_by: [alertname, component_name, env]
+          group_wait: 10s
+          group_interval: 1m
+          # Resend while firing so an alert raised before the evaluation
+          # window opens still lands inside it.
+          repeat_interval: 1m
+    receivers:
+      - name: "null"
+      - name: circleci-smart-deployments
+        webhook_configs:
+          - url: https://circleci.com/api/v3/deploy/hooks/efc130dc-284f-4533-964e-844f5c173860/validate
+            send_resolved: false
+            http_config:
+              authorization:
+                type: Bearer
+                credentials_file: /etc/alertmanager/secrets/cba-smart-deploys-webhook/token
+    # Chart defaults, kept because setting alertmanager.config replaces them.
+    inhibit_rules:
+      - source_matchers: ['severity = "critical"']
+        target_matchers: ['severity =~ "warning|info"']
+        equal: [namespace, alertname]
+      - source_matchers: ['severity = "warning"']
+        target_matchers: ['severity = "info"']
+        equal: [namespace, alertname]
+      - source_matchers: ['alertname = "InfoInhibitor"']
+        target_matchers: ['severity = "info"']
+        equal: [namespace]
+      - target_matchers: ['alertname = "InfoInhibitor"']
+    templates:
+      - /etc/alertmanager/config/*.tmpl

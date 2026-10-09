@@ -24,6 +24,11 @@ ENV PYTHONUNBUFFERED=0
 # explicitly set a fallback log level in case no log level is defined by Kubernetes
 ENV LOG_LEVEL info
 
+# Share of requests that return 500 (Smart Deployments bad-version demo).
+# Only the "-bad" image built with bad_version=true sets this above 0.
+ARG FAULT_INJECTION_RATE=0
+ENV FAULT_INJECTION_RATE=${FAULT_INJECTION_RATE}
+
 # Install dependencies.
 COPY requirements.txt .
 RUN pip install -r requirements.txt

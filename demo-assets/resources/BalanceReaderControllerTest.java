@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.circleci.samples.bankcorp.balancereader;
+package com.circleci.samples.circle_banking_app.balancereader;
 
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;

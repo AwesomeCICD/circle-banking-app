@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transactionhistory
+  namespace: circle-banking-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transactionhistory
+  template:
+    metadata:
+      labels:
+        app: transactionhistory
+    spec:
+      serviceAccountName: circle-banking-app-sa
+      containers:
+      - name: transactionhistory
+        image: circle-banking-app/transactionhistory:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: environment-config
+        env:
+        - name: VERSION
+          value: "0.1.0"
+        - name: PORT
+          value: "8080"
+        - name: HISTORY_LIMIT
+          value: "100"
+        volumeMounts:
+        - name: jwt-keys
+          mountPath: /tmp/.ssh
+          readOnly: true
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      volumes:
+      - name: jwt-keys
+        secret:
+          secretName: jwt-keys
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transactionhistory
+  namespace: circle-banking-app
+spec:
+  selector:
+    app: transactionhistory
+  ports:
+  - port: 8080
+    targetPort: 8080
