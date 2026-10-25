@@ -94,10 +94,17 @@ describe('Authenticated default user', function () {
             expectedBalance = formatter.format(currentBalance + parseFloat(depositAmount))
                                        .split('.')[0]
 
+            // Intercept the balance API call to wait for updated balance
+            cy.intercept('GET', '**/balances/**').as('getBalance')
+
             cy.deposit(externalAccount, depositAmount)
             cy.get('#alert-message').contains(depositMsgs.success)
         })
         cy.visit('/home')
+
+        // Wait for balance API to complete before checking the value
+        cy.wait('@getBalance')
+
         cy.get('#current-balance').then(($span) => {
             const updatedBalanceSpan = $span.text()
             cy.wrap(updatedBalanceSpan).should('contain', expectedBalance)
