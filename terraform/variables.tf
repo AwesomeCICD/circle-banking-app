@@ -7,7 +7,7 @@ variable "existing_cluster_name" {
 variable "irsa_extra_cluster_names" {
   description = "Other EKS clusters whose OIDC provider the app IRSA role also trusts. Used during a cluster move so pods on the old cluster keep DynamoDB access until DNS has switched; set back to [] once the old cluster is gone."
   type        = list(string)
-  default     = ["fe-cera-v2-namer"]
+  default     = []
 }
 
 variable "aws_region" {
