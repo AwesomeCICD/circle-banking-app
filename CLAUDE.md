@@ -234,7 +234,7 @@ parameters:
     type: string
   eks_cluster_name:
     type: string
-    default: "fe-cera-v2-namer"
+    default: "fieldeng-apps-use1"
   aws_region:
     type: string
     default: "us-east-1"
