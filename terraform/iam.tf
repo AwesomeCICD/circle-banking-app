@@ -1,18 +1,21 @@
 # IRSA role for the app pods (ServiceAccount circle-banking-app-sa) on the
-# EKS cluster in var.existing_cluster_name. Least privilege: the services
+# EKS cluster in var.existing_cluster_name, plus any clusters in
+# var.irsa_extra_cluster_names (kept during a cluster move so the old
+# cluster's pods keep working until DNS switches). Least privilege: the services
 # only talk to their DynamoDB tables; secrets are injected by CI as
 # Kubernetes Secrets, so no Secrets Manager access is needed here.
 
-data "aws_eks_cluster" "this" {
-  name = local.cluster_name
+data "aws_eks_cluster" "irsa" {
+  for_each = toset(concat([local.cluster_name], var.irsa_extra_cluster_names))
+  name     = each.key
 }
 
-data "aws_iam_openid_connect_provider" "cluster" {
-  url = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+data "aws_iam_openid_connect_provider" "irsa" {
+  for_each = data.aws_eks_cluster.irsa
+  url      = each.value.identity[0].oidc[0].issuer
 }
 
 locals {
-  oidc_issuer_host = replace(data.aws_eks_cluster.this.identity[0].oidc[0].issuer, "https://", "")
   dynamodb_table_arns = [
     aws_dynamodb_table.users.arn,
     aws_dynamodb_table.contacts.arn,
@@ -21,22 +24,26 @@ locals {
   ]
 }
 
+# One trust statement per cluster OIDC provider.
 data "aws_iam_policy_document" "app_assume" {
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    principals {
-      type        = "Federated"
-      identifiers = [data.aws_iam_openid_connect_provider.cluster.arn]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "${local.oidc_issuer_host}:sub"
-      values   = ["system:serviceaccount:${var.k8s_namespace}:circle-banking-app-sa"]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "${local.oidc_issuer_host}:aud"
-      values   = ["sts.amazonaws.com"]
+  dynamic "statement" {
+    for_each = data.aws_iam_openid_connect_provider.irsa
+    content {
+      actions = ["sts:AssumeRoleWithWebIdentity"]
+      principals {
+        type        = "Federated"
+        identifiers = [statement.value.arn]
+      }
+      condition {
+        test     = "StringEquals"
+        variable = "${replace(statement.value.url, "https://", "")}:sub"
+        values   = ["system:serviceaccount:${var.k8s_namespace}:circle-banking-app-sa"]
+      }
+      condition {
+        test     = "StringEquals"
+        variable = "${replace(statement.value.url, "https://", "")}:aud"
+        values   = ["sts.amazonaws.com"]
+      }
     }
   }
 }
