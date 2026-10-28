@@ -197,8 +197,6 @@ These showed up while writing the talk tracks. None of them blocks a demo today,
 1. **Dev and prod share one namespace and one set of hostnames.** Both overlays deploy to `circle-banking-app` on the same cluster with identical ingress hosts, so `Deploy Production` overwrites dev. Check that the `-prod` DynamoDB tables exist. `dynamodb.tf` creates tables for one `var.environment` only.
 2. **Production has no approval gate.** Adding a `type: approval` job before `Deploy Production` strengthens tracks C and D.
 3. **Terraform runs with `-lock=false`.** It's safe only because of the serial group. Say that explicitly (it's a good talking point), or re-enable locking.
-4. **Unpinned installs.** `staticcheck@latest` and the Helm install script piped from `main` over `curl | bash` will be flagged by security audiences.
-5. **`curl -k` in e2e.** TLS verification is skipped even though an ACM cert exists.
-6. **Update the Confluence catalog page.**
+4. **Update the Confluence catalog page.**
    - The project description (Java + Python, Vault, DLC, progressive deploy) is stale.
    - The known gap "Baseline cannot deploy until the CERA replacement exists" is resolved: the app now deploys to `fieldeng-apps-use1`.
