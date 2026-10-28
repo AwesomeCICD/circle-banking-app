@@ -384,21 +384,27 @@ jobs:
           name: Wait for rollouts (5-min per deployment)
           command: |
             NS="<< pipeline.parameters.k8s_namespace >>"
-            # frontend is the tracked release component, so its rollout must
-            # succeed; the others stay best-effort.
-            if ! kubectl -n "$NS" rollout status deploy/frontend --timeout=5m; then
-              kubectl -n "$NS" describe deploy/frontend
-              echo "FAILURE_REASON='frontend rollout did not complete within 5m'" > /tmp/failure_reason.env
-              exit 1
-            fi
-            for d in userservice contacts balancereader ledgerwriter transactionhistory; do
+            # Every rollout must succeed, or a broken backend ships green.
+            # Wait on all of them (they roll in parallel) so one log shows
+            # every failure, then fail the job. loadgenerator runs at 0
+            # replicas and is not waited on.
+            FAILED=""
+            for d in frontend userservice contacts balancereader ledgerwriter transactionhistory; do
               echo "==> waiting for $d"
-              kubectl -n "$NS" rollout status deploy/$d --timeout=5m || kubectl -n "$NS" describe deploy/$d
+              if ! kubectl -n "$NS" rollout status deploy/$d --timeout=5m; then
+                kubectl -n "$NS" describe deploy/$d
+                FAILED="$FAILED $d"
+              fi
             done
             echo "==> Pods:"
             kubectl -n "$NS" get pods -o wide
             echo "==> Ingress:"
             kubectl -n "$NS" get ingress
+            if [ -n "$FAILED" ]; then
+              echo "FAILURE_REASON='rollout did not complete within 5m:${FAILED}'" > /tmp/failure_reason.env
+              echo "ERROR - rollout did not complete within 5m:${FAILED}"
+              exit 1
+            fi
       - run:
           name: Capture live ALB DNS + zone for downstream dns-apply
           command: |
