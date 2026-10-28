@@ -4,11 +4,12 @@
 |---|---|
 | **Catalog use cases** | 2 Platform Engineering & Golden Path · 3 Security / Supply Chain · 7 Containers & Microservices |
 | **Owners** | UC2, UC7: Derry Bradley · UC3: Vijay Pandian |
-| **Branch** | `cera-refactor` (becomes `main` when merged) |
+| **Branch** | `main` |
 | **Status** | DRAFT — talk tracks written from the branch, not yet run at demo triage |
 | **Live app** | https://circle-banking-app.namer.fieldeng-sphereci.com |
 | **Grafana** | https://grafana.namer.fieldeng-sphereci.com |
-| **Cluster** | EKS `fe-cera-v2-namer`, us-east-1, namespace `circle-banking-app` |
+| **Cluster** | EKS `fieldeng-apps-use1`, us-east-1, namespace `circle-banking-app` |
+| **Available** | Weekdays 06:00–20:00 New York time, plus weekends. `fe-fleet-adjuster` scales the cluster to 0 nodes overnight, and both URLs return 503 until it scales back up. |
 
 The baseline is the demo to run cold: booths, first calls and discovery. It's a 7-service polyglot banking app ("CCI Bank Corp"): 3 Go, 3 Python and a Locust load generator. One pipeline tests it, provisions AWS with Terraform, builds 7 images to ECR, deploys to EKS with Kustomize, smoke-tests the live endpoints and promotes to production.
 
@@ -16,7 +17,7 @@ The baseline is the demo to run cold: booths, first calls and discovery. It's a 
 
 ## 1. Pre-flight (10 minutes before)
 
-- [ ] **Last `main` workflow on `cera-refactor` is green.** If it's red, go to section 7 first.
+- [ ] **The last `main` workflow run on the `main` branch is green.** If it's red, go to section 7 first.
 - [ ] **App loads and you can log in.** Demo credentials are in Secrets Manager under `AwesomeCICD/circle-banking-app/secrets` (`demo_username` / `demo_password`).
 - [ ] **Grafana loads and you can log in.** The admin password is `grafana_admin_password` in the same secret.
 - [ ] **Laptop kit works.** Run `circleci version` and check that the MCP server is connected.
@@ -48,7 +49,7 @@ dns-apply      ← reads live ALB DNS from the workspace, writes Route 53 via Te
                ▼
 e2e-test       ← 15x parallel curl probes of app + Grafana, JUnit results
                ▼
-Deploy Production  ← prod Kustomize overlay, cera-refactor branch only
+Deploy Production  ← prod Kustomize overlay, cera-refactor branch only (not run from main)
 ```
 
 **Features you can point at in `config.yml`:**
@@ -167,13 +168,14 @@ Use at a booth, on a first call, or as the lead-in to any other track.
 | Second pipeline sits in "queued" on `deploy-ecr` | The serial group is doing its job | "That's the guardrail from earlier: it's waiting its turn." Use it. |
 | `deploy-o11y` fails | Grafana password is still `PLACEHOLDER` in Secrets Manager | Show the green deploy path, then fix the secret after the call |
 | `e2e-test` fails | ALB/DNS not propagated yet (it retries 20 times, 15s apart) | "This is exactly why the check runs before prod." Open the Tests tab. |
+| App returns 503 outside US hours | Cluster scaled to 0 by `fe-fleet-adjuster` | Walk the last green workflow. Before EMEA or APAC calls, check the nodes are up or ask the fleet owner to bring them up. |
 | App is down | Cluster or deploy issue | Walk the last green workflow instead. Don't live-debug. |
 
 ---
 
 ## 8. Don't say (not in this branch)
 
-The catalog page still describes the old CERA build. On `cera-refactor`:
+The catalog page still describes the old CERA build. On `main`:
 
 - **No Vault.** Secrets are in AWS Secrets Manager, and CI uses OIDC straight to AWS IAM.
 - **No Java.** The backends are Go now.
@@ -184,6 +186,7 @@ The catalog page still describes the old CERA build. On `cera-refactor`:
 - **No Hubble/Cilium or Tempo traces.** They're in the proposed architecture but not deployed. Tempo only installs if `TEMPO_TRACES_BUCKET` is set, and the config doesn't set it.
 - **No real Python unit coverage.** `python-test` runs `test_ci_shard_*.py` files, which are small synthetic tests there to demonstrate splitting. Frame the story as "test splitting", not "test coverage".
 - **No CircleCI deploy markers or release tracking.** That's `dr-demo` too.
+- **No production promotion from `main`.** `Deploy Production` is filtered to `cera-refactor`, so a `main` run ends at `e2e-test`. Show the filter as branch policy, but don't claim the run you're showing promoted to prod.
 
 ---
 
@@ -192,12 +195,8 @@ The catalog page still describes the old CERA build. On `cera-refactor`:
 These showed up while writing the talk tracks. None of them blocks a demo today, but each is a question someone will eventually ask.
 
 1. **Dev and prod share one namespace and one set of hostnames.** Both overlays deploy to `circle-banking-app` on the same cluster with identical ingress hosts, so `Deploy Production` overwrites dev. Check that the `-prod` DynamoDB tables exist. `dynamodb.tf` creates tables for one `var.environment` only.
-2. **Rollout failures are swallowed.** `kubectl rollout status ... || kubectl describe` keeps the job green even when a rollout fails. Fail the job instead, so the pipeline tells the truth.
-3. **App pods use the CI role through IRSA.** The config says a least-privilege role is planned. Fix this before any security audience sees it.
-4. **Production has no approval gate.** Adding a `type: approval` job before `Deploy Production` strengthens tracks C and D.
-5. **Terraform runs with `-lock=false`.** It's safe only because of the serial group. Say that explicitly (it's a good talking point), or re-enable locking.
-6. **Unpinned installs.** `staticcheck@latest` and the Helm install script piped from `main` over `curl | bash` will be flagged by security audiences.
-7. **`curl -k` in e2e.** TLS verification is skipped even though an ACM cert exists.
-8. **Update the Confluence catalog page.**
+2. **Production has no approval gate.** Adding a `type: approval` job before `Deploy Production` strengthens tracks C and D.
+3. **Terraform runs with `-lock=false`.** It's safe only because of the serial group. Say that explicitly (it's a good talking point), or re-enable locking.
+4. **Update the Confluence catalog page.**
    - The project description (Java + Python, Vault, DLC, progressive deploy) is stale.
-   - The known gap "Baseline cannot deploy until the CERA replacement exists" is resolved by this branch once it merges.
+   - The known gap "Baseline cannot deploy until the CERA replacement exists" is resolved: the app now deploys to `fieldeng-apps-use1`.

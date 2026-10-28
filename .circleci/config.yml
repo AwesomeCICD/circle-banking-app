@@ -50,10 +50,12 @@ executors:
       - image: cimg/aws:2024.03
   go:
     docker:
-      - image: cimg/go:1.22
+      # Exact tags from the org's approved_language_images policy
+      # (AwesomeCICD/circleci-policies); floating tags are rejected.
+      - image: cimg/go:1.26.10
   python:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.11.18
   terraform:
     docker:
       - image: hashicorp/terraform:1.7
@@ -99,7 +101,9 @@ jobs:
       - run:
           name: Go vet and staticcheck
           command: |
-            go install honnef.co/go/tools/cmd/staticcheck@latest
+            # Pinned so a new release can't change lint results without a
+            # commit. v0.8.2 needs Go 1.26, which the go executor provides.
+            go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
             for svc in balancereader ledgerwriter transactionhistory; do
               echo "==> $svc"
               (cd src/$svc && go vet ./... && staticcheck ./...)
@@ -133,7 +137,7 @@ jobs:
               echo "No Go tests assigned to node ${CIRCLE_NODE_INDEX:-0}"
               exit 0
             fi
-            go install gotest.tools/gotestsum@v1.12.2
+            go install gotest.tools/gotestsum@v1.13.0
             export PATH="$(go env GOPATH)/bin:$PATH"
             while IFS= read -r entry; do
               svc="${entry%%/*}"
@@ -384,21 +388,27 @@ jobs:
           name: Wait for rollouts (5-min per deployment)
           command: |
             NS="<< pipeline.parameters.k8s_namespace >>"
-            # frontend is the tracked release component, so its rollout must
-            # succeed; the others stay best-effort.
-            if ! kubectl -n "$NS" rollout status deploy/frontend --timeout=5m; then
-              kubectl -n "$NS" describe deploy/frontend
-              echo "FAILURE_REASON='frontend rollout did not complete within 5m'" > /tmp/failure_reason.env
-              exit 1
-            fi
-            for d in userservice contacts balancereader ledgerwriter transactionhistory; do
+            # Every rollout must succeed, or a broken backend ships green.
+            # Wait on all of them (they roll in parallel) so one log shows
+            # every failure, then fail the job. loadgenerator runs at 0
+            # replicas and is not waited on.
+            FAILED=""
+            for d in frontend userservice contacts balancereader ledgerwriter transactionhistory; do
               echo "==> waiting for $d"
-              kubectl -n "$NS" rollout status deploy/$d --timeout=5m || kubectl -n "$NS" describe deploy/$d
+              if ! kubectl -n "$NS" rollout status deploy/$d --timeout=5m; then
+                kubectl -n "$NS" describe deploy/$d
+                FAILED="$FAILED $d"
+              fi
             done
             echo "==> Pods:"
             kubectl -n "$NS" get pods -o wide
             echo "==> Ingress:"
             kubectl -n "$NS" get ingress
+            if [ -n "$FAILED" ]; then
+              echo "FAILURE_REASON='rollout did not complete within 5m:${FAILED}'" > /tmp/failure_reason.env
+              echo "ERROR - rollout did not complete within 5m:${FAILED}"
+              exit 1
+            fi
       - run:
           name: Capture live ALB DNS + zone for downstream dns-apply
           command: |
@@ -510,7 +520,14 @@ jobs:
       - run:
           name: Install Helm
           command: |
-            curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            # Pinned release tarball, checked against the checksum published
+            # in the Helm release notes (not a script piped from main).
+            HELM_VERSION=v3.22.1
+            HELM_SHA256=896cf63684a42a723d61c980369d6e588330927deb13676ca0d85006dd6da0ea
+            curl -sSfLo /tmp/helm.tar.gz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+            echo "${HELM_SHA256}  /tmp/helm.tar.gz" | sha256sum -c -
+            tar -xzf /tmp/helm.tar.gz -C /tmp linux-amd64/helm
+            sudo install -m 0755 /tmp/linux-amd64/helm /usr/local/bin/helm
             helm version
       - run:
           name: Deploy Grafana + Prometheus stack
@@ -564,9 +581,9 @@ jobs:
               echo "==> Probing ${METHOD} ${URL} (up to 20 attempts, 15s apart)"
               for i in $(seq 1 20); do
                 if [ "$METHOD" = "HEAD" ]; then
-                  RAW_CODE=$(curl -k -sS -o /dev/null -w "%{http_code}" --max-time 10 --head "$URL") || true
+                  RAW_CODE=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 --head "$URL") || true
                 else
-                  RAW_CODE=$(curl -k -sS -o /dev/null -w "%{http_code}" --max-time 10 -X "$METHOD" "$URL") || true
+                  RAW_CODE=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 -X "$METHOD" "$URL") || true
                 fi
                 CODE=$(printf '%s' "$RAW_CODE" | awk 'match($0, /[0-9][0-9][0-9]/) { print substr($0, RSTART, 3); exit }')
                 [ -n "$CODE" ] || CODE="000"
