@@ -50,10 +50,12 @@ executors:
       - image: cimg/aws:2024.03
   go:
     docker:
-      - image: cimg/go:1.22
+      # Exact tags from the org's approved_language_images policy
+      # (AwesomeCICD/circleci-policies); floating tags are rejected.
+      - image: cimg/go:1.26.10
   python:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.11.18
   terraform:
     docker:
       - image: hashicorp/terraform:1.7
@@ -100,7 +102,7 @@ jobs:
           name: Go vet and staticcheck
           command: |
             # Pinned so a new release can't change lint results without a
-            # commit. v0.8.2 needs Go 1.26; GOTOOLCHAIN=auto fetches it.
+            # commit. v0.8.2 needs Go 1.26, which the go executor provides.
             go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
             for svc in balancereader ledgerwriter transactionhistory; do
               echo "==> $svc"
