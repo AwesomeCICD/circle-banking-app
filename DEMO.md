@@ -9,7 +9,7 @@
 | **Live app** | https://circle-banking-app.namer.fieldeng-sphereci.com |
 | **Grafana** | https://grafana.namer.fieldeng-sphereci.com |
 | **Cluster** | EKS `fieldeng-apps-use1`, us-east-1, namespace `circle-banking-app` |
-| **Available** | Weekdays 06:00–20:00 New York time, plus weekends. `fe-fleet-adjuster` scales the cluster to 0 nodes overnight, and both URLs return 503 until it scales back up. |
+| **Available** | Around the clock. `fe-fleet-adjuster`'s overnight schedule for this cluster (`cera-weeknights`) is disabled. If it's turned back on, the cluster scales to 0 nodes on weeknights 20:00–06:00 New York time, and both URLs return 503 until it scales back up. |
 
 The baseline is the demo to run cold: booths, first calls and discovery. It's a 7-service polyglot banking app ("CCI Bank Corp"): 3 Go, 3 Python and a Locust load generator. One pipeline tests it, provisions AWS with Terraform, builds 7 images to ECR, deploys to EKS with Kustomize, smoke-tests the live endpoints and promotes to production.
 
@@ -168,7 +168,7 @@ Use at a booth, on a first call, or as the lead-in to any other track.
 | Second pipeline sits in "queued" on `deploy-ecr` | The serial group is doing its job | "That's the guardrail from earlier: it's waiting its turn." Use it. |
 | `deploy-o11y` fails | Grafana password is still `PLACEHOLDER` in Secrets Manager | Show the green deploy path, then fix the secret after the call |
 | `e2e-test` fails | ALB/DNS not propagated yet (it retries 20 times, 15s apart) | "This is exactly why the check runs before prod." Open the Tests tab. |
-| App returns 503 outside US hours | Cluster scaled to 0 by `fe-fleet-adjuster` | Walk the last green workflow. Before EMEA or APAC calls, check the nodes are up or ask the fleet owner to bring them up. |
+| App returns 503 outside US hours | `fe-fleet-adjuster`'s overnight schedule was turned back on, and the cluster is scaled to 0 | Walk the last green workflow. Ask the fleet owner to bring the nodes up. |
 | App is down | Cluster or deploy issue | Walk the last green workflow instead. Don't live-debug. |
 
 ---
